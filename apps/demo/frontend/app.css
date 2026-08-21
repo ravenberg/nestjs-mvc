@@ -1,0 +1,33 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  max-width: 40rem;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+nav a {
+  font-weight: 600;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+
+input {
+  flex: 1;
+  padding: 0.5rem;
+}
