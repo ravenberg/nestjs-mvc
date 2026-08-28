@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core'
 import type { Request, Response } from 'express'
 import { Observable, from, mergeMap } from 'rxjs'
 import {
+  ERRORS_COOKIE,
   HEADER_INERTIA,
   HEADER_PARTIAL_COMPONENT,
   HEADER_PARTIAL_DATA,
@@ -13,12 +14,21 @@ import {
   INERTIA_REQUEST_STATE,
 } from './constants'
 import { defaultTemplate } from './html'
-import { PartialReload, resolveProps } from './props'
+import { PartialReload, always, resolveProps } from './props'
 import type { InertiaModuleOptions, InertiaPage, InertiaRequestState } from './types'
 import { resolveVersion } from './version'
 
 const splitHeader = (value: string | string[] | undefined): string[] =>
   typeof value === 'string' && value.length > 0 ? value.split(',').map((s) => s.trim()) : []
+
+const readCookie = (header: string | undefined, name: string): string | undefined => {
+  if (!header) return undefined
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=')
+    if (eq !== -1 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim()
+  }
+  return undefined
+}
 
 @Injectable()
 export class InertiaInterceptor implements NestInterceptor {
@@ -51,7 +61,11 @@ export class InertiaInterceptor implements NestInterceptor {
     const reset = splitHeader(req.headers[HEADER_RESET])
     const state = (req as Request & Record<symbol, InertiaRequestState | undefined>)[INERTIA_REQUEST_STATE]
 
-    const { props, deferredProps, mergeProps } = await resolveProps({ ...state?.shared, ...raw }, partial, reset)
+    const { props, deferredProps, mergeProps } = await resolveProps(
+      { errors: always(this.consumeErrors(req, res)), ...state?.shared, ...raw },
+      partial,
+      reset,
+    )
 
     const page: InertiaPage = {
       component,
@@ -71,6 +85,19 @@ export class InertiaInterceptor implements NestInterceptor {
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     return (this.options.template ?? defaultTemplate)(page)
+  }
+
+  /** Reads and clears validation errors flashed by the InertiaExceptionFilter. */
+  private consumeErrors(req: Request, res: Response): Record<string, unknown> {
+    const raw = readCookie(req.headers.cookie, ERRORS_COOKIE)
+    if (raw === undefined) return {}
+    res.clearCookie(ERRORS_COOKIE, { path: '/' })
+    try {
+      const parsed: unknown = JSON.parse(decodeURIComponent(raw))
+      return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
   }
 
   private detectPartial(req: Request, component: string): PartialReload | null {

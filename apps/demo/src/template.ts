@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { inertiaBody, type InertiaPage } from '@nestjs-inertia/core'
+import { inertiaBody, type InertiaPage } from 'inertia-nest'
 
 const DEV = process.env.NODE_ENV !== 'production'
 const VITE = 'http://localhost:5173'

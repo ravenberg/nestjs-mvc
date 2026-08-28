@@ -8,6 +8,9 @@ export const HEADER_PARTIAL_COMPONENT = 'x-inertia-partial-component'
 export const HEADER_ERROR_BAG = 'x-inertia-error-bag'
 export const HEADER_RESET = 'x-inertia-reset'
 
+/** Cookie used to flash validation errors across the redirect-back. */
+export const ERRORS_COOKIE = 'inertia_errors'
+
 /** Metadata key set by the `@Inertia()` decorator. */
 export const INERTIA_COMPONENT_METADATA = 'inertia:component'
 

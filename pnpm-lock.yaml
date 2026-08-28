@@ -17,9 +17,6 @@ importers:
       '@inertiajs/react':
         specifier: ^2.0.0
         version: 2.3.27(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@nestjs-inertia/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@nestjs/common':
         specifier: ^11.1.0
         version: 11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -29,6 +26,9 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.1.0
         version: 11.2.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.1)
+      inertia-nest:
+        specifier: workspace:*
+        version: link:../../packages/core
       react:
         specifier: ^19.0.0
         version: 19.2.8

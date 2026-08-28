@@ -1,8 +1,16 @@
 {
-  "name": "@nestjs-inertia/core",
+  "name": "inertia-nest",
   "version": "0.1.0",
   "description": "Modern Inertia.js adapter for NestJS — idiomatic decorators, Inertia v2+ protocol (partial reloads, deferred props, merge props), ESM-first.",
   "license": "MIT",
+  "author": "Ravenberg <ravenberg.ict@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravenberg/inertia-nest.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/ravenberg/inertia-nest#readme",
+  "bugs": "https://github.com/ravenberg/inertia-nest/issues",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -26,7 +34,8 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "keywords": [
     "nestjs",

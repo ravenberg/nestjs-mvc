@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function Home({ framework, serverTime, messages }: Props) {
-  const { data, setData, post, processing, reset } = useForm({ message: '' })
+  const { data, setData, post, processing, reset, errors } = useForm({ message: '' })
 
   return (
     <Layout>
@@ -32,6 +32,7 @@ export default function Home({ framework, serverTime, messages }: Props) {
         <button type="submit" disabled={processing}>
           Send
         </button>
+        {errors.message && <p style={{ color: 'crimson' }}>{errors.message}</p>}
       </form>
 
       <ul>

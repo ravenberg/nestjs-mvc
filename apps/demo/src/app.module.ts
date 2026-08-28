@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { InertiaModule } from '@nestjs-inertia/core'
+import { InertiaModule } from 'inertia-nest'
 import { AppController } from './app.controller'
 import { template } from './template'
 

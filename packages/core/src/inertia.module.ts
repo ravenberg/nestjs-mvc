@@ -1,6 +1,7 @@
 import { DynamicModule, Inject, MiddlewareConsumer, Module, NestModule, Provider } from '@nestjs/common'
-import { APP_INTERCEPTOR } from '@nestjs/core'
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
 import { INERTIA_MODULE_OPTIONS } from './constants'
+import { InertiaExceptionFilter } from './inertia-exception.filter'
 import { InertiaInterceptor } from './inertia.interceptor'
 import { InertiaMiddleware } from './inertia.middleware'
 import { InertiaService } from './inertia.service'
@@ -41,6 +42,7 @@ export class InertiaModule implements NestModule {
         InertiaService,
         InertiaMiddleware,
         { provide: APP_INTERCEPTOR, useClass: InertiaInterceptor },
+        { provide: APP_FILTER, useClass: InertiaExceptionFilter },
       ],
       exports: [INERTIA_MODULE_OPTIONS, InertiaService],
     }

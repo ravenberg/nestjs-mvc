@@ -77,6 +77,7 @@ describe('Inertia protocol (e2e)', () => {
     expect(res.body.url).toBe('/')
     expect(res.body.version).toBe('v1')
     expect(res.body.props).toEqual({
+      errors: {},
       auth: { user: 'raven' },
       name: 'World',
       flash: 'hello',
@@ -105,7 +106,7 @@ describe('Inertia protocol (e2e)', () => {
       .set('X-Inertia-Partial-Data', 'stats')
 
     expect(res.status).toBe(200)
-    expect(res.body.props).toEqual({ stats: { users: 42 }, flash: 'hello' })
+    expect(res.body.props).toEqual({ errors: {}, stats: { users: 42 }, flash: 'hello' })
     expect(res.body.deferredProps).toBeUndefined()
   })
 
