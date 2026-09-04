@@ -1,6 +1,6 @@
 import { Inject, Injectable, NestMiddleware, Optional } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
-import { INERTIA_VITE_SERVER } from './constants'
+import { MVC_VITE_SERVER } from './tokens'
 import type { ViteDevServerHolder } from './vite'
 
 /**
@@ -10,7 +10,7 @@ import type { ViteDevServerHolder } from './vite'
  */
 @Injectable()
 export class ViteDevMiddleware implements NestMiddleware {
-  constructor(@Optional() @Inject(INERTIA_VITE_SERVER) private readonly holder: ViteDevServerHolder | null) {}
+  constructor(@Optional() @Inject(MVC_VITE_SERVER) private readonly holder: ViteDevServerHolder | null) {}
 
   use(req: Request, res: Response, next: NextFunction): void {
     const vite = this.holder?.server

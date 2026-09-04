@@ -1,17 +1,39 @@
-export { Inertia } from './inertia.decorator'
-export { InertiaModule, type InertiaModuleAsyncOptions } from './inertia.module'
-export { InertiaService } from './inertia.service'
-export { InertiaInterceptor } from './inertia.interceptor'
-export { InertiaMiddleware } from './inertia.middleware'
-export { InertiaExceptionFilter } from './inertia-exception.filter'
-export { InertiaValidationException, inertiaExceptionFactory, flattenValidationErrors } from './validation'
+// ── Nest layer ────────────────────────────────────────────────────────────────
+export { View } from './nest/view.decorator'
+export { MvcModule, type MvcModuleAsyncOptions } from './nest/mvc.module'
+export type { MvcModuleOptions } from './nest/types'
+export { ViewService } from './nest/view.service'
+export { MvcInterceptor } from './nest/mvc.interceptor'
+export { MvcMiddleware } from './nest/mvc.middleware'
+export { MvcExceptionFilter } from './nest/mvc-exception.filter'
+export { ValidationException, validationExceptionFactory, flattenValidationErrors } from './nest/validation'
+export {
+  MVC_MODULE_OPTIONS,
+  MVC_VIEW_METADATA,
+  MVC_REQUEST_STATE,
+  MVC_VITE_SERVER,
+  MVC_ASSETS,
+} from './nest/tokens'
+
+// ── Vite integration ──────────────────────────────────────────────────────────
+export { ViteDevMiddleware } from './nest/vite.middleware'
+export {
+  ViteAssets,
+  ViteDevServerHolder,
+  createViteDevServer,
+  isViteDev,
+  type ViteOptions,
+  type ViteDevServerLike,
+} from './nest/vite'
+
+// ── Protocol layer (framework-agnostic) ───────────────────────────────────────
 export {
   optional,
   defer,
   always,
   merge,
   resolveProps,
-  InertiaProp,
+  Prop,
   OptionalProp,
   DeferProp,
   AlwaysProp,
@@ -19,31 +41,14 @@ export {
   type PropValue,
   type PartialReload,
   type ResolvedProps,
-} from './props'
-export { inertiaBody, defaultTemplate } from './html'
-export { resolveVersion } from './version'
-export { ViteDevMiddleware } from './vite.middleware'
-export {
-  InertiaAssets,
-  ViteDevServerHolder,
-  createViteDevServer,
-  isViteDev,
-  type InertiaViteOptions,
-  type ViteDevServerLike,
-} from './vite'
+} from './protocol/props'
+export { viewBody, defaultTemplate } from './protocol/html'
+export { resolveVersion } from './protocol/version'
 export type {
-  InertiaPage,
-  InertiaModuleOptions,
-  InertiaVersion,
-  InertiaRequestState,
-  InertiaTemplate,
-  InertiaTemplateContext,
-} from './types'
-export {
-  INERTIA_MODULE_OPTIONS,
-  INERTIA_COMPONENT_METADATA,
-  INERTIA_REQUEST_STATE,
-  INERTIA_VITE_SERVER,
-  INERTIA_ASSETS,
-  ERRORS_COOKIE,
-} from './constants'
+  PageObject,
+  AssetVersion,
+  MvcRequestState,
+  TemplateFn,
+  TemplateContext,
+} from './protocol/types'
+export { ERRORS_COOKIE } from './protocol/constants'

@@ -4,14 +4,14 @@ import { Test } from '@nestjs/testing'
 import type { Response } from 'express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Inertia, InertiaModule, InertiaService, always, defer, merge, optional } from '../src/index'
+import { View, MvcModule, ViewService, always, defer, merge, optional } from '../src/index'
 
 @Controller()
 class PagesController {
-  constructor(@Inject(InertiaService) private readonly inertia: InertiaService) {}
+  constructor(@Inject(ViewService) private readonly inertia: ViewService) {}
 
   @Get('/')
-  @Inertia('Home')
+  @View('Home')
   home() {
     this.inertia.share('auth', { user: 'raven' })
     return {
@@ -44,7 +44,7 @@ describe('Inertia protocol (e2e)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [InertiaModule.forRoot({ version: 'v1' })],
+      imports: [MvcModule.forRoot({ version: 'v1' })],
       controllers: [PagesController],
     }).compile()
     app = moduleRef.createNestApplication()
@@ -64,7 +64,7 @@ describe('Inertia protocol (e2e)', () => {
     expect(res.text).toContain('&quot;component&quot;:&quot;Home&quot;')
   })
 
-  it('serves the JSON page object for Inertia visits', async () => {
+  it('serves the JSON page object for Inertia visit', async () => {
     const res = await request(app.getHttpServer())
       .get('/')
       .set('X-Inertia', 'true')
@@ -135,7 +135,7 @@ describe('Inertia protocol (e2e)', () => {
     expect(res.body.mergeProps).toBeUndefined()
   })
 
-  it('converts 302 to 303 for PUT redirects during Inertia visits', async () => {
+  it('converts 302 to 303 for PUT redirects during Inertia visit', async () => {
     const inertia = await request(app.getHttpServer()).put('/submit').set('X-Inertia', 'true')
     expect(inertia.status).toBe(303)
 
@@ -143,7 +143,7 @@ describe('Inertia protocol (e2e)', () => {
     expect(regular.status).toBe(302)
   })
 
-  it('sends 409 + X-Inertia-Location for external redirects during Inertia visits', async () => {
+  it('sends 409 + X-Inertia-Location for external redirects during Inertia visit', async () => {
     const res = await request(app.getHttpServer())
       .get('/external')
       .set('X-Inertia', 'true')
@@ -153,7 +153,7 @@ describe('Inertia protocol (e2e)', () => {
     expect(res.headers['x-inertia-location']).toBe('https://example.com/oauth')
   })
 
-  it('leaves non-Inertia routes untouched', async () => {
+  it('leaves non-View routes untouched', async () => {
     const res = await request(app.getHttpServer()).get('/plain')
 
     expect(res.status).toBe(200)

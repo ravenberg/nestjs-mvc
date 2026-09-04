@@ -4,12 +4,12 @@ import { Test } from '@nestjs/testing'
 import type { Response } from 'express'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Inertia, InertiaModule, flattenValidationErrors, inertiaExceptionFactory } from '../src/index'
+import { View, MvcModule, flattenValidationErrors, validationExceptionFactory } from '../src/index'
 
 @Controller()
 class FormsController {
   @Get('/users/create')
-  @Inertia('Users/Create')
+  @View('Users/Create')
   create() {
     return { title: 'New user' }
   }
@@ -17,7 +17,7 @@ class FormsController {
   @Post('/users')
   store(@Body('email') email: string, @Res() res: Response) {
     if (!email?.includes('@')) {
-      throw inertiaExceptionFactory([
+      throw validationExceptionFactory([
         { property: 'email', constraints: { isEmail: 'email must be an email' }, children: [] },
       ])
     }
@@ -45,7 +45,7 @@ describe('validation errors (e2e)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [InertiaModule.forRoot()],
+      imports: [MvcModule.forRoot()],
       controllers: [FormsController],
     }).compile()
     app = moduleRef.createNestApplication()
@@ -120,7 +120,7 @@ describe('validation errors (e2e)', () => {
     expect(cookie).toContain('"name":"name should not be empty"')
   })
 
-  it('falls through to the default 400 response for non-Inertia requests', async () => {
+  it('falls through to the default 400 response for non-View requests', async () => {
     const res = await request(app.getHttpServer()).post('/users').send({})
 
     expect(res.status).toBe(400)

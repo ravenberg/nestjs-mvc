@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { always, defer, merge, optional, resolveProps } from '../src/props'
+import { always, defer, merge, optional, resolveProps } from '../src/protocol/props'
 
 describe('resolveProps', () => {
   const raw = () => ({

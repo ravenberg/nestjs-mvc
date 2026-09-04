@@ -1,7 +1,7 @@
 export type PropValue<T> = T | (() => T | Promise<T>)
 
 /** Base class for special prop wrappers. */
-export abstract class InertiaProp<T = unknown> {
+export abstract class Prop<T = unknown> {
   constructor(protected readonly value: PropValue<T>) {}
 
   async resolve(): Promise<T> {
@@ -10,20 +10,20 @@ export abstract class InertiaProp<T = unknown> {
 }
 
 /** Excluded from the initial load; only evaluated when explicitly requested in a partial reload. */
-export class OptionalProp<T = unknown> extends InertiaProp<T> {}
+export class OptionalProp<T = unknown> extends Prop<T> {}
 
 /** Excluded from the initial load and advertised via `deferredProps`; the client fetches it right after the first render. */
-export class DeferProp<T = unknown> extends InertiaProp<T> {
+export class DeferProp<T = unknown> extends Prop<T> {
   constructor(value: () => T | Promise<T>, readonly group: string = 'default') {
     super(value)
   }
 }
 
 /** Included in every response, even partial reloads that don't request it. */
-export class AlwaysProp<T = unknown> extends InertiaProp<T> {}
+export class AlwaysProp<T = unknown> extends Prop<T> {}
 
 /** Advertised via `mergeProps` so the client merges (e.g. appends arrays) instead of replacing. */
-export class MergeProp<T = unknown> extends InertiaProp<T> {}
+export class MergeProp<T = unknown> extends Prop<T> {}
 
 export const optional = <T>(value: () => T | Promise<T>): OptionalProp<T> => new OptionalProp(value)
 export const defer = <T>(value: () => T | Promise<T>, group?: string): DeferProp<T> => new DeferProp(value, group)
@@ -42,7 +42,7 @@ export interface ResolvedProps {
 }
 
 async function resolveValue(value: unknown): Promise<unknown> {
-  if (value instanceof InertiaProp) return value.resolve()
+  if (value instanceof Prop) return value.resolve()
   if (typeof value === 'function') return (value as () => unknown)()
   return value
 }

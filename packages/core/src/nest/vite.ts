@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** Options for running Vite inside the Nest process (dev) and resolving built assets (production). */
-export interface InertiaViteOptions {
+export interface ViteOptions {
   /** Client entry module, relative to `root`. E.g. `'frontend/main.tsx'`. */
   entry: string
   /**
@@ -38,10 +38,10 @@ interface ManifestChunk {
   imports?: string[]
 }
 
-export const isViteDev = (options: InertiaViteOptions): boolean =>
+export const isViteDev = (options: ViteOptions): boolean =>
   options.dev ?? process.env.NODE_ENV !== 'production'
 
-const viteRoot = (options: InertiaViteOptions): string => options.root ?? process.cwd()
+const viteRoot = (options: ViteOptions): string => options.root ?? process.cwd()
 
 /**
  * Boots a Vite dev server in middleware mode, so it shares the Nest process and port.
@@ -52,7 +52,7 @@ const viteRoot = (options: InertiaViteOptions): string => options.root ?? proces
  * second port.
  */
 export async function createViteDevServer(
-  options: InertiaViteOptions,
+  options: ViteOptions,
   httpServer?: unknown,
 ): Promise<ViteDevServerLike> {
   // Indirect specifier keeps bundlers from statically resolving Vite, which is an optional peer.
@@ -81,11 +81,11 @@ export class ViteDevServerHolder {
 }
 
 /** Resolves the `<script>` / `<link>` tags for the configured entry, in dev or production. */
-export class InertiaAssets {
+export class ViteAssets {
   private manifest?: Record<string, ManifestChunk>
 
   constructor(
-    private readonly options?: InertiaViteOptions,
+    private readonly options?: ViteOptions,
     private readonly holder?: ViteDevServerHolder,
   ) {}
 
@@ -108,12 +108,12 @@ export class InertiaAssets {
     return dev ? dev.transformIndexHtml(url, html) : html
   }
 
-  private productionTags(options: InertiaViteOptions): string {
+  private productionTags(options: ViteOptions): string {
     const manifest = this.readManifest(options)
     const entry = manifest[options.entry]
     if (!entry) {
       throw new Error(
-        `[inertia-nest] Entry "${options.entry}" not found in the Vite manifest. ` +
+        `[nestjs-mvc] Entry "${options.entry}" not found in the Vite manifest. ` +
           `Check that \`vite.entry\` matches the \`build.rollupOptions.input\` path.`,
       )
     }
@@ -143,14 +143,14 @@ export class InertiaAssets {
     for (const imported of chunk.imports ?? []) this.collectCss(manifest, imported, out, seen)
   }
 
-  private readManifest(options: InertiaViteOptions): Record<string, ManifestChunk> {
+  private readManifest(options: ViteOptions): Record<string, ManifestChunk> {
     if (this.manifest) return this.manifest
     const path = join(viteRoot(options), options.buildDir ?? 'dist/client', '.vite/manifest.json')
     try {
       this.manifest = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, ManifestChunk>
     } catch (cause) {
       throw new Error(
-        `[inertia-nest] Could not read the Vite manifest at ${path}. Run your client build first.`,
+        `[nestjs-mvc] Could not read the Vite manifest at ${path}. Run your client build first.`,
         { cause },
       )
     }

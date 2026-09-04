@@ -1,4 +1,4 @@
-import type { InertiaPage, InertiaTemplateContext } from './types'
+import type { PageObject, TemplateContext } from './types'
 
 const escapeAttr = (value: string): string =>
   value
@@ -8,12 +8,12 @@ const escapeAttr = (value: string): string =>
     .replaceAll('>', '&gt;')
 
 /** Renders the Inertia root element with the page object encoded in `data-page`. */
-export function inertiaBody(page: InertiaPage, id = 'app'): string {
+export function viewBody(page: PageObject, id = 'app'): string {
   return `<div id="${id}" data-page="${escapeAttr(JSON.stringify(page))}"></div>`
 }
 
 /** Minimal HTML shell used when no `template` option is configured. */
-export function defaultTemplate(page: InertiaPage, ctx?: InertiaTemplateContext): string {
+export function defaultTemplate(page: PageObject, ctx?: TemplateContext): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -21,6 +21,6 @@ export function defaultTemplate(page: InertiaPage, ctx?: InertiaTemplateContext)
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ${ctx?.assets() ?? ''}
 </head>
-<body>${inertiaBody(page)}</body>
+<body>${viewBody(page)}</body>
 </html>`
 }

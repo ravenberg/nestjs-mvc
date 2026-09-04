@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Res } from '@nestjs/common'
 import type { Response } from 'express'
-import { Inertia, InertiaValidationException, defer } from 'inertia-nest'
+import { View, ValidationException, defer } from 'nestjs-mvc'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -9,7 +9,7 @@ const messages: string[] = []
 @Controller()
 export class AppController {
   @Get()
-  @Inertia('Home')
+  @View('Home')
   home() {
     return {
       framework: 'NestJS',
@@ -19,7 +19,7 @@ export class AppController {
   }
 
   @Get('users')
-  @Inertia('Users')
+  @View('Users')
   users() {
     return {
       // Deferred: excluded from the first response, fetched by the client right after render.
@@ -40,7 +40,7 @@ export class AppController {
     if (trimmed.length < 3) {
       // With class-validator you'd let ValidationPipe throw this via
       // `exceptionFactory: inertiaExceptionFactory` instead.
-      throw new InertiaValidationException({ message: 'A message needs at least 3 characters.' })
+      throw new ValidationException({ message: 'A message needs at least 3 characters.' })
     }
     messages.push(trimmed)
     res.redirect('/')

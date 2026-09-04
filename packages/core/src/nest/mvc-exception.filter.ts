@@ -1,8 +1,8 @@
 import { ArgumentsHost, BadRequestException, Catch } from '@nestjs/common'
 import { BaseExceptionFilter } from '@nestjs/core'
 import type { Request, Response } from 'express'
-import { ERRORS_COOKIE, HEADER_ERROR_BAG, HEADER_INERTIA } from './constants'
-import { InertiaValidationException } from './validation'
+import { ERRORS_COOKIE, HEADER_ERROR_BAG, HEADER_INERTIA } from '../protocol/constants'
+import { ValidationException } from './validation'
 
 /**
  * Turns validation failures on Inertia visits into the redirect-back flow the
@@ -14,7 +14,7 @@ import { InertiaValidationException } from './validation'
  * request — falls through to Nest's default exception handling.
  */
 @Catch(BadRequestException)
-export class InertiaExceptionFilter extends BaseExceptionFilter {
+export class MvcExceptionFilter extends BaseExceptionFilter {
   catch(exception: BadRequestException, host: ArgumentsHost): void {
     if (host.getType() !== 'http') return super.catch(exception, host)
 
@@ -43,7 +43,7 @@ export class InertiaExceptionFilter extends BaseExceptionFilter {
 }
 
 function extractErrors(exception: BadRequestException): Record<string, string> | null {
-  if (exception instanceof InertiaValidationException) return exception.errors
+  if (exception instanceof ValidationException) return exception.errors
 
   const response = exception.getResponse()
   if (typeof response !== 'object' || response === null) return null

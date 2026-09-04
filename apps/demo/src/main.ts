@@ -1,4 +1,3 @@
-import 'reflect-metadata'
 import { fileURLToPath } from 'node:url'
 import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'

@@ -12,7 +12,7 @@ export default function Home({ framework, serverTime, messages }: Props) {
 
   return (
     <Layout>
-      <h1>{framework} × Inertia</h1>
+      <h1>{framework} MVC</h1>
       <p>
         Server-rendered page object, client-side navigation. Server time at render: <code>{serverTime}</code>
       </p>

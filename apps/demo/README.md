@@ -1,13 +1,13 @@
 # Demo app
 
-A minimal NestJS + React + Vite app used to manually exercise `inertia-nest`
+A minimal NestJS + React + Vite app used to manually exercise `nestjs-mvc`
 while developing the adapter in [`packages/core`](../../packages/core).
 
 ## Stack
 
 - **Server**: NestJS (`src/`) on `http://localhost:3000`
 - **Client**: React + Vite (`frontend/`), served by Nest itself — no second port
-- **Adapter**: `inertia-nest` (workspace package, linked via pnpm)
+- **Adapter**: `nestjs-mvc` (workspace package, linked via pnpm)
 
 ## Getting started
 
@@ -21,10 +21,10 @@ pnpm dev
 
 Open **http://localhost:3000**.
 
-> ⚠️ The demo imports the workspace package `inertia-nest` from its built
+> ⚠️ The demo imports the workspace package `nestjs-mvc` from its built
 > output (`packages/core/dist`), not from source. If you skip `pnpm build`
 > (or run `pnpm dev` on a fresh clone), the server crashes with
-> `ERR_MODULE_NOT_FOUND: .../inertia-nest/dist/index.mjs`. Re-run `pnpm build`
+> `ERR_MODULE_NOT_FOUND: .../nestjs-mvc/dist/index.js`. Re-run `pnpm build`
 > whenever `dist/` is missing or stale.
 
 ## Runtime model
@@ -33,7 +33,7 @@ Open **http://localhost:3000**.
 
 `pnpm dev` runs a single command: `tsx watch src/main.ts`. There is no
 `concurrently`, no separate `vite` command and no `localhost:5173`. The
-`vite` option on `InertiaModule.forRoot()` (see [`src/app.module.ts`](src/app.module.ts))
+`vite` option on `MvcModule.forRoot()` (see [`src/app.module.ts`](src/app.module.ts))
 boots Vite in *middleware mode* inside the Nest process:
 
 | | Dev | Production |
@@ -58,7 +58,7 @@ Reload behaviour while developing:
 | Page | URL | What it demonstrates |
 |---|---|---|
 | Home | `/` | Standard Inertia render + `useForm()` submission |
-| Home | `/` | **Validation errors**: submit a message under 3 characters → `InertiaValidationException` → redirect back with `errors.message` rendered inline |
+| Home | `/` | **Validation errors**: submit a message under 3 characters → `ValidationException` → redirect back with `errors.message` rendered inline |
 | Home | `/` | **Redirect after POST**: a valid submit redirects back to `/` and the message appears in the list |
 | Users | `/users` | **Deferred props** (`defer()`): renders instantly with a "Loading users…" fallback, then fetches `users` ~800ms later via a partial request |
 
@@ -107,7 +107,7 @@ Vite does not run. `main.ts` serves `dist/client` under `/build/`, and
 ```
 apps/demo
 ├── src/                  # NestJS server
-│   ├── app.module.ts     # InertiaModule.forRoot({ version, template, vite })
+│   ├── app.module.ts     # MvcModule.forRoot({ version, template, vite })
 │   ├── app.controller.ts # routes: GET /, GET /users, POST /messages
 │   ├── template.ts       # HTML shell; ctx.assets() handles dev/prod tags
 │   └── main.ts           # bootstrap + static assets in production

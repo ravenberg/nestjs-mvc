@@ -9,16 +9,14 @@ import {
   HEADER_PARTIAL_DATA,
   HEADER_PARTIAL_EXCEPT,
   HEADER_RESET,
-  INERTIA_ASSETS,
-  INERTIA_COMPONENT_METADATA,
-  INERTIA_MODULE_OPTIONS,
-  INERTIA_REQUEST_STATE,
-} from './constants'
-import { defaultTemplate } from './html'
-import { PartialReload, always, resolveProps } from './props'
-import type { InertiaModuleOptions, InertiaPage, InertiaRequestState } from './types'
-import type { InertiaAssets } from './vite'
-import { resolveVersion } from './version'
+} from '../protocol/constants'
+import { defaultTemplate } from '../protocol/html'
+import { PartialReload, always, resolveProps } from '../protocol/props'
+import type { PageObject, MvcRequestState } from '../protocol/types'
+import type { MvcModuleOptions } from './types'
+import { resolveVersion } from '../protocol/version'
+import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_REQUEST_STATE, MVC_VIEW_METADATA } from './tokens'
+import type { ViteAssets } from './vite'
 
 const splitHeader = (value: string | string[] | undefined): string[] =>
   typeof value === 'string' && value.length > 0 ? value.split(',').map((s) => s.trim()) : []
@@ -33,15 +31,15 @@ const readCookie = (header: string | undefined, name: string): string | undefine
 }
 
 @Injectable()
-export class InertiaInterceptor implements NestInterceptor {
+export class MvcInterceptor implements NestInterceptor {
   constructor(
-    @Inject(INERTIA_MODULE_OPTIONS) private readonly options: InertiaModuleOptions,
+    @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
     @Inject(Reflector) private readonly reflector: Reflector,
-    @Optional() @Inject(INERTIA_ASSETS) private readonly assets: InertiaAssets | null,
+    @Optional() @Inject(MVC_ASSETS) private readonly assets: ViteAssets | null,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const component = this.reflector.get<string | undefined>(INERTIA_COMPONENT_METADATA, context.getHandler())
+    const component = this.reflector.get<string | undefined>(MVC_VIEW_METADATA, context.getHandler())
     if (!component) return next.handle()
 
     const http = context.switchToHttp()
@@ -62,7 +60,7 @@ export class InertiaInterceptor implements NestInterceptor {
     const isInertia = req.headers[HEADER_INERTIA] === 'true'
     const partial = this.detectPartial(req, component)
     const reset = splitHeader(req.headers[HEADER_RESET])
-    const state = (req as Request & Record<symbol, InertiaRequestState | undefined>)[INERTIA_REQUEST_STATE]
+    const state = (req as Request & Record<symbol, MvcRequestState | undefined>)[MVC_REQUEST_STATE]
 
     const { props, deferredProps, mergeProps } = await resolveProps(
       { errors: always(this.consumeErrors(req, res)), ...state?.shared, ...raw },
@@ -70,7 +68,7 @@ export class InertiaInterceptor implements NestInterceptor {
       reset,
     )
 
-    const page: InertiaPage = {
+    const page: PageObject = {
       component,
       props,
       url: req.originalUrl ?? req.url,
@@ -93,7 +91,7 @@ export class InertiaInterceptor implements NestInterceptor {
     return this.assets ? this.assets.transformHtml(req.originalUrl ?? req.url, html) : html
   }
 
-  /** Reads and clears validation errors flashed by the InertiaExceptionFilter. */
+  /** Reads and clears validation errors flashed by the MvcExceptionFilter. */
   private consumeErrors(req: Request, res: Response): Record<string, unknown> {
     const raw = readCookie(req.headers.cookie, ERRORS_COOKIE)
     if (raw === undefined) return {}

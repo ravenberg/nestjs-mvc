@@ -9,37 +9,37 @@ import {
   Provider,
 } from '@nestjs/common'
 import { APP_FILTER, APP_INTERCEPTOR, HttpAdapterHost } from '@nestjs/core'
-import { INERTIA_ASSETS, INERTIA_MODULE_OPTIONS, INERTIA_VITE_SERVER } from './constants'
-import { InertiaExceptionFilter } from './inertia-exception.filter'
-import { InertiaInterceptor } from './inertia.interceptor'
-import { InertiaMiddleware } from './inertia.middleware'
-import { InertiaService } from './inertia.service'
-import type { InertiaModuleOptions } from './types'
-import { InertiaAssets, ViteDevServerHolder, createViteDevServer, isViteDev } from './vite'
+import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
+import { MvcExceptionFilter } from './mvc-exception.filter'
+import { MvcInterceptor } from './mvc.interceptor'
+import { MvcMiddleware } from './mvc.middleware'
+import { ViewService } from './view.service'
+import type { MvcModuleOptions } from './types'
+import { ViteAssets, ViteDevServerHolder, createViteDevServer, isViteDev } from './vite'
 import { ViteDevMiddleware } from './vite.middleware'
 
-export interface InertiaModuleAsyncOptions {
+export interface MvcModuleAsyncOptions {
   imports?: DynamicModule['imports']
   inject?: unknown[]
-  useFactory: (...args: never[]) => InertiaModuleOptions | Promise<InertiaModuleOptions>
+  useFactory: (...args: never[]) => MvcModuleOptions | Promise<MvcModuleOptions>
 }
 
 @Module({})
-export class InertiaModule implements NestModule, OnApplicationBootstrap, OnModuleDestroy {
+export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDestroy {
   constructor(
-    @Inject(INERTIA_MODULE_OPTIONS) private readonly options: InertiaModuleOptions,
-    @Inject(INERTIA_VITE_SERVER) private readonly holder: ViteDevServerHolder,
+    @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
+    @Inject(MVC_VITE_SERVER) private readonly holder: ViteDevServerHolder,
     @Inject(HttpAdapterHost) private readonly adapterHost: HttpAdapterHost,
   ) {}
 
-  static forRoot(options: InertiaModuleOptions = {}): DynamicModule {
-    return this.build({ provide: INERTIA_MODULE_OPTIONS, useValue: options })
+  static forRoot(options: MvcModuleOptions = {}): DynamicModule {
+    return this.build({ provide: MVC_MODULE_OPTIONS, useValue: options })
   }
 
-  static forRootAsync(options: InertiaModuleAsyncOptions): DynamicModule {
+  static forRootAsync(options: MvcModuleAsyncOptions): DynamicModule {
     return this.build(
       {
-        provide: INERTIA_MODULE_OPTIONS,
+        provide: MVC_MODULE_OPTIONS,
         useFactory: options.useFactory,
         inject: (options.inject ?? []) as never[],
       },
@@ -49,25 +49,25 @@ export class InertiaModule implements NestModule, OnApplicationBootstrap, OnModu
 
   private static build(optionsProvider: Provider, imports?: DynamicModule['imports']): DynamicModule {
     return {
-      module: InertiaModule,
+      module: MvcModule,
       global: true,
       imports,
       providers: [
         optionsProvider,
-        { provide: INERTIA_VITE_SERVER, useValue: new ViteDevServerHolder() },
+        { provide: MVC_VITE_SERVER, useValue: new ViteDevServerHolder() },
         {
-          provide: INERTIA_ASSETS,
-          useFactory: (options: InertiaModuleOptions, holder: ViteDevServerHolder) =>
-            new InertiaAssets(options.vite, holder),
-          inject: [INERTIA_MODULE_OPTIONS, INERTIA_VITE_SERVER],
+          provide: MVC_ASSETS,
+          useFactory: (options: MvcModuleOptions, holder: ViteDevServerHolder) =>
+            new ViteAssets(options.vite, holder),
+          inject: [MVC_MODULE_OPTIONS, MVC_VITE_SERVER],
         },
-        InertiaService,
-        InertiaMiddleware,
+        ViewService,
+        MvcMiddleware,
         ViteDevMiddleware,
-        { provide: APP_INTERCEPTOR, useClass: InertiaInterceptor },
-        { provide: APP_FILTER, useClass: InertiaExceptionFilter },
+        { provide: APP_INTERCEPTOR, useClass: MvcInterceptor },
+        { provide: APP_FILTER, useClass: MvcExceptionFilter },
       ],
-      exports: [INERTIA_MODULE_OPTIONS, INERTIA_ASSETS, INERTIA_VITE_SERVER, InertiaService],
+      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, ViewService],
     }
   }
 
@@ -77,7 +77,7 @@ export class InertiaModule implements NestModule, OnApplicationBootstrap, OnModu
       // Vite first: it owns /@vite/*, /@react-refresh and source files, and defers the rest.
       consumer.apply(ViteDevMiddleware).forRoutes('{*splat}')
     }
-    consumer.apply(InertiaMiddleware).forRoutes('{*splat}')
+    consumer.apply(MvcMiddleware).forRoutes('{*splat}')
   }
 
   /**

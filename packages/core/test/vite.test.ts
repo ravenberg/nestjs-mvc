@@ -6,12 +6,12 @@ import { Controller, Get, type INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Inertia, InertiaAssets, InertiaModule, inertiaBody } from '../src/index'
+import { View, ViteAssets, MvcModule, viewBody } from '../src/index'
 
 @Controller()
 class PagesController {
   @Get('/')
-  @Inertia('Home')
+  @View('Home')
   home() {
     return {}
   }
@@ -25,16 +25,16 @@ function fakeBuild(manifest: Record<string, unknown>): string {
   return root
 }
 
-describe('InertiaAssets', () => {
+describe('ViteAssets', () => {
   it('returns no tags when Vite is not configured', () => {
-    expect(new InertiaAssets().tags()).toBe('')
+    expect(new ViteAssets().tags()).toBe('')
   })
 
   it('resolves hashed script and style tags from the build manifest', () => {
     const root = fakeBuild({
       'frontend/main.tsx': { file: 'assets/main-abc.js', css: ['assets/main-abc.css'] },
     })
-    const assets = new InertiaAssets({ entry: 'frontend/main.tsx', root, dev: false })
+    const assets = new ViteAssets({ entry: 'frontend/main.tsx', root, dev: false })
 
     expect(assets.tags()).toBe(
       '<link rel="stylesheet" href="/build/assets/main-abc.css">\n' +
@@ -47,27 +47,27 @@ describe('InertiaAssets', () => {
       'frontend/main.tsx': { file: 'assets/main-abc.js', imports: ['_shared-def.js'] },
       '_shared-def.js': { file: 'assets/shared-def.js', css: ['assets/shared-def.css'] },
     })
-    const assets = new InertiaAssets({ entry: 'frontend/main.tsx', root, dev: false })
+    const assets = new ViteAssets({ entry: 'frontend/main.tsx', root, dev: false })
 
     expect(assets.tags()).toContain('href="/build/assets/shared-def.css"')
   })
 
   it('honours a custom base', () => {
     const root = fakeBuild({ 'frontend/main.tsx': { file: 'assets/main-abc.js' } })
-    const assets = new InertiaAssets({ entry: 'frontend/main.tsx', root, dev: false, base: '/static/' })
+    const assets = new ViteAssets({ entry: 'frontend/main.tsx', root, dev: false, base: '/static/' })
 
     expect(assets.tags()).toContain('src="/static/assets/main-abc.js"')
   })
 
   it('throws a helpful error when the entry is missing from the manifest', () => {
     const root = fakeBuild({ 'other.tsx': { file: 'assets/other.js' } })
-    const assets = new InertiaAssets({ entry: 'frontend/main.tsx', root, dev: false })
+    const assets = new ViteAssets({ entry: 'frontend/main.tsx', root, dev: false })
 
     expect(() => assets.tags()).toThrow(/not found in the Vite manifest/)
   })
 
   it('throws a helpful error when the manifest does not exist', () => {
-    const assets = new InertiaAssets({ entry: 'frontend/main.tsx', root: '/nope', dev: false })
+    const assets = new ViteAssets({ entry: 'frontend/main.tsx', root: '/nope', dev: false })
 
     expect(() => assets.tags()).toThrow(/Could not read the Vite manifest/)
   })
@@ -87,10 +87,10 @@ describe('template asset tags (e2e)', () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [
-        InertiaModule.forRoot({
+        MvcModule.forRoot({
           version: 'v1',
           vite: { entry: 'frontend/main.tsx', root, dev: false },
-          template: (page, ctx) => `<!DOCTYPE html><html><head>${ctx.assets()}</head><body>${inertiaBody(page)}</body></html>`,
+          template: (page, ctx) => `<!DOCTYPE html><html><head>${ctx.assets()}</head><body>${viewBody(page)}</body></html>`,
         }),
       ],
       controllers: [PagesController],
@@ -107,9 +107,9 @@ describe('template asset tags (e2e)', () => {
   it('renders an empty assets() when no vite option is configured', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        InertiaModule.forRoot({
+        MvcModule.forRoot({
           version: 'v1',
-          template: (page, ctx) => `<html><head>${ctx.assets()}</head><body>${inertiaBody(page)}</body></html>`,
+          template: (page, ctx) => `<html><head>${ctx.assets()}</head><body>${viewBody(page)}</body></html>`,
         }),
       ],
       controllers: [PagesController],

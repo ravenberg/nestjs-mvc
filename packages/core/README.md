@@ -1,23 +1,29 @@
-# inertia-nest
+# nestjs-mvc
 
 Modern [Inertia.js](https://inertiajs.com) adapter for NestJS (Express platform). See the [repository README](../../README.md) for the project overview.
 
 ## Install
 
 ```sh
-pnpm add inertia-nest
+pnpm add nestjs-mvc
 ```
 
-Peer dependencies: `@nestjs/common` and `@nestjs/core` `^11 || ^12`, `rxjs ^7.8`. `vite` is an optional peer — only needed if you use the built-in dev-server integration below.
+Peer dependencies: `@nestjs/common`, `@nestjs/core` and `@nestjs/platform-express` `^12`, `reflect-metadata ^0.2`, `rxjs ^7`. `vite` is an optional peer — only needed if you use the built-in dev-server integration below.
+
+Requires Node `^20.19 || ^22.12 || >=24` (NestJS v12's `require(esm)` floor). The package is
+**ESM-only**, but stays loadable from CommonJS via `require(esm)` since it ships no top-level `await`.
+
+> NestJS v12 imports `reflect-metadata` itself, so you no longer need `import 'reflect-metadata'`
+> at the top of your `main.ts`.
 
 ## Setup
 
 ```ts
-import { InertiaModule, inertiaBody } from 'inertia-nest'
+import { MvcModule, viewBody } from 'nestjs-mvc'
 
 @Module({
   imports: [
-    InertiaModule.forRoot({
+    MvcModule.forRoot({
       // Asset version for cache busting; version mismatch on a GET visit
       // returns 409 + X-Inertia-Location so the client does a full visit.
       version: () => myBuildHash(),
@@ -25,7 +31,7 @@ import { InertiaModule, inertiaBody } from 'inertia-nest'
       template: (page, ctx) => `<!DOCTYPE html>
 <html>
 <head>${ctx.assets()}</head>
-<body>${inertiaBody(page)}</body>
+<body>${viewBody(page)}</body>
 </html>`,
     }),
   ],
@@ -33,14 +39,14 @@ import { InertiaModule, inertiaBody } from 'inertia-nest'
 export class AppModule {}
 ```
 
-`InertiaModule.forRootAsync({ imports, inject, useFactory })` is available for config-driven setups. The module registers itself globally, applies the protocol middleware, and binds the render interceptor.
+`MvcModule.forRootAsync({ imports, inject, useFactory })` is available for config-driven setups. The module registers itself globally, applies the protocol middleware, and binds the render interceptor.
 
 ## Single-process Vite integration
 
 Add the `vite` option and the client dev server runs **inside your Nest process**, on the same port. No `concurrently`, no second terminal, no `localhost:5173` — `nest start --watch` stays the whole story:
 
 ```ts
-InertiaModule.forRoot({
+MvcModule.forRoot({
   version: () => myBuildHash(),
   template,
   vite: {
@@ -84,12 +90,12 @@ Prefer to keep Vite out of Nest? Omit the `vite` option and write your own asset
 ## Rendering pages
 
 ```ts
-import { Inertia, defer, optional, always, merge } from 'inertia-nest'
+import { View, defer, optional, always, merge } from 'nestjs-mvc'
 
 @Controller()
 export class UsersController {
   @Get('users')
-  @Inertia('Users')
+  @View('Users')
   index() {
     return {
       users: this.users.findAll(),                  // plain prop (may be a promise or function)
@@ -102,19 +108,19 @@ export class UsersController {
 }
 ```
 
-Handlers without `@Inertia()` are untouched — regular JSON APIs keep working next to your pages.
+Handlers without `@View()` are untouched — regular JSON APIs keep working next to your pages.
 
 ## Shared props & external redirects
 
 ```ts
-import { InertiaService } from 'inertia-nest'
+import { ViewService } from 'nestjs-mvc'
 
 @Controller()
 export class AppController {
-  constructor(private readonly inertia: InertiaService) {}
+  constructor(private readonly inertia: ViewService) {}
 
   @Get('profile')
-  @Inertia('Profile')
+  @View('Profile')
   profile() {
     this.inertia.share('auth', { user: this.currentUser() })
     return { profile: this.profiles.mine() }
@@ -128,7 +134,7 @@ export class AppController {
 }
 ```
 
-`InertiaService` is request-scoped; sharing from middleware/guards via the request state is also supported.
+`ViewService` is request-scoped; sharing from middleware/guards via the request state is also supported.
 
 ## Validation errors
 
@@ -138,19 +144,19 @@ Wire `ValidationPipe` up with the provided `exceptionFactory` to get errors keye
 
 ```ts
 import { ValidationPipe } from '@nestjs/common'
-import { inertiaExceptionFactory } from 'inertia-nest'
+import { validationExceptionFactory } from 'nestjs-mvc'
 
-app.useGlobalPipes(new ValidationPipe({ exceptionFactory: inertiaExceptionFactory }))
+app.useGlobalPipes(new ValidationPipe({ exceptionFactory: validationExceptionFactory }))
 ```
 
-> Building without `emitDecoratorMetadata` (tsx, esbuild, SWC without the transform)? Pass the DTO explicitly: `@Body(new ValidationPipe({ expectedType: CreateUserDto, exceptionFactory: inertiaExceptionFactory }))`.
+> Building without `emitDecoratorMetadata` (tsx, esbuild, SWC without the transform)? Pass the DTO explicitly: `@Body(new ValidationPipe({ expectedType: CreateUserDto, exceptionFactory: validationExceptionFactory }))`.
 
 You can also throw errors yourself, e.g. from a service:
 
 ```ts
-import { InertiaValidationException } from 'inertia-nest'
+import { ValidationException } from 'nestjs-mvc'
 
-throw new InertiaValidationException({ email: 'That email is already taken.' })
+throw new ValidationException({ email: 'That email is already taken.' })
 ```
 
 The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag name the client asked for. A plain `ValidationPipe` without the factory works too — the filter falls back to parsing the default message array. Non-Inertia requests are untouched and keep NestJS's regular 400 JSON response (with an added `errors` object when you use the factory).

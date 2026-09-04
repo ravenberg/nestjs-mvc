@@ -1,20 +1,21 @@
 import { Inject, Injectable, Scope } from '@nestjs/common'
 import { REQUEST } from '@nestjs/core'
 import type { Request, Response } from 'express'
-import { HEADER_INERTIA, INERTIA_REQUEST_STATE } from './constants'
-import type { InertiaRequestState } from './types'
+import { HEADER_INERTIA } from '../protocol/constants'
+import { MVC_REQUEST_STATE } from './tokens'
+import type { MvcRequestState } from '../protocol/types'
 
 /**
  * Request-scoped helper for sharing props and issuing external redirects.
  * Shared props are merged under the props returned by the handler.
  */
 @Injectable({ scope: Scope.REQUEST })
-export class InertiaService {
+export class ViewService {
   constructor(@Inject(REQUEST) private readonly req: Request) {}
 
-  private get state(): InertiaRequestState {
-    const req = this.req as Request & Record<symbol, InertiaRequestState | undefined>
-    return (req[INERTIA_REQUEST_STATE] ??= { shared: {} })
+  private get state(): MvcRequestState {
+    const req = this.req as Request & Record<symbol, MvcRequestState | undefined>
+    return (req[MVC_REQUEST_STATE] ??= { shared: {} })
   }
 
   /** Shares props with the current page render (e.g. auth user, flash messages). */

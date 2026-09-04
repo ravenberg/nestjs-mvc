@@ -1,8 +1,10 @@
 import { Inject, Injectable, NestMiddleware } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
-import { HEADER_INERTIA, HEADER_VERSION, INERTIA_MODULE_OPTIONS, INERTIA_REQUEST_STATE } from './constants'
-import type { InertiaModuleOptions, InertiaRequestState } from './types'
-import { resolveVersion } from './version'
+import { HEADER_INERTIA, HEADER_VERSION } from '../protocol/constants'
+import { MVC_MODULE_OPTIONS, MVC_REQUEST_STATE } from './tokens'
+import type { MvcRequestState } from '../protocol/types'
+import type { MvcModuleOptions } from './types'
+import { resolveVersion } from '../protocol/version'
 
 /**
  * Handles the protocol concerns that must run before routing:
@@ -12,12 +14,12 @@ import { resolveVersion } from './version'
  * - answers stale-version GET visits with 409 + X-Inertia-Location
  */
 @Injectable()
-export class InertiaMiddleware implements NestMiddleware {
-  constructor(@Inject(INERTIA_MODULE_OPTIONS) private readonly options: InertiaModuleOptions) {}
+export class MvcMiddleware implements NestMiddleware {
+  constructor(@Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const state: InertiaRequestState = { shared: {} }
-    ;(req as Request & Record<symbol, InertiaRequestState>)[INERTIA_REQUEST_STATE] = state
+    const state: MvcRequestState = { shared: {} }
+    ;(req as Request & Record<symbol, MvcRequestState>)[MVC_REQUEST_STATE] = state
 
     const isInertia = req.headers[HEADER_INERTIA] === 'true'
 
