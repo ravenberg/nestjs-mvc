@@ -7,6 +7,6 @@ export default defineConfig({
   clean: true,
   target: 'node20',
   deps: {
-    neverBundle: ['@nestjs/common', '@nestjs/core', 'rxjs', 'express'],
+    neverBundle: ['@nestjs/common', '@nestjs/core', 'rxjs', 'express', 'vite'],
   },
 })

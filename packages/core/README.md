@@ -8,7 +8,7 @@ Modern [Inertia.js](https://inertiajs.com) adapter for NestJS (Express platform)
 pnpm add inertia-nest
 ```
 
-Peer dependencies: `@nestjs/common` and `@nestjs/core` `^11 || ^12`, `rxjs ^7.8`.
+Peer dependencies: `@nestjs/common` and `@nestjs/core` `^11 || ^12`, `rxjs ^7.8`. `vite` is an optional peer — only needed if you use the built-in dev-server integration below.
 
 ## Setup
 
@@ -22,9 +22,9 @@ import { InertiaModule, inertiaBody } from 'inertia-nest'
       // returns 409 + X-Inertia-Location so the client does a full visit.
       version: () => myBuildHash(),
       // HTML shell for the initial page load.
-      template: (page) => `<!DOCTYPE html>
+      template: (page, ctx) => `<!DOCTYPE html>
 <html>
-<head><script type="module" src="/build/main.js"></script></head>
+<head>${ctx.assets()}</head>
 <body>${inertiaBody(page)}</body>
 </html>`,
     }),
@@ -34,6 +34,52 @@ export class AppModule {}
 ```
 
 `InertiaModule.forRootAsync({ imports, inject, useFactory })` is available for config-driven setups. The module registers itself globally, applies the protocol middleware, and binds the render interceptor.
+
+## Single-process Vite integration
+
+Add the `vite` option and the client dev server runs **inside your Nest process**, on the same port. No `concurrently`, no second terminal, no `localhost:5173` — `nest start --watch` stays the whole story:
+
+```ts
+InertiaModule.forRoot({
+  version: () => myBuildHash(),
+  template,
+  vite: {
+    entry: 'frontend/main.tsx',   // matches build.rollupOptions.input
+    root: import.meta.dirname,    // dir containing vite.config.ts (default: process.cwd())
+  },
+})
+```
+
+| Option | Default | Purpose |
+|---|---|---|
+| `entry` | — | Client entry, relative to `root`. Also the manifest key in production. |
+| `root` | `process.cwd()` | Directory containing `vite.config.*`. |
+| `dev` | `NODE_ENV !== 'production'` | Whether to boot the dev server. |
+| `buildDir` | `'dist/client'` | Build output dir, relative to `root`. Must match `build.outDir`. |
+| `base` | `'/build'` | Public URL prefix for built assets. |
+| `config` | — | Extra inline Vite config, merged into the dev server config. |
+
+What it does:
+
+- **Development** — boots Vite with `middlewareMode` and `appType: 'custom'`, then serves its middleware from the Nest port. The HMR websocket is attached to Nest's own HTTP server, so no extra port is opened. `ctx.assets()` emits the entry script and Vite's `transformIndexHtml` injects the HMR client and plugin preambles (e.g. React Refresh) automatically.
+- **Production** — no Vite involved. `ctx.assets()` reads `<root>/<buildDir>/.vite/manifest.json` and emits hashed `<script>`/`<link>` tags under `base`, walking the import graph so CSS from shared chunks is included.
+
+Serve the built assets yourself, matching `base`:
+
+```ts
+app.useStaticAssets(join(root, 'dist/client'), { prefix: '/build/' })
+```
+
+Set `base` in `vite.config.ts` for the build so code-split chunks resolve:
+
+```ts
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/build/' : '/',
+  build: { manifest: true, outDir: 'dist/client', rollupOptions: { input: 'frontend/main.tsx' } },
+}))
+```
+
+Prefer to keep Vite out of Nest? Omit the `vite` option and write your own asset tags in `template` — everything else works unchanged.
 
 ## Rendering pages
 
@@ -118,3 +164,4 @@ The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag na
 - 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
 - Stale asset version on GET visits → `409` + `X-Inertia-Location`.
 - `Vary: X-Inertia` on every page response.
+- Optional single-process Vite dev server (middleware mode, HMR on the app port).

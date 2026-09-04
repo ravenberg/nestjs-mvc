@@ -17,5 +17,11 @@ export const INERTIA_COMPONENT_METADATA = 'inertia:component'
 /** DI token for the module options. */
 export const INERTIA_MODULE_OPTIONS = 'INERTIA_MODULE_OPTIONS'
 
+/** DI token for the in-process Vite dev server (null outside development). */
+export const INERTIA_VITE_SERVER = 'INERTIA_VITE_SERVER'
+
+/** DI token for the asset-tag resolver (Vite dev server or build manifest). */
+export const INERTIA_ASSETS = 'INERTIA_ASSETS'
+
 /** Key under which per-request Inertia state (shared props) is stored on the request object. */
 export const INERTIA_REQUEST_STATE = Symbol.for('nestjs-inertia:state')

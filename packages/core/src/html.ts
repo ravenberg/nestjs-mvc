@@ -1,4 +1,4 @@
-import type { InertiaPage } from './types'
+import type { InertiaPage, InertiaTemplateContext } from './types'
 
 const escapeAttr = (value: string): string =>
   value
@@ -13,12 +13,13 @@ export function inertiaBody(page: InertiaPage, id = 'app'): string {
 }
 
 /** Minimal HTML shell used when no `template` option is configured. */
-export function defaultTemplate(page: InertiaPage): string {
+export function defaultTemplate(page: InertiaPage, ctx?: InertiaTemplateContext): string {
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${ctx?.assets() ?? ''}
 </head>
 <body>${inertiaBody(page)}</body>
 </html>`

@@ -1,4 +1,4 @@
-import { CallHandler, ExecutionContext, Inject, Injectable, NestInterceptor } from '@nestjs/common'
+import { CallHandler, ExecutionContext, Inject, Injectable, NestInterceptor, Optional } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import type { Request, Response } from 'express'
 import { Observable, from, mergeMap } from 'rxjs'
@@ -9,6 +9,7 @@ import {
   HEADER_PARTIAL_DATA,
   HEADER_PARTIAL_EXCEPT,
   HEADER_RESET,
+  INERTIA_ASSETS,
   INERTIA_COMPONENT_METADATA,
   INERTIA_MODULE_OPTIONS,
   INERTIA_REQUEST_STATE,
@@ -16,6 +17,7 @@ import {
 import { defaultTemplate } from './html'
 import { PartialReload, always, resolveProps } from './props'
 import type { InertiaModuleOptions, InertiaPage, InertiaRequestState } from './types'
+import type { InertiaAssets } from './vite'
 import { resolveVersion } from './version'
 
 const splitHeader = (value: string | string[] | undefined): string[] =>
@@ -35,6 +37,7 @@ export class InertiaInterceptor implements NestInterceptor {
   constructor(
     @Inject(INERTIA_MODULE_OPTIONS) private readonly options: InertiaModuleOptions,
     @Inject(Reflector) private readonly reflector: Reflector,
+    @Optional() @Inject(INERTIA_ASSETS) private readonly assets: InertiaAssets | null,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -84,7 +87,10 @@ export class InertiaInterceptor implements NestInterceptor {
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    return (this.options.template ?? defaultTemplate)(page)
+    const ctx = { assets: () => this.assets?.tags() ?? '' }
+    const html = await (this.options.template ?? defaultTemplate)(page, ctx)
+    // In dev this lets Vite inject the HMR client and plugin preambles (e.g. React Refresh).
+    return this.assets ? this.assets.transformHtml(req.originalUrl ?? req.url, html) : html
   }
 
   /** Reads and clears validation errors flashed by the InertiaExceptionFilter. */

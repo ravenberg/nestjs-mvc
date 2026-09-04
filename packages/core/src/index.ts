@@ -22,5 +22,28 @@ export {
 } from './props'
 export { inertiaBody, defaultTemplate } from './html'
 export { resolveVersion } from './version'
-export type { InertiaPage, InertiaModuleOptions, InertiaVersion, InertiaRequestState } from './types'
-export { INERTIA_MODULE_OPTIONS, INERTIA_COMPONENT_METADATA, INERTIA_REQUEST_STATE, ERRORS_COOKIE } from './constants'
+export { ViteDevMiddleware } from './vite.middleware'
+export {
+  InertiaAssets,
+  ViteDevServerHolder,
+  createViteDevServer,
+  isViteDev,
+  type InertiaViteOptions,
+  type ViteDevServerLike,
+} from './vite'
+export type {
+  InertiaPage,
+  InertiaModuleOptions,
+  InertiaVersion,
+  InertiaRequestState,
+  InertiaTemplate,
+  InertiaTemplateContext,
+} from './types'
+export {
+  INERTIA_MODULE_OPTIONS,
+  INERTIA_COMPONENT_METADATA,
+  INERTIA_REQUEST_STATE,
+  INERTIA_VITE_SERVER,
+  INERTIA_ASSETS,
+  ERRORS_COOKIE,
+} from './constants'
