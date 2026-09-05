@@ -20,6 +20,8 @@ import { NavigationController } from './features/navigation.controller'
 import { DataLoadingController } from './features/data-loading.controller'
 import { PrefetchingController } from './features/prefetching.controller'
 import { StateController } from './features/state.controller'
+import { LayoutsController } from './features/layouts.controller'
+import { EventsController } from './features/events.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -67,6 +69,8 @@ const root = new URL('..', import.meta.url).pathname
     DataLoadingController,
     PrefetchingController,
     StateController,
+    LayoutsController,
+    EventsController,
   ],
 })
 export class AppModule implements NestModule {

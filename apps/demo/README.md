@@ -73,6 +73,15 @@ without a link are on the roadmap and render muted.
 | Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
 | Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
 | Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
+| Persistent Layouts | `/features/layouts/persistent/first` | **`Page.layout`**: the frame (a clock, a visit counter) stays mounted while the page inside it changes; every other demo page renders its layout inside the page and remounts it |
+| Nested Layouts | `/features/layouts/nested/overview` | **Two layouts, one inside the other**: the persistent frame plus a tab strip, both kept across tab switches; declared once in `Page.layout` |
+| Head | `/features/layouts/head/monolith` | **`<Head>`**: per-page `<title>`, `<meta>` and canonical link, swapped on each visit; the tab title changes as you switch articles |
+| Layout Props | `/features/layouts/props/light` | **`setLayoutProps()`**: the page hands `title`, `theme` and `accent` to the persistent layout it does not own; reset on the next page that sets none |
+| Global Events | `/features/events/global` | **`router.on(...)`**: a log of every event (`before` … `finish`, `navigate`, `prefetching`, `flash`) with the visit's method and URL; a checkbox cancels visits from `before` |
+| Visit Callbacks | `/features/events/callbacks` | **Per-visit hooks**: `onBefore`, `onStart`, `onSuccess`, `onCancelToken` + `cancel()`, `onFinish`; with `errorPages` configured a 404/500 arrives as a page, so it is `onSuccess`, not `onHttpException` |
+| Progress | `/features/events/progress` | **Progress bar**: a 2 s visit shows it, a 100 ms visit does not (250 ms delay), `showProgress: false`, and manual `progress.start()/set()/finish()` |
+| Network Errors | `/features/errors/network` | **`onNetworkError`**: a visit to an unreachable port, a route that never answers cancelled with the cancel token, and a 503 for contrast; return `false` to keep the dialog away |
+| useHttp | `/features/http/use-http` | **`useHttp()`**: a typeahead against a plain JSON handler (no `@View()`), and a POST whose validation failure is answered `422` + `{ errors }` so `errors` fills in like a form |
 | Links & Methods | `/features/navigation/links` | **`<Link>`**: GET tabs, and `method="post|put|patch|delete"` with `data` and `as="button"`; the server lists what it received; 303 after non-GET |
 | Preserve State | `/features/navigation/preserve-state` | **preserveState**: the same component instance (draft and mount time survive) versus a remount |
 | Preserve Scroll | `/features/navigation/preserve-scroll` | **preserveScroll**: a 40-row list; a visit keeps the scroll position, a plain visit resets it |
@@ -140,6 +149,9 @@ Manual checks while developing:
    with a `Set-Cookie: mvc_flash=…` carrying the message and the refresh key, the
    GET after it shows the green message and a new resolve stamp, and the next GET
    shows neither. The cookie is the only memory.
+11. **Persistent layouts** — on Persistent Layouts, click first/second/third: the
+   clock keeps counting and "pages shown" goes up by one per visit; the layout
+   never remounts. "props: dark" restyles the same frame through layout props.
 
 Handy one-liners:
 
@@ -173,7 +185,7 @@ apps/demo
 │   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root }, errorPages })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
 │   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
-│   ├── features/               # Kitchen Sink controllers, one per feature group (forms, data loading, navigation, state, errors)
+│   ├── features/               # Kitchen Sink controllers, one per feature group (forms, data loading, navigation, state, errors, layouts, events)
 │   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
 │   ├── main.ts                 # bootstrap; StandardSchemaValidationPipe + static assets in production
