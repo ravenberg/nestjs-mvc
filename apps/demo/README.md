@@ -73,6 +73,13 @@ without a link are on the roadmap and render muted.
 | Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
 | Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
 | Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
+| Links & Methods | `/features/navigation/links` | **`<Link>`**: GET tabs, and `method="post|put|patch|delete"` with `data` and `as="button"`; the server lists what it received; 303 after non-GET |
+| Preserve State | `/features/navigation/preserve-state` | **preserveState**: the same component instance (draft and mount time survive) versus a remount |
+| Preserve Scroll | `/features/navigation/preserve-scroll` | **preserveScroll**: a 40-row list; a visit keeps the scroll position, a plain visit resets it |
+| Redirects | `/features/navigation/redirects` | **Every redirect kind**: `redirect()` 302, `back()`, 303 after PUT, `location()` 409 + `X-Inertia-Location`, and a pointer to fragment redirects |
+| Partial Reloads | `/features/data-loading/partial-reloads` | **Partial reloads**: props stamped with their resolve time; `only`/`except` show which closures ran (the 700 ms `stats` is skipped unless asked); `optional()` `audit` loads on request |
+| When Visible | `/features/data-loading/when-visible` | **`<WhenVisible>`**: three `optional()` sections, each fetched by a partial reload when it scrolls into view; one with `always` |
+| Polling | `/features/data-loading/polling` | **`usePoll`**: a partial reload of one prop every 2 s, start/stop, pauses in a background tab; values derive from the clock, no server state |
 | Shared Props | `/features/state/shared-props` | **Shared props**: `auth` from middleware, `locale` from the handler's `view.share()`; the page object's `sharedProps` lists both, which is what keeps the sidebar on screen during instant visits |
 | URL Fragments | `/features/navigation/fragments` | **Fragment redirects**: "Redirect to #security" POSTs to a handler redirecting to `…#security`; the response is `409` + `X-Inertia-Redirect` and the client lands on the section. "Save billing" posts from `#billing`, the handler calls `preserveFragment().back()`, and the URL keeps the fragment |
 | History Management | `/features/navigation/history` | **History encryption**: the route has `@EncryptHistory()`, so `encryptHistory: true` is on the page object and the client encrypts the entry; "Log out" POSTs to a handler calling `clearHistory().back()`, and the next page object carries `clearHistory: true` |
@@ -180,8 +187,8 @@ apps/demo
         ├── Features/Forms/{Validation,UseForm,FormComponent,FileUploads,Precognition,OptimisticUpdates}.tsx
         ├── Features/Forms/DottedKeys.tsx
         ├── Features/Errors/Http.tsx
-        ├── Features/Navigation/History.tsx
-        ├── Features/Navigation/Fragments.tsx
+        ├── Features/Navigation/{History,Fragments,Links,PreserveState,PreserveScroll,Redirects}.tsx
+        ├── Features/DataLoading/{PartialReloads,WhenVisible,Polling}.tsx
         ├── Features/State/SharedProps.tsx
         ├── Errors/Show.tsx         # the error page errorPages renders
         ├── Features/DataLoading/DeferredProps.tsx

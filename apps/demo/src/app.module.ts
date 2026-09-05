@@ -16,6 +16,8 @@ import { HistoryController } from './features/history.controller'
 import { FragmentsController } from './features/fragments.controller'
 import { SharedPropsController } from './features/shared-props.controller'
 import { FormsController } from './features/forms.controller'
+import { NavigationController } from './features/navigation.controller'
+import { DataLoadingController } from './features/data-loading.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -59,6 +61,8 @@ const root = new URL('..', import.meta.url).pathname
     FragmentsController,
     SharedPropsController,
     FormsController,
+    NavigationController,
+    DataLoadingController,
   ],
 })
 export class AppModule implements NestModule {
