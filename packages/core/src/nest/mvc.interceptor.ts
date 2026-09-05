@@ -10,12 +10,13 @@ import {
   HEADER_PARTIAL_EXCEPT,
   HEADER_RESET,
 } from '../protocol/constants'
-import { defaultTemplate } from '../protocol/html'
+import { defaultTemplate, viewBody } from '../protocol/html'
 import { PartialReload, always, resolveProps } from '../protocol/props'
-import type { PageObject, MvcRequestState } from '../protocol/types'
+import type { PageObject, MvcRequestState, TemplateContext } from '../protocol/types'
 import type { MvcModuleOptions } from './types'
 import { resolveVersion } from '../protocol/version'
-import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_REQUEST_STATE, MVC_VIEW_METADATA } from './tokens'
+import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_REQUEST_STATE, MVC_SSR_METADATA, MVC_VIEW_METADATA } from './tokens'
+import { SsrService } from './ssr.service'
 import type { ViteAssets } from './vite'
 
 const splitHeader = (value: string | string[] | undefined): string[] =>
@@ -36,19 +37,29 @@ export class MvcInterceptor implements NestInterceptor {
     @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
     @Inject(Reflector) private readonly reflector: Reflector,
     @Optional() @Inject(MVC_ASSETS) private readonly assets: ViteAssets | null,
+    @Optional() @Inject(SsrService) private readonly ssr: SsrService | null,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const component = this.reflector.get<string | undefined>(MVC_VIEW_METADATA, context.getHandler())
     if (!component) return next.handle()
 
+    // `@Ssr()` on the handler wins over `@Ssr()` on the controller.
+    const ssrDecorator = this.reflector.getAllAndOverride<boolean | undefined>(MVC_SSR_METADATA, [
+      context.getHandler(),
+      context.getClass(),
+    ])
     const http = context.switchToHttp()
     const req = http.getRequest<Request>()
     const res = http.getResponse<Response>()
 
     return next
       .handle()
-      .pipe(mergeMap((props) => from(this.render(component, (props ?? {}) as Record<string, unknown>, req, res))))
+      .pipe(
+        mergeMap((props) =>
+          from(this.render(component, (props ?? {}) as Record<string, unknown>, req, res, ssrDecorator)),
+        ),
+      )
   }
 
   private async render(
@@ -56,6 +67,7 @@ export class MvcInterceptor implements NestInterceptor {
     raw: Record<string, unknown>,
     req: Request,
     res: Response,
+    ssrDecorator?: boolean,
   ): Promise<unknown> {
     const isInertia = req.headers[HEADER_INERTIA] === 'true'
     const partial = this.detectPartial(req, component)
@@ -85,7 +97,25 @@ export class MvcInterceptor implements NestInterceptor {
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    const ctx = { assets: () => this.assets?.tags() ?? '' }
+
+    // SSR only applies to the initial HTML load; Inertia visits swap on the client.
+    const ssr =
+      (await this.ssr?.render(
+        {
+          path: req.path,
+          url: req.originalUrl ?? req.url,
+          method: req.method,
+          component,
+          page,
+        },
+        { decorator: ssrDecorator, runtime: state?.ssr },
+      )) ?? null
+
+    const ctx: TemplateContext = {
+      assets: () => this.assets?.tags() ?? '',
+      head: () => ssr?.head.join('\n') ?? '',
+      body: () => ssr?.body ?? viewBody(page),
+    }
     const html = await (this.options.template ?? defaultTemplate)(page, ctx)
     // In dev this lets Vite inject the HMR client and plugin preambles (e.g. React Refresh).
     return this.assets ? this.assets.transformHtml(req.originalUrl ?? req.url, html) : html

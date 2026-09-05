@@ -1,7 +1,7 @@
 {
   "name": "nestjs-mvc",
   "version": "0.1.0",
-  "description": "Modern Inertia.js adapter for NestJS — idiomatic decorators, Inertia v2+ protocol (partial reloads, deferred props, merge props), ESM-first.",
+  "description": "Modern Inertia.js adapter for NestJS \u2014 idiomatic decorators, Inertia v2+ protocol (partial reloads, deferred props, merge props), ESM-first.",
   "license": "MIT",
   "author": "Ravenberg <ravenberg.ict@gmail.com>",
   "repository": {
@@ -18,6 +18,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
     }
   },
   "files": [
@@ -68,6 +72,7 @@
     "supertest": "^7.0.0",
     "tsdown": "^0.22.14",
     "typescript": "^5.7.2",
+    "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }
 }

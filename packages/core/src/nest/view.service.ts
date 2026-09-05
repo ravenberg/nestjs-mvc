@@ -32,6 +32,21 @@ export class ViewService {
   }
 
   /**
+   * Skips server-side rendering for this request, even on a route that opted in
+   * with `@Ssr()`. Useful from a guard once you know the visitor is logged in.
+   */
+  disableSsr(): this {
+    this.state.ssr = false
+    return this
+  }
+
+  /** Opts this request into server-side rendering, as `@Ssr()` would for the route. */
+  enableSsr(): this {
+    this.state.ssr = true
+    return this
+  }
+
+  /**
    * Redirects to an external (non-Inertia) URL. During an Inertia visit this
    * sends 409 + X-Inertia-Location so the client performs a full page visit.
    */

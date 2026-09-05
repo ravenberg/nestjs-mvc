@@ -20,6 +20,16 @@ export interface TemplateContext {
    * Empty string when no `vite` option is configured.
    */
   assets: () => string
+  /**
+   * Elements the SSR render produced for `<head>` (title, meta tags), joined into
+   * a string. Empty when the page was not server-rendered.
+   */
+  head: () => string
+  /**
+   * The page body: the server-rendered markup when SSR ran, otherwise the root
+   * element plus the page-object script that `viewBody(page)` produces.
+   */
+  body: () => string
 }
 
 export type TemplateFn = (
@@ -30,4 +40,6 @@ export type TemplateFn = (
 /** Per-request state stored on the request object by the middleware. */
 export interface MvcRequestState {
   shared: Record<string, unknown>
+  /** Set by `ViewService.disableSsr()`/`enableSsr()`; overrides `@Ssr()` for this request. */
+  ssr?: boolean
 }

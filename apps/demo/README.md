@@ -18,7 +18,7 @@ From the repo root:
 
 ```sh
 pnpm install
-pnpm build   # builds packages/core → dist/*.mjs, required before first run
+pnpm build   # builds packages/core → dist/index.js, required before first run
 pnpm dev
 ```
 
@@ -44,7 +44,11 @@ boots Vite in *middleware mode* inside the Nest process:
 | Processes | 1 | 1 |
 | Ports | 1 (`:3000`, HMR websocket included) | 1 (`:3000`) |
 | Client assets | Vite dev server, in-process, with HMR | Prebuilt `dist/client`, served by Nest under `/build/` |
-| Script tags | `/frontend/main.tsx` + injected HMR client | `/build/assets/main-<hash>.js` from the Vite manifest |
+| Tags | `<link>` to `/frontend/app.css` + `/@id/virtual:nestjs-mvc/client` + injected HMR client | `/build/assets/app-<hash>.css` + `/build/assets/client-<hash>.js` from the Vite manifest |
+
+There is no `main.tsx` and no `ssr.tsx`: `nestjsMvc()` in
+[`vite.config.ts`](vite.config.ts) generates both entries from `frontend/pages/`
+and links `frontend/app.css` as a real stylesheet in both modes.
 
 `ctx.assets()` in [`src/template.ts`](src/template.ts) emits the right tags for
 whichever mode is active, so the template has no `NODE_ENV` branching. Vite is a
@@ -69,7 +73,7 @@ without a link are on the roadmap and render muted.
 | Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
 | Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
 | Organization | `/organizations/:id` | Deferred `contacts` list |
-| Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline |
+| Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
 The database is SQLite (`demo.sqlite`), seeded on first boot with 4 users, 15
 organizations, 100 contacts and notes on 40 of them, spread over the last 30 days.
@@ -86,7 +90,11 @@ Manual checks while developing:
 4. **Asset versioning** — change `version` in `src/app.module.ts`, then navigate; the
    server answers `409` and forces a full page visit.
 5. **HMR** — edit a page component while a form has input; it should update without
-   losing the value.
+   losing the value. Edit `app.css` and the `<link>` swaps in place.
+6. **SSR** — View Source (not the Elements tab) on `/features/forms/validation` shows
+   `data-server-rendered="true"` and the stylesheet link *before* the body, in dev
+   too, so there is no flash of unstyled content. `/features/forms/validation-csr`
+   shows the page-object script instead.
 
 Handy one-liners:
 
@@ -102,30 +110,31 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 ## Production build
 
 ```sh
-pnpm --filter demo build       # vite build → dist/client (+ .vite/manifest.json)
+pnpm --filter demo build       # one `vite build`: dist/client + dist/ssr
 pnpm --filter demo start:prod  # NODE_ENV=production is set by the script
 ```
 
-Vite does not run. `main.ts` serves `dist/client` under `/build/`, and
-`ctx.assets()` resolves hashed tags from the manifest. Verify with
-`curl -s localhost:3000/dashboard | grep script` — you should see
-`/build/assets/main-<hash>.js` and no `@vite/client`.
+Still one process: the SSR bundle is imported into the Nest process rather than
+served by a sidecar. Vite does not run. `main.ts` serves `dist/client` under
+`/build/`, and `ctx.assets()` resolves hashed tags from the manifest. Verify with
+`curl -s localhost:3000/dashboard | grep 'link\|script'` — you should see
+`/build/assets/app-<hash>.css`, `/build/assets/client-<hash>.js` and no `@vite/client`.
 
 ## Structure
 
 ```
 apps/demo
 ├── src/                        # NestJS server
-│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite })
+│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root } })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
 │   ├── shared-props.middleware.ts  # shares auth.user on every response
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
 │   ├── main.ts                 # bootstrap + static assets in production
 │   ├── crm/                    # Dashboard, Contacts, Organizations controllers
 │   └── database/               # TypeORM entities, module and seeder
-├── vite.config.ts              # Tailwind + React; no `server` block (middleware mode)
-└── frontend/                   # React client
-    ├── main.tsx                # Inertia app + page resolver
+├── vite.config.ts              # react() + tailwindcss() + nestjsMvc(); no entries, no build block
+└── frontend/                   # React client — no main.tsx, no ssr.tsx: both are generated
+    ├── app.css                 # linked by nestjsMvc() as a stylesheet, in dev too
     ├── navigation.ts           # sidebar config; items without href render muted
     ├── layouts/AppLayout.tsx
     ├── components/Sidebar.tsx

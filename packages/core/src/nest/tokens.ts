@@ -3,6 +3,9 @@
 /** Metadata key set by the `@View()` decorator. */
 export const MVC_VIEW_METADATA = 'mvc:view'
 
+/** Metadata key set by the `@Ssr()` decorator. */
+export const MVC_SSR_METADATA = 'mvc:ssr'
+
 /** DI token for the module options. */
 export const MVC_MODULE_OPTIONS = 'MVC_MODULE_OPTIONS'
 

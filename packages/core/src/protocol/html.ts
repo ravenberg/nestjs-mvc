@@ -27,7 +27,8 @@ export function defaultTemplate(page: PageObject, ctx?: TemplateContext): string
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ${ctx?.assets() ?? ''}
+${ctx?.head() ?? ''}
 </head>
-<body>${viewBody(page)}</body>
+<body>${ctx?.body() ?? viewBody(page)}</body>
 </html>`
 }

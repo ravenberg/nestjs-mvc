@@ -1,10 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { CLIENT_CHUNK, PLUGIN_NAME, type NestjsMvcPluginApi } from '../vite/plugin'
 
 /** Options for running Vite inside the Nest process (dev) and resolving built assets (production). */
 export interface ViteOptions {
-  /** Client entry module, relative to `root`. E.g. `'frontend/main.tsx'`. */
-  entry: string
+  /**
+   * Client entry module, relative to `root`, e.g. `'frontend/main.tsx'`. Omit it
+   * when `nestjsMvc()` from `nestjs-mvc/vite` is in your Vite config: the entry
+   * is generated, and stylesheets are linked from the plugin's `css` option.
+   */
+  entry?: string
   /**
    * Project root containing `vite.config.*`. Defaults to `process.cwd()`.
    * Pass an absolute path when the process may be started from another directory.
@@ -29,13 +34,27 @@ type Next = (err?: unknown) => void
 export interface ViteDevServerLike {
   middlewares: (req: unknown, res: unknown, next: Next) => void
   transformIndexHtml: (url: string, html: string) => Promise<string>
+  /** Executes a module in Node with Vite's transforms applied — used for dev SSR. */
+  ssrLoadModule: (url: string) => Promise<Record<string, unknown>>
+  /** Rewrites a stack trace to point at original sources. */
+  ssrFixStacktrace?: (error: Error) => void
+  /** Resolved config; the `nestjs-mvc` plugin exposes its entries through `plugins[].api`. */
+  config?: { plugins: readonly { name: string; api?: unknown }[] }
   close: () => Promise<void>
 }
 
 interface ManifestChunk {
   file: string
+  name?: string
+  isEntry?: boolean
   css?: string[]
   imports?: string[]
+}
+
+/** Reads what `nestjsMvc()` exposes at runtime, or `null` when the plugin is not in the Vite config. */
+export function pluginApi(server: ViteDevServerLike | null | undefined): NestjsMvcPluginApi | null {
+  const plugin = server?.config?.plugins.find((p) => p.name === PLUGIN_NAME)
+  return (plugin?.api as NestjsMvcPluginApi | undefined) ?? null
 }
 
 export const isViteDev = (options: ViteOptions): boolean =>
@@ -95,11 +114,25 @@ export class ViteAssets {
 
   tags(): string {
     if (!this.options) return ''
-    if (this.devServer) {
-      // Vite's transformIndexHtml injects the HMR client and any plugin preamble (e.g. React Refresh).
-      return `<script type="module" src="/${this.options.entry}"></script>`
+    return this.devServer ? this.devTags(this.options, this.devServer) : this.productionTags(this.options)
+  }
+
+  /** Vite's transformIndexHtml later injects the HMR client and any plugin preamble (e.g. React Refresh). */
+  private devTags(options: ViteOptions, server: ViteDevServerLike): string {
+    if (options.entry) return `<script type="module" src="/${options.entry}"></script>`
+
+    const api = pluginApi(server)
+    if (!api) {
+      throw new Error(
+        '[nestjs-mvc] No client entry: add `nestjsMvc()` from "nestjs-mvc/vite" to vite.config.ts, ' +
+          'or set `vite.entry`.',
+      )
     }
-    return this.productionTags(this.options)
+    // Stylesheets as real links, so a server-rendered page is styled before any JS runs.
+    return [
+      ...api.css.map((file) => `<link rel="stylesheet" href="/${file}">`),
+      `<script type="module" src="/@id/${api.client}"></script>`,
+    ].join('\n')
   }
 
   /** In dev, lets Vite plugins rewrite the HTML (HMR client, React Refresh preamble). */
@@ -110,22 +143,45 @@ export class ViteAssets {
 
   private productionTags(options: ViteOptions): string {
     const manifest = this.readManifest(options)
-    const entry = manifest[options.entry]
-    if (!entry) {
-      throw new Error(
-        `[nestjs-mvc] Entry "${options.entry}" not found in the Vite manifest. ` +
-          `Check that \`vite.entry\` matches the \`build.rollupOptions.input\` path.`,
-      )
-    }
-
     const base = (options.base ?? '/build').replace(/\/$/, '')
     const css = new Set<string>()
-    this.collectCss(manifest, options.entry, css, new Set())
+    const [key, entry] = options.entry ? this.namedEntry(manifest, options.entry) : this.generatedEntry(manifest, css)
+    this.collectCss(manifest, key, css, new Set())
 
     return [
       ...[...css].map((file) => `<link rel="stylesheet" href="${base}/${file}">`),
       `<script type="module" src="${base}/${entry.file}"></script>`,
     ].join('\n')
+  }
+
+  private namedEntry(manifest: Record<string, ManifestChunk>, entry: string): [string, ManifestChunk] {
+    const chunk = manifest[entry]
+    if (!chunk) {
+      throw new Error(
+        `[nestjs-mvc] Entry "${entry}" not found in the Vite manifest. ` +
+          `Check that \`vite.entry\` matches the \`build.rollupOptions.input\` path.`,
+      )
+    }
+    return [entry, chunk]
+  }
+
+  /**
+   * With `nestjsMvc()` the client entry is a virtual module, so its manifest key
+   * is not a path: find it by chunk name. Stylesheets are entries of their own.
+   */
+  private generatedEntry(manifest: Record<string, ManifestChunk>, css: Set<string>): [string, ManifestChunk] {
+    const entries = Object.entries(manifest).filter(([, chunk]) => chunk.isEntry)
+    const client =
+      entries.find(([, chunk]) => chunk.name === CLIENT_CHUNK) ??
+      entries.find(([, chunk]) => chunk.file.endsWith('.js'))
+    if (!client) {
+      throw new Error(
+        '[nestjs-mvc] No client entry in the Vite manifest. Build with `nestjsMvc()` in vite.config.ts, ' +
+          'or set `vite.entry`.',
+      )
+    }
+    for (const [, chunk] of entries) if (chunk.file.endsWith('.css')) css.add(chunk.file)
+    return client
   }
 
   /** CSS can live on statically imported chunks too, so walk the import graph. */

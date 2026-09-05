@@ -1,18 +1,12 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { nestjsMvc } from 'nestjs-mvc/vite'
 import { defineConfig } from 'vite'
 
-// The dev server runs in middleware mode inside the Nest process (see app.module.ts),
-// so there is no `server` block here and no second port.
-export default defineConfig(({ command }) => ({
-  // Built assets are served by Nest under /build/; in dev Vite owns the root.
-  base: command === 'build' ? '/build/' : '/',
-  plugins: [react(), tailwindcss()],
-  build: {
-    manifest: true,
-    outDir: 'dist/client',
-    rollupOptions: {
-      input: 'frontend/main.tsx',
-    },
-  },
-}))
+// No entries, no build block: nestjsMvc() generates the client and SSR entries
+// (the page a route renders is the entry point), links frontend/app.css, and
+// makes `vite build` produce dist/client and dist/ssr in one go. The dev server
+// runs in middleware mode inside the Nest process (see app.module.ts).
+export default defineConfig({
+  plugins: [react(), tailwindcss(), nestjsMvc()],
+})

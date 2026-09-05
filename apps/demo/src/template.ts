@@ -1,4 +1,4 @@
-import { type PageObject, type TemplateContext, viewBody } from 'nestjs-mvc'
+import type { PageObject, TemplateContext } from 'nestjs-mvc'
 
 export function template(page: PageObject, ctx: TemplateContext): string {
   return `<!DOCTYPE html>
@@ -8,7 +8,8 @@ export function template(page: PageObject, ctx: TemplateContext): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NestJS MVC demo</title>
 ${ctx.assets()}
+${ctx.head()}
 </head>
-<body>${viewBody(page)}</body>
+<body>${ctx.body()}</body>
 </html>`
 }

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Redirect, Res } from '@nestjs/common'
 import type { Response } from 'express'
-import { ValidationException, View } from 'nestjs-mvc'
+import { Ssr, ValidationException, View } from 'nestjs-mvc'
 
 const messages: string[] = []
 
@@ -12,9 +12,18 @@ export class AppController {
     // The CRM dashboard is the app's entry point, mirroring the official demo.
   }
 
+  /** Opted into SSR: the only route in the demo that is, so the difference is visible. */
   @Get('features/forms/validation')
   @View('Features/Forms/Validation')
+  @Ssr()
   validation() {
+    return { messages }
+  }
+
+  /** Same component without the decorator — client-rendered, like every other page. */
+  @Get('features/forms/validation-csr')
+  @View('Features/Forms/Validation')
+  validationWithoutSsr() {
     return { messages }
   }
 

@@ -1,5 +1,5 @@
-import { Link, usePage } from '@inertiajs/react'
-import { ChevronRight } from 'lucide-react'
+import { Deferred, Link, usePage } from '@inertiajs/react'
+import { Bell, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { navigation, type NavGroup } from '../navigation'
 
@@ -58,8 +58,14 @@ function CollapsibleGroup({ group, currentUrl }: { group: NavGroup; currentUrl: 
 }
 
 export function Sidebar() {
-  const { url, props } = usePage<{ auth?: { user?: { name: string; email: string } | null } }>()
+  const { url, props } = usePage<{
+    auth?: {
+      user?: { name: string; email: string } | null
+      notifications?: { id: number; body: string }[]
+    }
+  }>()
   const user = props.auth?.user
+  const notifications = props.auth?.notifications
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
@@ -68,6 +74,21 @@ export function Sidebar() {
           N
         </span>
         <span className="font-semibold text-slate-900">NestJS MVC</span>
+
+        {/* Nested deferred prop: announced as `auth.notifications` and fetched
+            after the first paint. Proves dot-notation works end to end. */}
+        <Deferred
+          data="auth.notifications"
+          fallback={<span className="ml-auto size-4 animate-pulse rounded-full bg-slate-200" />}
+        >
+          <span
+            className="ml-auto flex items-center gap-1 text-xs text-slate-500"
+            title={`${notifications?.length ?? 0} recent notes by you`}
+          >
+            <Bell className="size-4" />
+            {notifications?.length ?? 0}
+          </span>
+        </Deferred>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4">

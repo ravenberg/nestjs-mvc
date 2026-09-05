@@ -1,4 +1,5 @@
 import type { AssetVersion, TemplateFn } from '../protocol/types'
+import type { SsrOptions } from '../ssr/types'
 import type { ViteOptions } from './vite'
 
 export interface MvcModuleOptions {
@@ -18,7 +19,14 @@ export interface MvcModuleOptions {
    * Runs Vite in middleware mode inside this Nest process during development,
    * so a single process serves both the app and the client assets — no separate
    * `vite` command or second port. In production the same options resolve
-   * hashed asset tags from the build manifest.
+   * hashed asset tags from the build manifest. With `nestjsMvc()` in your Vite
+   * config, `vite: {}` is enough.
    */
   vite?: ViteOptions
+  /**
+   * How server-side rendering runs (entry, bundle, timeouts). With `nestjsMvc()`
+   * in your Vite config none of it is needed: `@Ssr()` on a handler or controller
+   * is the whole story, and nothing renders on the server until a route opts in.
+   */
+  ssr?: SsrOptions
 }

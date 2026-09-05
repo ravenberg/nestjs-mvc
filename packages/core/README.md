@@ -43,32 +43,49 @@ export class AppModule {}
 
 ## Single-process Vite integration
 
-Add the `vite` option and the client dev server runs **inside your Nest process**, on the same port. No `concurrently`, no second terminal, no `localhost:5173` — `nest start --watch` stays the whole story:
+Two lines, and the client dev server runs **inside your Nest process**, on the
+same port. No `concurrently`, no second terminal, no `localhost:5173` —
+`nest start --watch` stays the whole story:
 
 ```ts
-MvcModule.forRoot({
-  version: () => myBuildHash(),
-  template,
-  vite: {
-    entry: 'frontend/main.tsx',   // matches build.rollupOptions.input
-    root: import.meta.dirname,    // dir containing vite.config.ts (default: process.cwd())
-  },
-})
+// vite.config.ts
+import { nestjsMvc } from 'nestjs-mvc/vite'
+export default defineConfig({ plugins: [react(), nestjsMvc()] })
+
+// app.module.ts
+MvcModule.forRoot({ version: () => myBuildHash(), template, vite: {} })
 ```
+
+There is no `main.tsx` and no SSR entry to write: **the page a route renders is
+the entry point.** `nestjsMvc()` generates both entries, resolves `@View('Users/Index')`
+to `frontend/pages/Users/Index.tsx`, and makes one `vite build` produce the client
+bundle (`dist/client`, with a manifest) and the SSR bundle (`dist/ssr/ssr.js`).
+Stylesheets are entries of their own, linked as `<link rel="stylesheet">` in
+development *and* production, so a server-rendered page never flashes unstyled.
+
+Plugin options:
 
 | Option | Default | Purpose |
 |---|---|---|
-| `entry` | — | Client entry, relative to `root`. Also the manifest key in production. |
-| `root` | `process.cwd()` | Directory containing `vite.config.*`. |
+| `pages` | `'frontend/pages'` | Directory holding the page components. |
+| `css` | `'frontend/app.css'` if it exists | Stylesheet(s) to link; `false` links nothing. |
+| `framework` | detected from `package.json` | `'react'` for now; Vue and Svelte follow. |
+
+Module options (`vite`):
+
+| Option | Default | Purpose |
+|---|---|---|
+| `root` | `process.cwd()` | Directory containing `vite.config.*`. Pass an absolute path if the process may start elsewhere. |
 | `dev` | `NODE_ENV !== 'production'` | Whether to boot the dev server. |
-| `buildDir` | `'dist/client'` | Build output dir, relative to `root`. Must match `build.outDir`. |
+| `buildDir` | `'dist/client'` | Build output dir, relative to `root`. |
 | `base` | `'/build'` | Public URL prefix for built assets. |
+| `entry` | generated | Bring your own client entry (see Advanced). |
 | `config` | — | Extra inline Vite config, merged into the dev server config. |
 
 What it does:
 
-- **Development** — boots Vite with `middlewareMode` and `appType: 'custom'`, then serves its middleware from the Nest port. The HMR websocket is attached to Nest's own HTTP server, so no extra port is opened. `ctx.assets()` emits the entry script and Vite's `transformIndexHtml` injects the HMR client and plugin preambles (e.g. React Refresh) automatically.
-- **Production** — no Vite involved. `ctx.assets()` reads `<root>/<buildDir>/.vite/manifest.json` and emits hashed `<script>`/`<link>` tags under `base`, walking the import graph so CSS from shared chunks is included.
+- **Development** — boots Vite with `middlewareMode` and `appType: 'custom'`, then serves its middleware from the Nest port. The HMR websocket is attached to Nest's own HTTP server, so no extra port is opened. `ctx.assets()` emits the stylesheet links and the entry script; Vite's `transformIndexHtml` injects the HMR client and plugin preambles (e.g. React Refresh).
+- **Production** — no Vite involved. `ctx.assets()` reads `<root>/<buildDir>/.vite/manifest.json` and emits hashed `<link>`/`<script>` tags under `base`, walking the import graph so CSS from shared chunks is included.
 
 Serve the built assets yourself, matching `base`:
 
@@ -76,7 +93,14 @@ Serve the built assets yourself, matching `base`:
 app.useStaticAssets(join(root, 'dist/client'), { prefix: '/build/' })
 ```
 
-Set `base` in `vite.config.ts` for the build so code-split chunks resolve:
+### Advanced: bring your own entry
+
+Set `vite.entry` and the plugin's generated client entry is ignored — you write
+`main.tsx` yourself and configure the build:
+
+```ts
+vite: { entry: 'frontend/main.tsx' }          // matches build.rollupOptions.input
+```
 
 ```ts
 export default defineConfig(({ command }) => ({
@@ -85,7 +109,95 @@ export default defineConfig(({ command }) => ({
 }))
 ```
 
-Prefer to keep Vite out of Nest? Omit the `vite` option and write your own asset tags in `template` — everything else works unchanged.
+Prefer to keep Vite out of Nest? Omit the `vite` option and write your own asset
+tags in `template` — everything else works unchanged.
+
+## Server-side rendering
+
+SSR is opt-in per route and off everywhere else. The app you build with
+`nestjs-mvc` is a client-rendered SPA that feels like a multi-page app; SSR is for
+the few pages that need to be indexable — a landing page, a blog — and nothing
+more. Put `@Ssr()` on the handler:
+
+```ts
+@Get()
+@View('Home')
+@Ssr()
+home() { ... }
+```
+
+On a controller it covers every handler, and a handler can opt back out:
+
+```ts
+@Controller('blog')
+@Ssr()
+export class BlogController {
+  @Get()        @View('Blog/Index')  index()  { ... }   // server-rendered
+  @Get('drafts') @View('Blog/Drafts') @Ssr(false) drafts() { ... }
+}
+```
+
+A guard or service can override the decorator for one request through
+`ViewService`, for example once you know the visitor is logged in:
+
+```ts
+this.view.disableSsr()   // or enableSsr()
+```
+
+Runtime call → decorator on the handler → decorator on the controller → off.
+Inertia visits are never server-rendered; only the initial HTML load is.
+
+That is all the configuration there is. With `nestjsMvc()` in your Vite config the
+SSR entry is generated, `vite build` writes `dist/ssr/ssr.js`, and the adapter
+finds both by convention.
+
+**One process, in development and production.** In development the generated
+entry runs in-process through Vite, so edits apply immediately. In production the
+built bundle is `import()`ed into the same process. Inertia's reference adapter
+posts to a separate Node SSR server only because PHP cannot execute JavaScript —
+NestJS already runs on Node, so that hop buys nothing.
+
+Your template receives the two SSR slots:
+
+```ts
+template: (page, ctx) => `<!DOCTYPE html>
+<html>
+<head>${ctx.assets()}${ctx.head()}</head>
+<body>${ctx.body()}</body>
+</html>`
+```
+
+`ctx.body()` returns the server-rendered markup when SSR ran, and falls back to
+the root element plus page-object script otherwise, so one template covers both.
+
+### Advanced
+
+Bring your own SSR entry, or put the bundle elsewhere:
+
+```ts
+ssr: {
+  entry: 'frontend/ssr.tsx',   // dev, executed in-process through Vite
+  bundle: 'dist/ssr/ssr.js',   // production, imported in-process
+}
+```
+
+The entry default-exports a function that takes the page object and returns
+`{ head, body }`; build it with `vite build --ssr frontend/ssr.tsx --outDir dist/ssr`.
+
+If you *do* want rendering on its own service — to scale or isolate it — set
+`url` and the adapter posts to a standalone Inertia SSR server instead. It is an
+explicit opt-in, never a default:
+
+```ts
+ssr: { url: 'http://127.0.0.1:13714', timeout: 5000 }
+```
+
+**Failures are never fatal.** A render that throws, times out, or cannot reach the
+SSR server is reported through `onError` (or logged) and the response falls back
+to client-side rendering, so a broken SSR build never takes the site down. Errors
+are classified as `browser-api`, `component-resolution`, `render` or `connection`.
+A route that opts in before the bundle is built is reported the same way, naming
+the component and the path it looked at.
 
 ## Rendering pages
 
@@ -164,10 +276,12 @@ The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag na
 ## Protocol behaviour handled for you
 
 - `X-Inertia` requests get the JSON page object; first loads get your HTML shell with the page object in a `<script type="application/json">` element.
-- Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props.
+- Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props, using **dot-notation** for nested ones (`only: ['auth.notifications']`).
+- `optional()`, `defer()` and `merge()` are recognised at any depth — inside plain objects, arrays and the return values of closures — and all metadata is emitted as dot paths. A closure guarding an unrequested branch is never called.
 - `defer()` props are advertised via `deferredProps` (grouped), `merge()` props via `mergeProps` (honouring `X-Inertia-Reset`).
 - Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).
 - 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
 - Stale asset version on GET visits → `409` + `X-Inertia-Location`.
 - `Vary: X-Inertia` on every page response.
-- Optional single-process Vite dev server (middleware mode, HMR on the app port).
+- SSR per route via `@Ssr()`, off by default; Inertia visits are never server-rendered.
+- Optional single-process Vite dev server (middleware mode, HMR on the app port), with generated entries via `nestjs-mvc/vite`.

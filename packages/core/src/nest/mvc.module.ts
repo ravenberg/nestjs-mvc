@@ -13,6 +13,7 @@ import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
 import { MvcExceptionFilter } from './mvc-exception.filter'
 import { MvcInterceptor } from './mvc.interceptor'
 import { MvcMiddleware } from './mvc.middleware'
+import { SsrService } from './ssr.service'
 import { ViewService } from './view.service'
 import type { MvcModuleOptions } from './types'
 import { ViteAssets, ViteDevServerHolder, createViteDevServer, isViteDev } from './vite'
@@ -62,12 +63,13 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
           inject: [MVC_MODULE_OPTIONS, MVC_VITE_SERVER],
         },
         ViewService,
+        SsrService,
         MvcMiddleware,
         ViteDevMiddleware,
         { provide: APP_INTERCEPTOR, useClass: MvcInterceptor },
         { provide: APP_FILTER, useClass: MvcExceptionFilter },
       ],
-      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, ViewService],
+      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, ViewService, SsrService],
     }
   }
 

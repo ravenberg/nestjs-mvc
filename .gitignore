@@ -3,6 +3,9 @@ dist/
 .idea/
 *.log
 .DS_Store
+.spec/
+.claude/
+.mcp.json
 
 # Demo SQLite database (seeded on boot)
 *.sqlite
