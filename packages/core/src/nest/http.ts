@@ -53,6 +53,9 @@ export const isInertia = (req: AnyRequest): boolean => header(req, 'x-inertia') 
 /** A validate-only request from Inertia's `useForm` (Laravel Precognition protocol). */
 export const isPrecognitive = (req: AnyRequest): boolean => header(req, 'precognition') === 'true'
 
+/** A prefetch by the client (`Purpose: prefetch`): rendered, but not a navigation the user made. */
+export const isPrefetch = (req: AnyRequest): boolean => header(req, 'purpose') === 'prefetch'
+
 export const requestMethod = (req: AnyRequest): string => (req.method ?? rawRequest(req).method ?? 'GET').toUpperCase()
 
 /** Path plus query string, as the client requested it. */

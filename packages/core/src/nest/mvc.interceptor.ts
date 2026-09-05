@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core'
 import { Observable, from, mergeMap } from 'rxjs'
 import { type AnyRequest, type AnyResponse } from './http'
 import { PageRenderer } from './page-renderer'
-import { MVC_SSR_METADATA, MVC_VIEW_METADATA } from './tokens'
+import { MVC_ENCRYPT_HISTORY_METADATA, MVC_SSR_METADATA, MVC_VIEW_METADATA } from './tokens'
 
 /**
  * Turns the plain object a `@View()` handler returns into the page response,
@@ -25,6 +25,10 @@ export class MvcInterceptor implements NestInterceptor {
       context.getHandler(),
       context.getClass(),
     ])
+    const encryptHistoryDecorator = this.reflector.getAllAndOverride<boolean | undefined>(
+      MVC_ENCRYPT_HISTORY_METADATA,
+      [context.getHandler(), context.getClass()],
+    )
     const http = context.switchToHttp()
     const req = http.getRequest<AnyRequest>()
     const res = http.getResponse<AnyResponse>()
@@ -33,7 +37,7 @@ export class MvcInterceptor implements NestInterceptor {
       mergeMap((props) =>
         from(
           this.renderer
-            .render(component, (props ?? {}) as Record<string, unknown>, req, res, { ssrDecorator })
+            .render(component, (props ?? {}) as Record<string, unknown>, req, res, { ssrDecorator, encryptHistoryDecorator })
             .then((rendered) => (rendered.kind === 'json' ? rendered.page : rendered.html)),
         ),
       ),

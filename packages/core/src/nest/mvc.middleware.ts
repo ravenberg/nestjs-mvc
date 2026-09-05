@@ -2,7 +2,17 @@ import { Inject, Injectable, NestMiddleware } from '@nestjs/common'
 import { HEADER_VERSION } from '../protocol/constants'
 import { resolveVersion } from '../protocol/version'
 import { type FlashStore, mergeBags } from './flash'
-import { type AnyRequest, type AnyResponse, absoluteUrl, endRaw, header, isInertia, requestMethod, requestState } from './http'
+import {
+  type AnyRequest,
+  type AnyResponse,
+  absoluteUrl,
+  endRaw,
+  header,
+  isInertia,
+  isPrefetch,
+  requestMethod,
+  requestState,
+} from './http'
 import { MVC_FLASH_STORE, MVC_MODULE_OPTIONS } from './tokens'
 import type { MvcModuleOptions } from './types'
 
@@ -32,7 +42,7 @@ export class MvcMiddleware implements NestMiddleware {
     const inertia = isInertia(req)
     const method = requestMethod(req)
 
-    this.patchExpressRedirect(req, res, inertia && ['PUT', 'PATCH', 'DELETE'].includes(method))
+    this.patchExpressRedirect(req, res, inertia, inertia && ['PUT', 'PATCH', 'DELETE'].includes(method))
 
     if (inertia && method === 'GET') {
       const version = await resolveVersion(this.options.version)
@@ -48,7 +58,7 @@ export class MvcMiddleware implements NestMiddleware {
   }
 
   /** Express only: `res.redirect` exists on the response. Fastify code goes through `ViewService`. */
-  private patchExpressRedirect(req: AnyRequest, res: AnyResponse, convertTo303: boolean): void {
+  private patchExpressRedirect(req: AnyRequest, res: AnyResponse, inertia: boolean, convertTo303: boolean): void {
     const expressRes = res as AnyResponse & { redirect?: (...args: unknown[]) => unknown }
     const original = expressRes.redirect
     if (typeof original !== 'function') return
@@ -62,6 +72,11 @@ export class MvcMiddleware implements NestMiddleware {
         // bag here; both shipped stores are. Async stores work through ViewService.
         const incoming = this.flash.read(req)
         void this.flash.write(req, res, mergeBags(incoming instanceof Promise ? undefined : incoming, pending))
+      }
+      if (inertia && url.includes('#') && !isPrefetch(req)) {
+        // XHR drops the fragment when following a redirect: let the client visit it.
+        endRaw(res, 409, { 'X-Inertia-Redirect': url })
+        return
       }
       return original.call(expressRes, convertTo303 && status === 302 ? 303 : status, url)
     }

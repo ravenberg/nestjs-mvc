@@ -12,7 +12,7 @@ The existing NestJS adapters for Inertia are unmaintained and only speak the v1 
 - **Idiomatic NestJS** — an `@View('Component')` decorator on your handler; return props as a plain object. No `res.inertia.render()` plumbing.
 - **One process, one port** — an opt-in `vite` option boots the Vite dev server *inside* your Nest process (middleware mode, HMR on the app port). `nest start --watch` stays the whole dev story: no `concurrently`, no second terminal, no `localhost:5173`. In production Vite is gone and asset tags come from the build manifest.
 - **No entry files** — `nestjsMvc()` from `nestjs-mvc/vite` generates the client and SSR entries: the page a route renders *is* the entry point. One `vite build` produces both bundles, and stylesheets are real `<link>` tags in development too.
-- **Inertia v3 protocol** — partial reloads with dot-notation, deferred props (`defer()`), lazy props (`optional()`), `always()`, merge props (`merge()` + `X-Inertia-Reset`), infinite scroll (`scroll()` with append/prepend and reset), once props (`once()` with `as`/`until`/`fresh`, remembered by the client), precognition, asset versioning with 409 full-visit responses, 303 redirects for PUT/PATCH/DELETE.
+- **Inertia v3 protocol** — partial reloads with dot-notation, deferred props (`defer()`, with `rescue` for ones that may fail), lazy props (`optional()`), `always()`, merge props (`merge()`, `prepend()`, `deepMerge()`, `matchOn`, `X-Inertia-Reset`), infinite scroll (`scroll()` with append/prepend and reset), once props (`once()` with `as`/`until`/`fresh`, remembered by the client), precognition, asset versioning with 409 full-visit responses, 303 redirects for PUT/PATCH/DELETE.
 - **Your own error pages** — `errorPages: ({ status }) => ({ component: 'Errors/Show', props: { status } })` renders a page with the error's status for the codes you choose, on first load and Inertia visits alike; the rest stays Nest's default.
 - **Live validation for free** — Inertia's `form.validate('email')` hits the same handler with `Precognition: true`; the adapter runs the same pipes and answers `204` or `422` without running the handler. One set of rules, no validation endpoint.
 - **Laravel-style validation errors and flash, no session required** — a built-in exception filter turns `ValidationPipe` failures into the redirect-back + `errors` prop flow (`useForm().errors` just works), and `view.flash()` / `view.refresh()` ride the same client-held bag. Bring a session if you have one; the server stays stateless if you don't.
@@ -67,10 +67,10 @@ pnpm dev           # run the demo: single Nest process on :3000 (Vite included)
 - [x] Validation exception filter → Inertia error-bag flow (Laravel-style)
 - [x] Single-process Vite dev server (middleware mode, HMR on the app port)
 - [x] NestJS v12 baseline (ESM-only, `peerDependencies: ^12`)
-- [ ] Inertia v3 protocol — done: script-tag page object, nested props, infinite scroll, once props, flash, precognition, error pages; next: merge variants, deferred rescue, history encryption
+- [x] Inertia v3 protocol: script-tag page object, nested props with dot paths, infinite scroll, once props, flash, precognition, error pages, merge variants, deferred rescue, history encryption, fragment redirects, shared-props metadata (validation polish and prefetch awareness still to come)
 - [x] Opt-in SSR via `@Ssr()`, rendered in-process in dev *and* production
 - [x] Standard Schema validation (`@Body({ schema })` with Zod/Valibot/ArkType, errors keyed by dot path)
-- [ ] History encryption / `clearHistory` helpers
+- [x] History encryption (`@EncryptHistory()`, `history.encrypt`) and `clearHistory()` on logout
 - [ ] Fastify support — rendering, redirects, errors and flash already run on Fastify; the in-process Vite dev server does not yet
 - [ ] Starter templates (React / Vue / Svelte)
 

@@ -56,6 +56,24 @@ export interface MvcModuleOptions {
    * ```
    */
   errorPages?: (context: ErrorPageContext) => ErrorPage | undefined | void | Promise<ErrorPage | undefined | void>
+  /**
+   * Called when a `defer(fn, { rescue: true })` prop throws; the page still
+   * renders without it. Defaults to a logged warning naming the prop.
+   */
+  onRescue?: (error: unknown, path: string) => void
+  /**
+   * History behaviour on the client. `encrypt: true` asks it to encrypt every
+   * page's history entry (sensitive apps); `@EncryptHistory()` per route and
+   * `ViewService.encryptHistory()` per request override it.
+   */
+  history?: { encrypt?: boolean }
+  /**
+   * Lists the shared props' keys on every page object (`sharedProps`), so the
+   * client keeps `auth`, `flash` and friends on screen during an instant visit
+   * instead of blanking them. Defaults to `true`; matches Laravel's
+   * `expose_shared_prop_keys`.
+   */
+  exposeSharedProps?: boolean
 }
 
 /** What `errorPages` gets to look at. */

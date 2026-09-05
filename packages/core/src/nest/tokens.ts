@@ -6,6 +6,9 @@ export const MVC_VIEW_METADATA = 'mvc:view'
 /** Metadata key set by the `@Ssr()` decorator. */
 export const MVC_SSR_METADATA = 'mvc:ssr'
 
+/** Metadata key set by the `@EncryptHistory()` decorator. */
+export const MVC_ENCRYPT_HISTORY_METADATA = 'mvc:encrypt-history'
+
 /** DI token for the module options. */
 export const MVC_MODULE_OPTIONS = 'MVC_MODULE_OPTIONS'
 

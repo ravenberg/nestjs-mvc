@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common'
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import {
   HEADER_EXCEPT_ONCE_PROPS,
   HEADER_MERGE_INTENT,
@@ -35,6 +35,8 @@ const splitHeader = (value: string | undefined): string[] =>
 export interface RenderOptions {
   /** `@Ssr()` on the handler or controller, when rendering for a route. */
   ssrDecorator?: boolean
+  /** `@EncryptHistory()` on the handler or controller, when rendering for a route. */
+  encryptHistoryDecorator?: boolean
   /** Whether the props shared for this request (middleware, `ViewService.share()`) are included. Default `true`. */
   shared?: boolean
 }
@@ -51,6 +53,8 @@ export type Rendered = { kind: 'json'; page: PageObject } | { kind: 'html'; html
  */
 @Injectable()
 export class PageRenderer {
+  private readonly logger = new Logger('MvcProps')
+
   constructor(
     @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
     @Optional() @Inject(MVC_ASSETS) private readonly assets: ViteAssets | null,
@@ -75,7 +79,17 @@ export class PageRenderer {
     const flash = { ...bag.flash, ...state.pending.flash }
     const refreshOnce = [...(bag.refresh ?? []), ...(state.pending.refresh ?? [])]
 
-    const { props, deferredProps, mergeProps, prependProps, scrollProps, onceProps } = await resolveProps(
+    const {
+      props,
+      deferredProps,
+      mergeProps,
+      prependProps,
+      deepMergeProps,
+      matchPropsOn,
+      scrollProps,
+      onceProps,
+      rescuedProps,
+    } = await resolveProps(
       { errors: always(bag.errors ?? {}), ...(options.shared === false ? {} : state.shared), ...raw },
       partial,
       {
@@ -83,6 +97,12 @@ export class PageRenderer {
         mergeIntent: header(req, HEADER_MERGE_INTENT) === 'prepend' ? 'prepend' : 'append',
         loadedOnce: splitHeader(header(req, HEADER_EXCEPT_ONCE_PROPS)),
         refreshOnce,
+        onRescue:
+          this.options.onRescue ??
+          ((error, path) =>
+            this.logger.warn(
+              `Deferred prop "${path}" on ${component} failed and was left out: ${(error as Error)?.message ?? error}`,
+            )),
       },
     )
     await this.flash.clear(req, res)
@@ -96,9 +116,23 @@ export class PageRenderer {
     if (Object.keys(deferredProps).length > 0) page.deferredProps = deferredProps
     if (mergeProps.length > 0) page.mergeProps = mergeProps
     if (prependProps.length > 0) page.prependProps = prependProps
+    if (deepMergeProps.length > 0) page.deepMergeProps = deepMergeProps
+    if (matchPropsOn.length > 0) page.matchPropsOn = matchPropsOn
     if (Object.keys(scrollProps).length > 0) page.scrollProps = scrollProps
     if (Object.keys(onceProps).length > 0) page.onceProps = onceProps
     if (Object.keys(flash).length > 0) page.flash = flash
+    if (rescuedProps.length > 0) page.rescuedProps = rescuedProps
+    // Both are booleans the client only needs when true. Precedence for
+    // encryption: runtime → decorator → module default.
+    if (state.encryptHistory ?? options.encryptHistoryDecorator ?? this.options.history?.encrypt ?? false) {
+      page.encryptHistory = true
+    }
+    if (bag.clearHistory || state.pending.clearHistory) page.clearHistory = true
+    if (bag.preserveFragment || state.pending.preserveFragment) page.preserveFragment = true
+    // Which top-level props came from sharing: the client carries those into the
+    // placeholder page of an instant visit, so the layout does not flicker.
+    const sharedKeys = options.shared === false ? [] : Object.keys(state.shared).map((key) => key.split('.')[0])
+    if (sharedKeys.length > 0 && (this.options.exposeSharedProps ?? true)) page.sharedProps = [...new Set(sharedKeys)]
 
     appendVary(res, 'X-Inertia')
 

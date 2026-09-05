@@ -73,9 +73,19 @@ without a link are on the roadmap and render muted.
 | Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
 | Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
 | Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
+| Shared Props | `/features/state/shared-props` | **Shared props**: `auth` from middleware, `locale` from the handler's `view.share()`; the page object's `sharedProps` lists both, which is what keeps the sidebar on screen during instant visits |
+| URL Fragments | `/features/navigation/fragments` | **Fragment redirects**: "Redirect to #security" POSTs to a handler redirecting to `…#security`; the response is `409` + `X-Inertia-Redirect` and the client lands on the section. "Save billing" posts from `#billing`, the handler calls `preserveFragment().back()`, and the URL keeps the fragment |
+| History Management | `/features/navigation/history` | **History encryption**: the route has `@EncryptHistory()`, so `encryptHistory: true` is on the page object and the client encrypts the entry; "Log out" POSTs to a handler calling `clearHistory().back()`, and the next page object carries `clearHistory: true` |
+| Deferred Props | `/features/data-loading/deferred-props` | **Deferred + rescue**: the page paints first; two groups follow in two requests; the recommendations closure throws on purpose and `rescue: true` keeps the counters in the same request alive, with the failure under `rescuedProps` and the `<Deferred rescue>` slot shown |
+| Prop Merging | `/features/data-loading/prop-merging` | **Merge variants**: the same reload combined four ways — `merge()` appends, `prepend()` puts new items first, `matchOn: 'id'` updates a known item in place, `deepMerge()` merges an object key by key with matched arrays inside. Reset makes the client replace |
 | Once Props | `/features/data-loading/once-props` | **Once props**: `organizations` is resolved once (`as: 'organizations'`, `until: 300`) and remembered by the client; later visits send `X-Inertia-Except-Once-Props` and the response leaves the prop out. `?fresh=1` forces a re-resolve. **Flash + refresh**: the "Add an organization" form POSTs, the handler calls `view.flash(...)`, `view.refresh('organizations')` and `back()`; the redirect target shows the message once and re-resolves the once prop. A plain `serverTime` prop changes on every visit for contrast |
 | Infinite Scroll | `/features/data-loading/infinite-scroll?page=3` | **Both directions, on scroll**: lands on page 3; scrolling down appends, scrolling back to the top prepends (`X-Inertia-Infinite-Scroll-Merge-Intent: prepend` → `prependProps`) with the scroll position kept |
 | HTTP Exceptions | `/features/errors/http` | **Error pages**: each link throws; `errorPages` renders `Errors/Show` with the error's status for 403, 404, 500 and 503 (Inertia visit *and* first load), while 419 and 429 fall through to Nest's JSON and the client's error dialog. Unknown contact ids on `/contacts/:id` get the same page |
+| useForm | `/features/forms/use-form` | **useForm**: `data`, `errors`, `processing`, `transform`, `reset`, `clearErrors`, and the status flags; the handler is a Zod schema plus `back()` |
+| Form Component | `/features/forms/form-component` | **`<Form>`**: uncontrolled inputs with `name`s, render props for `errors`/`processing`/`wasSuccessful`, `resetOnSuccess`; same handler shape |
+| File Uploads | `/features/forms/file-uploads` | **Multipart**: a `File` in the form data; Nest's `FileInterceptor('avatar')` + `@UploadedFile()`, text fields in `@Body()`, a progress bar, validation through the same errors flow |
+| Precognition | `/features/forms/precognition` | **Live validation with a database rule**: "email already registered" is an async Zod `refine`, so precognition reports it on blur without running the handler |
+| Optimistic Updates | `/features/forms/optimistic-updates` | **Optimistic**: `form.optimistic()` and `router.patch({ optimistic })` show the change at once; the server sleeps 1.2 s; typing `fail` rolls the copy back with an error |
 | Dotted Keys | `/features/forms/dotted-keys` | **Standard Schema + Precognition**: a nested form validated by a Zod schema through `@Body({ schema })`; errors arrive as `user.email`, `address.postcode`, `tags.0`. Leaving a field validates it live against the same endpoint (`Precognition: true`, handler never runs). No DTO class, no `emitDecoratorMetadata` |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
@@ -151,7 +161,7 @@ apps/demo
 │   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root }, errorPages })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
 │   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
-│   ├── features/               # Kitchen Sink controllers (Infinite Scroll, Once Props, Dotted Keys, Errors)
+│   ├── features/               # Kitchen Sink controllers, one per feature group (forms, data loading, navigation, state, errors)
 │   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
 │   ├── main.ts                 # bootstrap; StandardSchemaValidationPipe + static assets in production
@@ -167,10 +177,15 @@ apps/demo
         ├── Crm/Dashboard.tsx
         ├── Contacts/{Index,Show}.tsx
         ├── Organizations/{Index,Show}.tsx
-        ├── Features/Forms/Validation.tsx
+        ├── Features/Forms/{Validation,UseForm,FormComponent,FileUploads,Precognition,OptimisticUpdates}.tsx
         ├── Features/Forms/DottedKeys.tsx
         ├── Features/Errors/Http.tsx
+        ├── Features/Navigation/History.tsx
+        ├── Features/Navigation/Fragments.tsx
+        ├── Features/State/SharedProps.tsx
         ├── Errors/Show.tsx         # the error page errorPages renders
+        ├── Features/DataLoading/DeferredProps.tsx
         ├── Features/DataLoading/InfiniteScroll.tsx
-        └── Features/DataLoading/OnceProps.tsx
+        ├── Features/DataLoading/OnceProps.tsx
+        └── Features/DataLoading/PropMerging.tsx
 ```

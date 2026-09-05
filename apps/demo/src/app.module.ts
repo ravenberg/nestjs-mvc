@@ -10,6 +10,12 @@ import { InfiniteScrollController } from './features/infinite-scroll.controller'
 import { OncePropsController } from './features/once-props.controller'
 import { DottedKeysController } from './features/dotted-keys.controller'
 import { ErrorsController } from './features/errors.controller'
+import { PropMergingController } from './features/prop-merging.controller'
+import { DeferredPropsController } from './features/deferred-props.controller'
+import { HistoryController } from './features/history.controller'
+import { FragmentsController } from './features/fragments.controller'
+import { SharedPropsController } from './features/shared-props.controller'
+import { FormsController } from './features/forms.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -47,6 +53,12 @@ const root = new URL('..', import.meta.url).pathname
     OncePropsController,
     DottedKeysController,
     ErrorsController,
+    PropMergingController,
+    DeferredPropsController,
+    HistoryController,
+    FragmentsController,
+    SharedPropsController,
+    FormsController,
   ],
 })
 export class AppModule implements NestModule {

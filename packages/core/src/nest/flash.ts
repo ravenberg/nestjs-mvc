@@ -9,6 +9,10 @@ export interface FlashBag {
   flash?: Record<string, unknown>
   errors?: Record<string, unknown>
   refresh?: string[]
+  /** Tell the client to drop its (encrypted) history on the next render — after logout. */
+  clearHistory?: boolean
+  /** Tell the client to keep the URL fragment it visited with, across the redirect. */
+  preserveFragment?: boolean
 }
 
 /**
@@ -33,12 +37,18 @@ export const mergeBags = (...bags: (FlashBag | undefined)[]): FlashBag => {
     if (bag.flash && Object.keys(bag.flash).length > 0) out.flash = { ...out.flash, ...bag.flash }
     if (bag.errors) out.errors = bag.errors
     if (bag.refresh?.length) out.refresh = [...new Set([...(out.refresh ?? []), ...bag.refresh])]
+    if (bag.clearHistory) out.clearHistory = true
+    if (bag.preserveFragment) out.preserveFragment = true
   }
   return out
 }
 
 export const isEmptyBag = (bag: FlashBag): boolean =>
-  !(bag.flash && Object.keys(bag.flash).length > 0) && !bag.errors && !bag.refresh?.length
+  !(bag.flash && Object.keys(bag.flash).length > 0) &&
+  !bag.errors &&
+  !bag.refresh?.length &&
+  !bag.clearHistory &&
+  !bag.preserveFragment
 
 export interface CookieFlashStoreOptions {
   /** Cookie name. Defaults to `mvc_flash`. */

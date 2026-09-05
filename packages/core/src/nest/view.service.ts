@@ -54,6 +54,35 @@ export class ViewService {
   }
 
   /**
+   * Asks the client to encrypt this page's history entry (or not), overriding
+   * `@EncryptHistory()` and the module default for this request.
+   */
+  encryptHistory(enabled = true): this {
+    this.state.encryptHistory = enabled
+    return this
+  }
+
+  /**
+   * Tells the client to rotate its history encryption key and drop what it
+   * stored — call it on logout. Like `flash()`, it lands on this request's
+   * render if there is one, otherwise on the next request after the redirect.
+   */
+  clearHistory(): this {
+    this.state.pending.clearHistory = true
+    return this
+  }
+
+  /**
+   * Keeps the URL fragment the client visited with (`/settings#security`) on
+   * the page that results from the redirect back, so the user lands on the
+   * same section. Lands on this render or, after a redirect, the next.
+   */
+  preserveFragment(): this {
+    this.state.pending.preserveFragment = true
+    return this
+  }
+
+  /**
    * Skips server-side rendering for this request, even on a route that opted in
    * with `@Ssr()`. Useful from a guard once you know the visitor is logged in.
    */

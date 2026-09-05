@@ -1,6 +1,7 @@
 // ── Nest layer ────────────────────────────────────────────────────────────────
 export { View } from './nest/view.decorator'
 export { Ssr } from './nest/ssr.decorator'
+export { EncryptHistory } from './nest/history.decorator'
 export { MvcModule, type MvcModuleAsyncOptions } from './nest/mvc.module'
 export type { MvcModuleOptions, ErrorPage, ErrorPageContext } from './nest/types'
 export { PageRenderer, type RenderOptions, type Rendered } from './nest/page-renderer'
@@ -18,6 +19,7 @@ export {
 export {
   isInertia,
   isPrecognitive,
+  isPrefetch,
   appendVary,
   header,
   requestUrl,
@@ -51,6 +53,7 @@ export {
   MVC_MODULE_OPTIONS,
   MVC_VIEW_METADATA,
   MVC_SSR_METADATA,
+  MVC_ENCRYPT_HISTORY_METADATA,
   MVC_REQUEST_STATE,
   MVC_VITE_SERVER,
   MVC_ASSETS,
@@ -92,6 +95,8 @@ export {
   defer,
   always,
   merge,
+  prepend,
+  deepMerge,
   scroll,
   once,
   resolveProps,
@@ -103,12 +108,14 @@ export {
   ScrollProp,
   OnceProp,
   type PropValue,
+  type DeferOptions,
   type PartialReload,
   type ResolvedProps,
   type MergeIntent,
   type ScrollMetadata,
   type ScrollPage,
   type ScrollOptions,
+  type MergeOptions,
   type OnceOptions,
   type OnceMetadata,
   type ResolveOptions,

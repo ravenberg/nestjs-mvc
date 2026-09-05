@@ -2,7 +2,7 @@ import { ArgumentsHost, BadRequestException, Catch, HttpException, Inject, Logge
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core'
 import { HEADER_ERROR_BAG } from '../protocol/constants'
 import { type FlashStore, isEmptyBag, mergeBags } from './flash'
-import { type AnyRequest, type AnyResponse, header, isInertia, requestMethod, requestState, setHeader } from './http'
+import { type AnyRequest, type AnyResponse, header, isInertia, isPrefetch, requestMethod, requestState, setHeader } from './http'
 import { PageRenderer } from './page-renderer'
 import { MvcPrecognition } from './precognition'
 import { MvcRedirect } from './redirect'
@@ -21,7 +21,8 @@ import { extractFieldErrors } from './validation'
  *   non-Inertia request, falls through to Nest's default handling.
  * - `MvcRedirect`, thrown by `ViewService.redirect()` / `back()` / `location()`:
  *   pending flash data is stored, then the redirect is written — 303 after
- *   PUT/PATCH/DELETE, or 409 + X-Inertia-Location for an external destination.
+ *   PUT/PATCH/DELETE, 409 + X-Inertia-Location for an external destination, or
+ *   409 + X-Inertia-Redirect when the target has a fragment (XHR would lose it).
  * - `MvcPrecognition`, thrown by the `PrecognitionInterceptor`: `204` +
  *   `Precognition-Success` or `422` + `errors`, never a redirect.
  * - Everything else, when `errorPages` is configured: the page it returns is
@@ -118,6 +119,13 @@ export class MvcExceptionFilter extends BaseExceptionFilter {
     if (redirect.external && isInertia(req)) {
       // The client performs a full page visit to the external URL.
       setHeader(res, 'X-Inertia-Location', redirect.url)
+      this.host.httpAdapter.reply(res, '', 409)
+      return
+    }
+    if (isInertia(req) && redirect.url.includes('#') && !isPrefetch(req)) {
+      // XHR follows a redirect without its fragment; hand the URL to the client
+      // instead, which visits it — fragment included — as a GET.
+      setHeader(res, 'X-Inertia-Redirect', redirect.url)
       this.host.httpAdapter.reply(res, '', 409)
       return
     }

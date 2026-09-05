@@ -9,14 +9,22 @@ export interface PageObject {
   deferredProps?: Record<string, string[]>
   mergeProps?: string[]
   prependProps?: string[]
+  deepMergeProps?: string[]
+  matchPropsOn?: string[]
   /** Per scroll prop: its cursor, and whether the client must re-sync to it. */
   scrollProps?: Record<string, ScrollMetadata & { reset: boolean }>
   /** Per once key: which prop it caches and when the client should drop it. */
   onceProps?: Record<string, OnceMetadata>
   /** Flash data for this render only; the client clears it from history. */
   flash?: Record<string, unknown>
+  /** Deferred props that failed and were left out; the client keeps the list across partial reloads. */
+  rescuedProps?: string[]
   clearHistory?: boolean
   encryptHistory?: boolean
+  /** Keep the fragment of the URL the client visited with, on the URL this page gets. */
+  preserveFragment?: boolean
+  /** Top-level keys of the shared props, so the client can carry them into an instant visit's placeholder page. */
+  sharedProps?: string[]
 }
 
 export type AssetVersion = string | (() => string | Promise<string>)
@@ -51,6 +59,8 @@ export interface MvcRequestState {
   shared: Record<string, unknown>
   /** Set by `ViewService.disableSsr()`/`enableSsr()`; overrides `@Ssr()` for this request. */
   ssr?: boolean
-  /** Flash data and refresh keys queued during this request, for this render or the next. */
-  pending: { flash?: Record<string, unknown>; refresh?: string[] }
+  /** Set by `ViewService.encryptHistory()`; overrides `@EncryptHistory()` and the module default. */
+  encryptHistory?: boolean
+  /** Flash data, refresh keys and page flags queued during this request, for this render or the next. */
+  pending: { flash?: Record<string, unknown>; refresh?: string[]; clearHistory?: boolean; preserveFragment?: boolean }
 }

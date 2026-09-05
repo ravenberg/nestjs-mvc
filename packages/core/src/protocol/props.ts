@@ -12,21 +12,77 @@ export abstract class Prop<T = unknown> {
 /** Excluded from the initial load; only evaluated when explicitly requested in a partial reload. */
 export class OptionalProp<T = unknown> extends Prop<T> {}
 
+export interface DeferOptions {
+  /** Deferred props in one group are fetched in one follow-up request. Defaults to `default`. */
+  group?: string
+  /**
+   * If the closure throws, report the error, leave the prop out and list its
+   * path in `rescuedProps` — instead of failing the whole response. For data
+   * the page can live without: a recommendations widget, an external feed.
+   */
+  rescue?: boolean
+}
+
 /** Excluded from the initial load and advertised via `deferredProps`; the client fetches it right after the first render. */
 export class DeferProp<T = unknown> extends Prop<T> {
-  constructor(
-    value: () => T | Promise<T>,
-    readonly group: string = 'default',
-  ) {
+  readonly group: string
+  readonly rescue: boolean
+
+  constructor(value: () => T | Promise<T>, options: string | DeferOptions = {}) {
     super(value)
+    const opts = typeof options === 'string' ? { group: options } : options
+    this.group = opts.group ?? 'default'
+    this.rescue = opts.rescue ?? false
   }
 }
 
 /** Included in every response, even partial reloads that don't request it. */
 export class AlwaysProp<T = unknown> extends Prop<T> {}
 
-/** Advertised via `mergeProps` so the client merges (e.g. appends arrays) instead of replacing. */
-export class MergeProp<T = unknown> extends Prop<T> {}
+export interface MergeOptions {
+  /**
+   * Put the new items in front instead of behind. `true` for the prop itself,
+   * or nested paths (relative to the prop) that should prepend, e.g. `['data']`.
+   */
+  prepend?: boolean | string[]
+  /** Nested paths (relative to the prop) that should append, instead of the prop as a whole. */
+  append?: string[]
+  /** Merge objects and arrays recursively rather than replacing what is under the prop. */
+  deep?: boolean
+  /**
+   * The field that identifies an item, so a matching item is updated in place
+   * instead of added again: `'id'` for the prop's own array, `'data.id'` for a
+   * nested one. Several are allowed.
+   */
+  matchOn?: string | string[]
+}
+
+/**
+ * Advertised via `mergeProps` (or `prependProps` / `deepMergeProps`) so the
+ * client merges the value into what it has instead of replacing it, with
+ * `matchPropsOn` telling it which field identifies an item.
+ */
+export class MergeProp<T = unknown> extends Prop<T> {
+  readonly deep: boolean
+  readonly prependRoot: boolean
+  readonly appendPaths: string[]
+  readonly prependPaths: string[]
+  readonly matchOn: string[]
+
+  constructor(value: PropValue<T>, options: MergeOptions = {}) {
+    super(value)
+    this.deep = options.deep ?? false
+    this.prependRoot = options.prepend === true
+    this.appendPaths = options.append ?? []
+    this.prependPaths = Array.isArray(options.prepend) ? options.prepend : []
+    this.matchOn = options.matchOn === undefined ? [] : ([] as string[]).concat(options.matchOn)
+  }
+
+  /** Whether the whole prop merges, as opposed to nested paths inside it. */
+  get mergesAtRoot(): boolean {
+    return this.appendPaths.length === 0 && this.prependPaths.length === 0
+  }
+}
 
 /** The cursor the client keeps per scroll prop; page identifiers may be numbers (offset) or strings (cursor). */
 export interface ScrollMetadata {
@@ -50,6 +106,8 @@ export interface ScrollPage<T = unknown> extends Partial<ScrollMetadata> {
 export interface ScrollOptions<T = unknown> {
   /** Key holding the array the client merges. Defaults to `data`. */
   wrapper?: string
+  /** Field that identifies an item in the array, so re-fetched items update in place instead of duplicating. */
+  matchOn?: string
   /** Defer the first page like `defer()` does; `true` uses the default group. */
   defer?: boolean | string
   /** Derive the cursor from a value that is not a `ScrollPage`. */
@@ -63,12 +121,14 @@ export interface ScrollOptions<T = unknown> {
 export class ScrollProp<T = unknown> extends Prop<T> {
   readonly wrapper: string
   readonly deferGroup: string | null
+  readonly matchOn: string | null
   private readonly metadata?: (value: T) => ScrollMetadata
 
   constructor(value: () => T | Promise<T>, options: ScrollOptions<T> = {}) {
     super(value)
     this.wrapper = options.wrapper ?? 'data'
     this.deferGroup = options.defer === true ? 'default' : options.defer || null
+    this.matchOn = options.matchOn ?? null
     this.metadata = options.metadata
   }
 
@@ -127,9 +187,16 @@ export class OnceProp<T = unknown> extends Prop<T> {
 }
 
 export const optional = <T>(value: () => T | Promise<T>): OptionalProp<T> => new OptionalProp(value)
-export const defer = <T>(value: () => T | Promise<T>, group?: string): DeferProp<T> => new DeferProp(value, group)
+export const defer = <T>(value: () => T | Promise<T>, options?: string | DeferOptions): DeferProp<T> =>
+  new DeferProp(value, options)
 export const always = <T>(value: PropValue<T>): AlwaysProp<T> => new AlwaysProp(value)
-export const merge = <T>(value: PropValue<T>): MergeProp<T> => new MergeProp(value)
+export const merge = <T>(value: PropValue<T>, options?: MergeOptions): MergeProp<T> => new MergeProp(value, options)
+/** `merge()` that puts new items in front — a feed of newer entries. */
+export const prepend = <T>(value: PropValue<T>, options?: Omit<MergeOptions, 'prepend'>): MergeProp<T> =>
+  new MergeProp(value, { ...options, prepend: true })
+/** `merge()` that merges objects and arrays recursively. */
+export const deepMerge = <T>(value: PropValue<T>, options?: Omit<MergeOptions, 'deep'>): MergeProp<T> =>
+  new MergeProp(value, { ...options, deep: true })
 export const scroll = <T = ScrollPage>(value: () => T | Promise<T>, options?: ScrollOptions<T>): ScrollProp<T> =>
   new ScrollProp(value, options)
 export const once = <T>(value: () => T | Promise<T>, options?: OnceOptions): OnceProp<T> => new OnceProp(value, options)
@@ -153,8 +220,13 @@ export interface ResolvedProps {
   deferredProps: Record<string, string[]>
   mergeProps: string[]
   prependProps: string[]
+  deepMergeProps: string[]
+  /** `<path>.<field>` entries: which field identifies an item at that path. */
+  matchPropsOn: string[]
   scrollProps: Record<string, ScrollMetadata & { reset: boolean }>
   onceProps: Record<string, OnceMetadata>
+  /** Paths of `defer(fn, { rescue: true })` props whose closure threw; the props are left out. */
+  rescuedProps: string[]
 }
 
 /** Everything the request tells the resolver, all read from headers; nothing here outlives the request. */
@@ -167,6 +239,8 @@ export interface ResolveOptions {
   loadedOnce?: string[]
   /** Once keys to resolve anyway, from `ViewService.refresh()` on a previous request. */
   refreshOnce?: string[]
+  /** Called with the error a rescued prop swallowed. Defaults to nothing; the adapter logs it. */
+  onRescue?: (error: unknown, path: string) => void
 }
 
 /**
@@ -215,8 +289,12 @@ interface WalkState {
   deferredProps: Record<string, string[]>
   mergeProps: string[]
   prependProps: string[]
+  deepMergeProps: string[]
+  matchPropsOn: string[]
   scrollProps: Record<string, ScrollMetadata & { reset: boolean }>
   onceProps: Record<string, OnceMetadata>
+  rescuedProps: string[]
+  onRescue?: (error: unknown, path: string) => void
 }
 
 /** Labels the array inside a scroll prop for the client, on the end the request asked for. */
@@ -224,6 +302,23 @@ function labelScrollMerge(prop: ScrollProp, path: string, state: WalkState): voi
   if (state.reset.includes(path)) return
   const target = state.mergeIntent === 'prepend' ? state.prependProps : state.mergeProps
   target.push(`${path}.${prop.wrapper}`)
+  if (prop.matchOn) state.matchPropsOn.push(`${path}.${prop.wrapper}.${prop.matchOn}`)
+}
+
+/**
+ * Emits a merge prop's labels the way Laravel's `collectMergeableMetadata` does:
+ * a reset drops everything; deep wins over the append/prepend choice; nested
+ * paths replace the root label; `matchOn` entries are `<path>.<field>`.
+ */
+function labelMerge(prop: MergeProp, path: string, state: WalkState): void {
+  if (state.reset.includes(path)) return
+  if (prop.deep) state.deepMergeProps.push(path)
+  else if (prop.mergesAtRoot) (prop.prependRoot ? state.prependProps : state.mergeProps).push(path)
+  else {
+    for (const nested of prop.appendPaths) state.mergeProps.push(`${path}.${nested}`)
+    for (const nested of prop.prependPaths) state.prependProps.push(`${path}.${nested}`)
+  }
+  for (const field of prop.matchOn) state.matchPropsOn.push(`${path}.${field}`)
 }
 
 interface Resolved {
@@ -272,14 +367,24 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
     return { include: false }
   }
 
-  if (value instanceof MergeProp && !state.reset.includes(path)) state.mergeProps.push(path)
+  if (value instanceof MergeProp) labelMerge(value, path, state)
 
-  const resolved =
-    value instanceof Prop
-      ? await value.resolve()
-      : typeof value === 'function'
-        ? await (value as () => unknown)()
-        : value
+  let resolved: unknown
+  try {
+    resolved =
+      value instanceof Prop
+        ? await value.resolve()
+        : typeof value === 'function'
+          ? await (value as () => unknown)()
+          : value
+  } catch (error) {
+    // A rescued deferred prop fails on its own: reported, left out, listed —
+    // the rest of the page renders. Anything else fails the response as usual.
+    if (!(value instanceof DeferProp && value.rescue)) throw error
+    state.rescuedProps.push(path)
+    state.onRescue?.(error, path)
+    return { include: false }
+  }
 
   if (value instanceof ScrollProp) {
     labelScrollMerge(value, path, state)
@@ -327,7 +432,9 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
  * - partial reload: only the requested paths (minus `except`) are evaluated, so a
  *   closure guarding an unrequested branch is never called; always-props are
  *   included regardless
- * - merge props are listed in `mergeProps` unless reset via X-Inertia-Reset
+ * - merge props are listed in `mergeProps`, `prependProps` or `deepMergeProps`
+ *   (plus `matchPropsOn` for their identifying fields) unless reset via
+ *   X-Inertia-Reset
  * - scroll props label their inner array in `mergeProps` or `prependProps`
  *   (per `mergeIntent`, from X-Inertia-Infinite-Scroll-Merge-Intent) and emit
  *   their cursor under `scrollProps`; a reset drops the label and flags the cursor
@@ -348,8 +455,12 @@ export async function resolveProps(
     deferredProps: {},
     mergeProps: [],
     prependProps: [],
+    deepMergeProps: [],
+    matchPropsOn: [],
     scrollProps: {},
     onceProps: {},
+    rescuedProps: [],
+    onRescue: options.onRescue,
   }
   const props: Record<string, unknown> = {}
 
@@ -363,7 +474,10 @@ export async function resolveProps(
     deferredProps: state.deferredProps,
     mergeProps: state.mergeProps,
     prependProps: state.prependProps,
+    deepMergeProps: state.deepMergeProps,
+    matchPropsOn: state.matchPropsOn,
     scrollProps: state.scrollProps,
     onceProps: state.onceProps,
+    rescuedProps: state.rescuedProps,
   }
 }

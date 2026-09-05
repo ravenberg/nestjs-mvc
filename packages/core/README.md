@@ -212,9 +212,10 @@ export class UsersController {
     return {
       users: scroll(() => this.users.page(page)),   // infinite scroll: see below
       stats: defer(() => this.stats.compute()),     // deferred: fetched right after first render
+      tips: defer(() => this.tips.fetch(), { rescue: true }), // may fail without taking the page down
       export: optional(() => this.heavyExport()),   // only evaluated on explicit partial reload
       flash: always(this.flash.pull()),             // included even in partial reloads
-      feed: merge(() => this.feed.nextPage()),      // client merges instead of replaces
+      feed: merge(() => this.feed.nextPage()),      // client appends instead of replacing
       countries: once(() => this.countries.all()),  // resolved once, remembered by the client
     }
   }
@@ -222,6 +223,40 @@ export class UsersController {
 ```
 
 Handlers without `@View()` are untouched — regular JSON APIs keep working next to your pages.
+
+### Deferred props that may fail
+
+A deferred prop that throws fails the whole follow-up request, and every other
+prop in its group with it. For data the page can live without — a
+recommendations widget, an external feed — let it fail alone:
+
+```ts
+recommendations: defer(() => this.recommendations.fetch(), { rescue: true })
+```
+
+The error is reported (`onRescue` on the module, else a logged warning naming
+the prop), the prop is left out, and its path is listed under `rescuedProps` so
+the client's `<Deferred rescue={...}>` slot can show a fallback. `defer()` also
+takes `{ group }` here, next to the plain group string.
+
+### Merging instead of replacing
+
+On a partial reload the client normally replaces a prop. `merge()` and its
+variants tell it to combine instead, so a "load more" or a live feed keeps what
+is already on screen:
+
+```ts
+feed: merge(() => this.feed.page(n)),                          // append
+alerts: prepend(() => this.alerts.since(last)),                // new ones in front
+users: merge(() => this.users.page(n), { matchOn: 'id' }),     // a known id updates in place, never duplicates
+inbox: merge(() => inbox, { append: ['data'], matchOn: 'data.id' }), // merge a nested array, not the whole object
+tree: deepMerge(() => tree, { matchOn: 'items.id' }),          // objects key by key, arrays inside them too
+```
+
+The page object carries `mergeProps`, `prependProps`, `deepMergeProps` and
+`matchPropsOn` (`<path>.<field>`); a path listed in `X-Inertia-Reset` gets no
+label, so the client replaces it — that is how a changed filter starts a list
+over. `scroll()` (next) is built on the same labels and takes `matchOn` too.
 
 ### Infinite scroll
 
@@ -318,11 +353,21 @@ export class AppController {
 }
 ```
 
+Every page object lists the shared props' keys under `sharedProps`, so the
+client keeps `auth` and friends on screen during an instant visit instead of
+blanking the layout; `exposeSharedProps: false` on the module turns that off.
+
 `ViewService` is request-scoped. `redirect()`, `back()` and `location()` end the
 request (nothing after them runs) and answer through Nest's HTTP adapter, so they
 work on Express and Fastify alike; `redirect()` uses 303 after PUT/PATCH/DELETE,
 as the protocol requires. Sharing from middleware works through
 `requestState(req).shared`.
+
+A redirect whose target has a fragment (`/settings#security`) would lose it,
+because XHR follows redirects without the hash; on an Inertia visit the adapter
+answers `409` + `X-Inertia-Redirect` instead and the client visits the URL
+itself. And `this.view.preserveFragment().back()` keeps the fragment the user
+was on across a redirect back — a form on `#billing` saves and stays there.
 
 ### Flash
 
@@ -408,6 +453,28 @@ throw new ValidationException({ email: 'That email is already taken.' })
 
 The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag name the client asked for. A plain `ValidationPipe` without the factory works too — the filter falls back to parsing the default message array. Non-Inertia requests are untouched and keep NestJS's regular 400 JSON response (with an added `errors` object when you use the factory).
 
+## History encryption
+
+Inertia keeps each page's props in `history.state` so back/forward is instant.
+For sensitive pages, ask the client to encrypt those entries — per route, per
+controller, or for the whole app — and clear them on logout:
+
+```ts
+@Get('settings') @View('Settings') @EncryptHistory()   // this page's entry is encrypted
+@Controller('vault') @EncryptHistory()                  // every handler; @EncryptHistory(false) opts one out
+MvcModule.forRoot({ history: { encrypt: true } })       // the default for every page
+
+@Post('logout')
+logout() {
+  return this.view.clearHistory().redirect('/login')    // rides the flash bag to the next render
+}
+```
+
+Precedence: `ViewService.encryptHistory()` for one request → decorator on the
+handler → on the controller → module default. The page object carries
+`encryptHistory: true` / `clearHistory: true` only when set; the client does
+the encrypting and keeps the key in `sessionStorage`.
+
 ## Error pages
 
 By default an exception is Nest's JSON; on an Inertia visit the client shows it
@@ -438,11 +505,15 @@ redirect-back flow regardless. Errors of 500 and up are still logged.
 - `X-Inertia` requests get the JSON page object; first loads get your HTML shell with the page object in a `<script type="application/json">` element.
 - Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props, using **dot-notation** for nested ones (`only: ['auth.notifications']`).
 - `optional()`, `defer()` and `merge()` are recognised at any depth — inside plain objects, arrays and the return values of closures — and all metadata is emitted as dot paths. A closure guarding an unrequested branch is never called.
-- `defer()` props are advertised via `deferredProps` (grouped), `merge()` props via `mergeProps` (honouring `X-Inertia-Reset`).
+- `defer()` props are advertised via `deferredProps` (grouped); `merge()` / `prepend()` / `deepMerge()` via `mergeProps` / `prependProps` / `deepMergeProps`, with `matchPropsOn` for identifying fields, all honouring `X-Inertia-Reset`.
 - `scroll()` props label their `data` array in `mergeProps` or `prependProps` (per `X-Inertia-Infinite-Scroll-Merge-Intent`) and carry their cursor in `scrollProps`; a reset drops the label and sets `reset: true`.
 - `once()` props are described in `onceProps` (`{ prop, expiresAt }`) and skipped when their key is in `X-Inertia-Except-Once-Props`, unless `fresh`, marked by `refresh()`, or explicitly requested.
 - Flash data → the page object's `flash` field, once, carried across redirects and 409s in the same client-held bag as validation errors.
 - `errorPages` → your component with the error's status code, for the statuses you pick; everything else stays Nest's default.
+- `defer(fn, { rescue: true })` → a failing deferred prop is reported, left out and listed in `rescuedProps`; the rest of the response is unaffected.
+- `@EncryptHistory()` / `history.encrypt` → `encryptHistory: true`; `ViewService.clearHistory()` → `clearHistory: true` on this or the next render.
+- A redirect to a URL with a fragment → `409` + `X-Inertia-Redirect` (not for prefetches); `ViewService.preserveFragment()` → `preserveFragment: true`.
+- Shared prop keys → `sharedProps` on every page object (`exposeSharedProps: false` to omit).
 - Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).
 - 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
 - Stale asset version on GET visits → `409` + `X-Inertia-Location`.
