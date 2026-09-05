@@ -1,7 +1,6 @@
 import { Injectable, type NestMiddleware } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { MVC_REQUEST_STATE, defer, type MvcRequestState } from 'nestjs-mvc'
-import type { NextFunction, Request, Response } from 'express'
+import { defer, requestState, type AnyRequest } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
@@ -18,12 +17,11 @@ export class SharedPropsMiddleware implements NestMiddleware {
     @InjectRepository(Note) private readonly notes: Repository<Note>,
   ) {}
 
-  async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  async use(req: AnyRequest, _res: unknown, next: () => void): Promise<void> {
     const user = await this.users.findOne({ where: { email: 'test@example.com' } })
 
-    // The Mvc middleware initialises this state; guard in case ordering changes.
-    const holder = req as Request & Record<symbol, MvcRequestState | undefined>
-    const state = (holder[MVC_REQUEST_STATE] ??= { shared: {} })
+    // Per-request state lives on the raw request, on every platform.
+    const state = requestState(req)
 
     state.shared.auth = {
       user: user ? { id: user.id, name: user.name, email: user.email } : null,

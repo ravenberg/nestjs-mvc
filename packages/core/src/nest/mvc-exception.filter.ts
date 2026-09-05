@@ -1,44 +1,77 @@
-import { ArgumentsHost, BadRequestException, Catch } from '@nestjs/common'
-import { BaseExceptionFilter } from '@nestjs/core'
-import type { Request, Response } from 'express'
-import { ERRORS_COOKIE, HEADER_ERROR_BAG, HEADER_INERTIA } from '../protocol/constants'
+import { ArgumentsHost, BadRequestException, Catch, Inject } from '@nestjs/common'
+import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core'
+import { HEADER_ERROR_BAG } from '../protocol/constants'
+import { type FlashStore, mergeBags } from './flash'
+import { type AnyRequest, type AnyResponse, header, isInertia, requestMethod, requestState, setHeader } from './http'
+import { MvcRedirect } from './redirect'
+import { MVC_FLASH_STORE } from './tokens'
 import { ValidationException } from './validation'
 
 /**
- * Turns validation failures on Inertia visits into the redirect-back flow the
- * protocol expects: the errors are flashed to a cookie and the client is
- * redirected to the previous page, where the interceptor consumes the cookie
- * and shares the errors as the `errors` prop. Honors `X-Inertia-Error-Bag`.
+ * Two protocol flows end here, both answered through Nest's HTTP adapter so
+ * they work on Express and Fastify alike:
  *
- * Anything it can't extract field errors from — and every non-Inertia
- * request — falls through to Nest's default exception handling.
+ * - Validation failures on Inertia visits become the redirect-back flow: the
+ *   field errors go into the flash bag and the client is sent back to the
+ *   previous page, where the interceptor renders them as the `errors` prop.
+ *   Honours `X-Inertia-Error-Bag`. Anything without field errors, and every
+ *   non-Inertia request, falls through to Nest's default handling.
+ * - `MvcRedirect`, thrown by `ViewService.redirect()` / `back()` / `location()`:
+ *   pending flash data is stored, then the redirect is written — 303 after
+ *   PUT/PATCH/DELETE, or 409 + X-Inertia-Location for an external destination.
  */
-@Catch(BadRequestException)
+@Catch(BadRequestException, MvcRedirect)
 export class MvcExceptionFilter extends BaseExceptionFilter {
-  catch(exception: BadRequestException, host: ArgumentsHost): void {
-    if (host.getType() !== 'http') return super.catch(exception, host)
+  constructor(
+    @Inject(HttpAdapterHost) private readonly host: HttpAdapterHost,
+    @Inject(MVC_FLASH_STORE) private readonly flash: FlashStore,
+  ) {
+    super(host.httpAdapter)
+  }
 
-    const ctx = host.switchToHttp()
-    const req = ctx.getRequest<Request>()
-    const res = ctx.getResponse<Response>()
+  async catch(exception: BadRequestException | MvcRedirect, argumentsHost: ArgumentsHost): Promise<void> {
+    if (argumentsHost.getType() !== 'http') return super.catch(exception, argumentsHost)
 
-    if (req.headers[HEADER_INERTIA] !== 'true') return super.catch(exception, host)
+    const ctx = argumentsHost.switchToHttp()
+    const req = ctx.getRequest<AnyRequest>()
+    const res = ctx.getResponse<AnyResponse>()
+
+    if (exception instanceof MvcRedirect) return this.redirect(exception, req, res)
+
+    if (!isInertia(req)) return super.catch(exception, argumentsHost)
 
     const errors = extractErrors(exception)
-    if (!errors) return super.catch(exception, host)
+    if (!errors) return super.catch(exception, argumentsHost)
 
-    const bag = req.headers[HEADER_ERROR_BAG]
-    const payload = typeof bag === 'string' && bag.length > 0 ? { [bag]: errors } : errors
+    const bag = header(req, HEADER_ERROR_BAG)
+    const payload = bag ? { [bag]: errors } : errors
 
-    // res.cookie URI-encodes the value itself; the interceptor decodes it back.
-    res.cookie(ERRORS_COOKIE, JSON.stringify(payload), {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-    })
+    await this.carry(req, res, { errors: payload })
+    this.host.httpAdapter.redirect(res, this.statusFor(req, undefined), header(req, 'referer') ?? '/')
+  }
 
-    const back = req.headers.referer ?? '/'
-    res.redirect(['PUT', 'PATCH', 'DELETE'].includes(req.method) ? 303 : 302, back)
+  private async redirect(redirect: MvcRedirect, req: AnyRequest, res: AnyResponse): Promise<void> {
+    await this.carry(req, res, {})
+
+    if (redirect.external && isInertia(req)) {
+      // The client performs a full page visit to the external URL.
+      setHeader(res, 'X-Inertia-Location', redirect.url)
+      this.host.httpAdapter.reply(res, '', 409)
+      return
+    }
+    this.host.httpAdapter.redirect(res, this.statusFor(req, redirect.status), redirect.url)
+  }
+
+  /** Writes whatever this request queued, on top of what it received, for the next request. */
+  private async carry(req: AnyRequest, res: AnyResponse, extra: { errors?: Record<string, unknown> }): Promise<void> {
+    const bag = mergeBags(await this.flash.read(req), requestState(req).pending, extra)
+    await this.flash.write(req, res, bag)
+  }
+
+  /** The protocol's redirect status: 303 after a non-GET/POST visit, so the follow-up becomes a GET. */
+  private statusFor(req: AnyRequest, explicit: number | undefined): number {
+    if (explicit !== undefined && explicit !== 302) return explicit
+    return ['PUT', 'PATCH', 'DELETE'].includes(requestMethod(req)) ? 303 : 302
   }
 }
 

@@ -1,9 +1,10 @@
 import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { View, defer } from 'nestjs-mvc'
+import { View, defer, scroll } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Contact } from '../database/entities/contact.entity'
 import { Note } from '../database/entities/note.entity'
+import { paginate } from '../pagination'
 
 const PAGE_SIZE = 15
 
@@ -16,28 +17,32 @@ export class ContactsController {
 
   @Get()
   @View('Contacts/Index')
-  async index(@Query('search') search?: string, @Query('favorite') favorite?: string) {
-    const query = this.contacts
-      .createQueryBuilder('contact')
-      .leftJoinAndSelect('contact.organization', 'organization')
-      .orderBy('contact.firstName', 'ASC')
-      .addOrderBy('contact.lastName', 'ASC')
-      .take(PAGE_SIZE)
-
-    if (search) {
-      query.andWhere(
-        '(contact.firstName LIKE :term OR contact.lastName LIKE :term OR contact.email LIKE :term)',
-        { term: `%${search}%` },
-      )
-    }
-    if (favorite === '1') query.andWhere('contact.isFavorite = :fav', { fav: true })
-
-    const [contacts, total] = await query.getManyAndCount()
-
+  index(
+    @Query('search') search?: string,
+    @Query('favorite') favorite?: string,
+    @Query('page') page?: string,
+  ) {
     return {
       filters: { search: search ?? '', favorite: favorite === '1' },
-      total,
-      contacts: contacts.map((contact) => this.serialize(contact)),
+      // Infinite scroll: the client asks for `?page=N` and appends `contacts.data`.
+      // Changing a filter resets the prop, so the list starts over from page 1.
+      contacts: scroll(() => {
+        const query = this.contacts
+          .createQueryBuilder('contact')
+          .leftJoinAndSelect('contact.organization', 'organization')
+          .orderBy('contact.firstName', 'ASC')
+          .addOrderBy('contact.lastName', 'ASC')
+
+        if (search) {
+          query.andWhere(
+            '(contact.firstName LIKE :term OR contact.lastName LIKE :term OR contact.email LIKE :term)',
+            { term: `%${search}%` },
+          )
+        }
+        if (favorite === '1') query.andWhere('contact.isFavorite = :fav', { fav: true })
+
+        return paginate(query, { page, perPage: PAGE_SIZE, map: (contact) => this.serialize(contact) })
+      }),
     }
   }
 

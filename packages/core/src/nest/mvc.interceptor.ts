@@ -1,10 +1,9 @@
 import { CallHandler, ExecutionContext, Inject, Injectable, NestInterceptor, Optional } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import type { Request, Response } from 'express'
 import { Observable, from, mergeMap } from 'rxjs'
 import {
-  ERRORS_COOKIE,
-  HEADER_INERTIA,
+  HEADER_EXCEPT_ONCE_PROPS,
+  HEADER_MERGE_INTENT,
   HEADER_PARTIAL_COMPONENT,
   HEADER_PARTIAL_DATA,
   HEADER_PARTIAL_EXCEPT,
@@ -12,24 +11,33 @@ import {
 } from '../protocol/constants'
 import { defaultTemplate, viewBody } from '../protocol/html'
 import { PartialReload, always, resolveProps } from '../protocol/props'
-import type { PageObject, MvcRequestState, TemplateContext } from '../protocol/types'
+import type { PageObject, TemplateContext } from '../protocol/types'
 import type { MvcModuleOptions } from './types'
 import { resolveVersion } from '../protocol/version'
-import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_REQUEST_STATE, MVC_SSR_METADATA, MVC_VIEW_METADATA } from './tokens'
+import type { FlashStore } from './flash'
+import {
+  type AnyRequest,
+  type AnyResponse,
+  header,
+  isInertia,
+  requestMethod,
+  requestPath,
+  requestState,
+  requestUrl,
+  setHeader,
+} from './http'
+import {
+  MVC_ASSETS,
+  MVC_FLASH_STORE,
+  MVC_MODULE_OPTIONS,
+  MVC_SSR_METADATA,
+  MVC_VIEW_METADATA,
+} from './tokens'
 import { SsrService } from './ssr.service'
 import type { ViteAssets } from './vite'
 
-const splitHeader = (value: string | string[] | undefined): string[] =>
-  typeof value === 'string' && value.length > 0 ? value.split(',').map((s) => s.trim()) : []
-
-const readCookie = (header: string | undefined, name: string): string | undefined => {
-  if (!header) return undefined
-  for (const part of header.split(';')) {
-    const eq = part.indexOf('=')
-    if (eq !== -1 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim()
-  }
-  return undefined
-}
+const splitHeader = (value: string | undefined): string[] =>
+  value !== undefined && value.length > 0 ? value.split(',').map((s) => s.trim()) : []
 
 @Injectable()
 export class MvcInterceptor implements NestInterceptor {
@@ -38,6 +46,7 @@ export class MvcInterceptor implements NestInterceptor {
     @Inject(Reflector) private readonly reflector: Reflector,
     @Optional() @Inject(MVC_ASSETS) private readonly assets: ViteAssets | null,
     @Optional() @Inject(SsrService) private readonly ssr: SsrService | null,
+    @Inject(MVC_FLASH_STORE) private readonly flash: FlashStore,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -50,8 +59,8 @@ export class MvcInterceptor implements NestInterceptor {
       context.getClass(),
     ])
     const http = context.switchToHttp()
-    const req = http.getRequest<Request>()
-    const res = http.getResponse<Response>()
+    const req = http.getRequest<AnyRequest>()
+    const res = http.getResponse<AnyResponse>()
 
     return next
       .handle()
@@ -65,50 +74,66 @@ export class MvcInterceptor implements NestInterceptor {
   private async render(
     component: string,
     raw: Record<string, unknown>,
-    req: Request,
-    res: Response,
+    req: AnyRequest,
+    res: AnyResponse,
     ssrDecorator?: boolean,
   ): Promise<unknown> {
-    const isInertia = req.headers[HEADER_INERTIA] === 'true'
+    const inertia = isInertia(req)
     const partial = this.detectPartial(req, component)
-    const reset = splitHeader(req.headers[HEADER_RESET])
-    const state = (req as Request & Record<symbol, MvcRequestState | undefined>)[MVC_REQUEST_STATE]
+    const state = requestState(req)
 
-    const { props, deferredProps, mergeProps } = await resolveProps(
-      { errors: always(this.consumeErrors(req, res)), ...state?.shared, ...raw },
+    // What the previous request left for this client, plus what this request
+    // queued. Consumed by this render: the store is cleared below, so nothing is
+    // kept between requests on the server.
+    const bag = (await this.flash.read(req)) ?? {}
+    const flash = { ...bag.flash, ...state.pending.flash }
+    const refreshOnce = [...(bag.refresh ?? []), ...(state.pending.refresh ?? [])]
+
+    const { props, deferredProps, mergeProps, prependProps, scrollProps, onceProps } = await resolveProps(
+      { errors: always(bag.errors ?? {}), ...state.shared, ...raw },
       partial,
-      reset,
+      {
+        reset: splitHeader(header(req, HEADER_RESET)),
+        mergeIntent: header(req, HEADER_MERGE_INTENT) === 'prepend' ? 'prepend' : 'append',
+        loadedOnce: splitHeader(header(req, HEADER_EXCEPT_ONCE_PROPS)),
+        refreshOnce,
+      },
     )
+    await this.flash.clear(req, res)
 
     const page: PageObject = {
       component,
       props,
-      url: req.originalUrl ?? req.url,
+      url: requestUrl(req),
       version: await resolveVersion(this.options.version),
     }
     if (Object.keys(deferredProps).length > 0) page.deferredProps = deferredProps
     if (mergeProps.length > 0) page.mergeProps = mergeProps
+    if (prependProps.length > 0) page.prependProps = prependProps
+    if (Object.keys(scrollProps).length > 0) page.scrollProps = scrollProps
+    if (Object.keys(onceProps).length > 0) page.onceProps = onceProps
+    if (Object.keys(flash).length > 0) page.flash = flash
 
-    res.setHeader('Vary', 'X-Inertia')
+    setHeader(res, 'Vary', 'X-Inertia')
 
-    if (isInertia) {
-      res.setHeader('X-Inertia', 'true')
+    if (inertia) {
+      setHeader(res, 'X-Inertia', 'true')
       return page
     }
 
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    setHeader(res, 'Content-Type', 'text/html; charset=utf-8')
 
     // SSR only applies to the initial HTML load; Inertia visits swap on the client.
     const ssr =
       (await this.ssr?.render(
         {
-          path: req.path,
-          url: req.originalUrl ?? req.url,
-          method: req.method,
+          path: requestPath(req),
+          url: requestUrl(req),
+          method: requestMethod(req),
           component,
           page,
         },
-        { decorator: ssrDecorator, runtime: state?.ssr },
+        { decorator: ssrDecorator, runtime: state.ssr },
       )) ?? null
 
     const ctx: TemplateContext = {
@@ -118,26 +143,13 @@ export class MvcInterceptor implements NestInterceptor {
     }
     const html = await (this.options.template ?? defaultTemplate)(page, ctx)
     // In dev this lets Vite inject the HMR client and plugin preambles (e.g. React Refresh).
-    return this.assets ? this.assets.transformHtml(req.originalUrl ?? req.url, html) : html
+    return this.assets ? this.assets.transformHtml(requestUrl(req), html) : html
   }
 
-  /** Reads and clears validation errors flashed by the MvcExceptionFilter. */
-  private consumeErrors(req: Request, res: Response): Record<string, unknown> {
-    const raw = readCookie(req.headers.cookie, ERRORS_COOKIE)
-    if (raw === undefined) return {}
-    res.clearCookie(ERRORS_COOKIE, { path: '/' })
-    try {
-      const parsed: unknown = JSON.parse(decodeURIComponent(raw))
-      return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {}
-    } catch {
-      return {}
-    }
-  }
-
-  private detectPartial(req: Request, component: string): PartialReload | null {
-    if (req.headers[HEADER_PARTIAL_COMPONENT] !== component) return null
-    const only = splitHeader(req.headers[HEADER_PARTIAL_DATA])
-    const except = splitHeader(req.headers[HEADER_PARTIAL_EXCEPT])
+  private detectPartial(req: AnyRequest, component: string): PartialReload | null {
+    if (header(req, HEADER_PARTIAL_COMPONENT) !== component) return null
+    const only = splitHeader(header(req, HEADER_PARTIAL_DATA))
+    const except = splitHeader(header(req, HEADER_PARTIAL_EXCEPT))
     return only.length > 0 || except.length > 0 ? { only, except } : null
   }
 }

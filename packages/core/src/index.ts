@@ -4,6 +4,31 @@ export { Ssr } from './nest/ssr.decorator'
 export { MvcModule, type MvcModuleAsyncOptions } from './nest/mvc.module'
 export type { MvcModuleOptions } from './nest/types'
 export { ViewService } from './nest/view.service'
+export { MvcRedirect } from './nest/redirect'
+export {
+  CookieFlashStore,
+  SessionFlashStore,
+  mergeBags,
+  type FlashBag,
+  type FlashStore,
+  type CookieFlashStoreOptions,
+} from './nest/flash'
+export {
+  isInertia,
+  header,
+  requestUrl,
+  requestPath,
+  requestMethod,
+  absoluteUrl,
+  requestState,
+  readCookie,
+  writeCookie,
+  clearCookie,
+  serializeCookie,
+  type AnyRequest,
+  type AnyResponse,
+  type CookieOptions,
+} from './nest/http'
 export { SsrService } from './nest/ssr.service'
 export { MvcInterceptor } from './nest/mvc.interceptor'
 export { MvcMiddleware } from './nest/mvc.middleware'
@@ -16,6 +41,7 @@ export {
   MVC_REQUEST_STATE,
   MVC_VITE_SERVER,
   MVC_ASSETS,
+  MVC_FLASH_STORE,
 } from './nest/tokens'
 
 // ── SSR ───────────────────────────────────────────────────────────────────────
@@ -53,15 +79,26 @@ export {
   defer,
   always,
   merge,
+  scroll,
+  once,
   resolveProps,
   Prop,
   OptionalProp,
   DeferProp,
   AlwaysProp,
   MergeProp,
+  ScrollProp,
+  OnceProp,
   type PropValue,
   type PartialReload,
   type ResolvedProps,
+  type MergeIntent,
+  type ScrollMetadata,
+  type ScrollPage,
+  type ScrollOptions,
+  type OnceOptions,
+  type OnceMetadata,
+  type ResolveOptions,
 } from './protocol/props'
 export { viewBody, defaultTemplate } from './protocol/html'
 export { resolveVersion } from './protocol/version'
@@ -72,4 +109,4 @@ export type {
   TemplateFn,
   TemplateContext,
 } from './protocol/types'
-export { ERRORS_COOKIE } from './protocol/constants'
+export { FLASH_COOKIE } from './protocol/constants'

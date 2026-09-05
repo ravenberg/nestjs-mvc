@@ -1,7 +1,13 @@
 import { Inject, Injectable, NestMiddleware, Optional } from '@nestjs/common'
-import type { NextFunction, Request, Response } from 'express'
 import { MVC_VITE_SERVER } from './tokens'
 import type { ViteDevServerHolder } from './vite'
+
+/** The raw request, plus the two Express fields the mount-path fix touches. */
+interface ViteRequest {
+  url?: string
+  originalUrl?: string
+  baseUrl?: string
+}
 
 /**
  * Delegates to the in-process Vite dev server so client assets and HMR are served
@@ -12,7 +18,7 @@ import type { ViteDevServerHolder } from './vite'
 export class ViteDevMiddleware implements NestMiddleware {
   constructor(@Optional() @Inject(MVC_VITE_SERVER) private readonly holder: ViteDevServerHolder | null) {}
 
-  use(req: Request, res: Response, next: NextFunction): void {
+  use(req: ViteRequest, res: unknown, next: (err?: unknown) => void): void {
     const vite = this.holder?.server
     if (!vite) return next()
 

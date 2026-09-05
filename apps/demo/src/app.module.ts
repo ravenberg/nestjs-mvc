@@ -6,6 +6,8 @@ import { ContactsController } from './crm/contacts.controller'
 import { DashboardController } from './crm/dashboard.controller'
 import { OrganizationsController } from './crm/organizations.controller'
 import { DatabaseModule } from './database/database.module'
+import { InfiniteScrollController } from './features/infinite-scroll.controller'
+import { OncePropsController } from './features/once-props.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -26,7 +28,14 @@ const root = new URL('..', import.meta.url).pathname
       vite: { root },
     }),
   ],
-  controllers: [AppController, DashboardController, ContactsController, OrganizationsController],
+  controllers: [
+    AppController,
+    DashboardController,
+    ContactsController,
+    OrganizationsController,
+    InfiniteScrollController,
+    OncePropsController,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -9,7 +9,8 @@ import {
   Provider,
 } from '@nestjs/common'
 import { APP_FILTER, APP_INTERCEPTOR, HttpAdapterHost } from '@nestjs/core'
-import { MVC_ASSETS, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
+import { MVC_ASSETS, MVC_FLASH_STORE, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
+import { CookieFlashStore, type FlashStore } from './flash'
 import { MvcExceptionFilter } from './mvc-exception.filter'
 import { MvcInterceptor } from './mvc.interceptor'
 import { MvcMiddleware } from './mvc.middleware'
@@ -62,6 +63,12 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
             new ViteAssets(options.vite, holder),
           inject: [MVC_MODULE_OPTIONS, MVC_VITE_SERVER],
         },
+        {
+          provide: MVC_FLASH_STORE,
+          useFactory: (options: MvcModuleOptions): FlashStore =>
+            new (options.flash?.store ?? CookieFlashStore)(options.flash?.cookie as never),
+          inject: [MVC_MODULE_OPTIONS],
+        },
         ViewService,
         SsrService,
         MvcMiddleware,
@@ -69,7 +76,7 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
         { provide: APP_INTERCEPTOR, useClass: MvcInterceptor },
         { provide: APP_FILTER, useClass: MvcExceptionFilter },
       ],
-      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, ViewService, SsrService],
+      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, MVC_FLASH_STORE, ViewService, SsrService],
     }
   }
 

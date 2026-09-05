@@ -79,11 +79,11 @@ export const navigation: NavSection[] = [
         items: [
           { label: 'Deferred Props' },
           { label: 'Partial Reloads' },
-          { label: 'Infinite Scroll' },
+          { label: 'Infinite Scroll', href: '/features/data-loading/infinite-scroll?page=3' },
           { label: 'When Visible' },
           { label: 'Polling' },
           { label: 'Prop Merging' },
-          { label: 'Once Props' },
+          { label: 'Once Props', href: '/features/data-loading/once-props' },
         ],
       },
       {

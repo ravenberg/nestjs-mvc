@@ -35,7 +35,7 @@ describe('resolveProps', () => {
   })
 
   it('drops merge markers for keys listed in reset', async () => {
-    const { mergeProps } = await resolveProps(raw(), { only: ['feed'], except: [] }, ['feed'])
+    const { mergeProps } = await resolveProps(raw(), { only: ['feed'], except: [] }, { reset: ['feed'] })
 
     expect(mergeProps).toEqual([])
   })

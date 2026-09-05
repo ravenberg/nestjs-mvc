@@ -1,11 +1,12 @@
-import { Body, Controller, Get, Post, Redirect, Res } from '@nestjs/common'
-import type { Response } from 'express'
-import { Ssr, ValidationException, View } from 'nestjs-mvc'
+import { Body, Controller, Get, Inject, Post, Redirect } from '@nestjs/common'
+import { Ssr, ValidationException, View, ViewService } from 'nestjs-mvc'
 
 const messages: string[] = []
 
 @Controller()
 export class AppController {
+  constructor(@Inject(ViewService) private readonly view: ViewService) {}
+
   @Get()
   @Redirect('/dashboard', 302)
   root() {
@@ -28,7 +29,7 @@ export class AppController {
   }
 
   @Post('features/forms/validation')
-  storeMessage(@Body('message') message: string, @Res() res: Response) {
+  storeMessage(@Body('message') message: string) {
     const trimmed = message?.trim() ?? ''
     if (trimmed.length < 3) {
       // With class-validator you'd let ValidationPipe throw this via
@@ -36,6 +37,8 @@ export class AppController {
       throw new ValidationException({ message: 'A message needs at least 3 characters.' })
     }
     messages.push(trimmed)
-    res.redirect('/features/forms/validation')
+    // Platform-agnostic redirect (303 after PUT/PATCH/DELETE, 302 otherwise);
+    // `res.redirect()` still works on Express, but this needs no `@Res()`.
+    return this.view.redirect('/features/forms/validation')
   }
 }

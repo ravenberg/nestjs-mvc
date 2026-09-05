@@ -57,7 +57,7 @@ describe('validation errors (e2e)', () => {
   })
 
   const errorsCookie = (res: request.Response): string | undefined =>
-    (res.headers['set-cookie'] as unknown as string[] | undefined)?.find((c) => c.startsWith('inertia_errors='))
+    (res.headers['set-cookie'] as unknown as string[] | undefined)?.find((c) => c.startsWith('mvc_flash='))
 
   it('redirects back with flashed errors on an Inertia visit', async () => {
     const res = await request(app.getHttpServer())

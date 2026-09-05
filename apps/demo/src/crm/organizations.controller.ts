@@ -1,9 +1,10 @@
 import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { View, defer } from 'nestjs-mvc'
+import { View, scroll } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Contact } from '../database/entities/contact.entity'
 import { Organization } from '../database/entities/organization.entity'
+import { paginateAfter } from '../pagination'
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -45,24 +46,31 @@ export class OrganizationsController {
 
   @Get(':id')
   @View('Organizations/Show')
-  async show(@Param('id', ParseIntPipe) id: number) {
+  async show(@Param('id', ParseIntPipe) id: number, @Query('cursor') cursor?: string) {
     const organization = await this.organizations.findOne({ where: { id } })
     if (!organization) throw new NotFoundException(`No organization with id ${id}`)
 
     return {
       organization: { id: organization.id, name: organization.name, city: organization.city },
-      contacts: defer(async () => {
-        const contacts = await this.contacts.find({
-          where: { organizationId: id },
-          order: { firstName: 'ASC' },
-        })
-        return contacts.map((contact) => ({
-          id: contact.id,
-          name: `${contact.firstName} ${contact.lastName}`,
-          email: contact.email,
-          isFavorite: contact.isFavorite,
-        }))
-      }),
+      // Deferred *and* scrollable: the header renders first, the first page follows
+      // in the client's follow-up request, and further pages use a keyset cursor.
+      contacts: scroll(
+        () =>
+          paginateAfter(
+            this.contacts.createQueryBuilder('contact').where('contact.organizationId = :id', { id }),
+            {
+              after: cursor,
+              perPage: 4,
+              map: (contact) => ({
+                id: contact.id,
+                name: `${contact.firstName} ${contact.lastName}`,
+                email: contact.email,
+                isFavorite: contact.isFavorite,
+              }),
+            },
+          ),
+        { defer: true },
+      ),
     }
   }
 }

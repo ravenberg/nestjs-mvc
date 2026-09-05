@@ -69,10 +69,12 @@ without a link are on the roadmap and render muted.
 | Page | URL | What it demonstrates |
 |---|---|---|
 | Dashboard | `/dashboard` | **Deferred props**: three counters are `defer()`-ed, so the page paints instantly with skeletons and the client fetches them in one follow-up partial request. `recentActivity` is eager. |
-| Contacts | `/contacts` | Search + favourites filter via `router.get(..., { preserveState, replace })` |
+| Contacts | `/contacts` | **Infinite scroll**: `scroll()` over an offset paginator, 15 a page, appended as you scroll. Search + favourites filter reset the prop (`router.get(..., { only, reset: ['contacts'] })`) so the list starts over |
 | Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
 | Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
-| Organization | `/organizations/:id` | Deferred `contacts` list |
+| Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
+| Once Props | `/features/data-loading/once-props` | **Once props**: `organizations` is resolved once (`as: 'organizations'`, `until: 300`) and remembered by the client; later visits send `X-Inertia-Except-Once-Props` and the response leaves the prop out. `?fresh=1` forces a re-resolve. **Flash + refresh**: the "Add an organization" form POSTs, the handler calls `view.flash(...)`, `view.refresh('organizations')` and `back()`; the redirect target shows the message once and re-resolves the once prop. A plain `serverTime` prop changes on every visit for contrast |
+| Infinite Scroll | `/features/data-loading/infinite-scroll?page=3` | **Both directions, on scroll**: lands on page 3; scrolling down appends, scrolling back to the top prepends (`X-Inertia-Infinite-Scroll-Merge-Intent: prepend` → `prependProps`) with the scroll position kept |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
 The database is SQLite (`demo.sqlite`), seeded on first boot with 4 users, 15
@@ -91,10 +93,19 @@ Manual checks while developing:
    server answers `409` and forces a full page visit.
 5. **HMR** — edit a page component while a form has input; it should update without
    losing the value. Edit `app.css` and the `<link>` swaps in place.
-6. **SSR** — View Source (not the Elements tab) on `/features/forms/validation` shows
+6. **Infinite scroll** — on `/contacts`, scroll down: the Network tab shows a partial
+   `GET /contacts?page=2` with `X-Inertia-Partial-Data: contacts`, and rows are
+   appended. Toggle Favorites: one request with `X-Inertia-Reset: contacts`, the
+   list is replaced, and page 2 of the filtered list loads as soon as its end
+   marker is in view.
+7. **SSR** — View Source (not the Elements tab) on `/features/forms/validation` shows
    `data-server-rendered="true"` and the stylesheet link *before* the body, in dev
    too, so there is no flash of unstyled content. `/features/forms/validation-csr`
    shows the page-object script instead.
+8. **Flash** — on the Once Props page, add an organization: the POST answers 302
+   with a `Set-Cookie: mvc_flash=…` carrying the message and the refresh key, the
+   GET after it shows the green message and a new resolve stamp, and the next GET
+   shows neither. The cookie is the only memory.
 
 Handy one-liners:
 
@@ -127,7 +138,9 @@ apps/demo
 ├── src/                        # NestJS server
 │   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root } })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
-│   ├── shared-props.middleware.ts  # shares auth.user on every response
+│   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
+│   ├── features/               # Kitchen Sink controllers (Data Loading → Infinite Scroll, Once Props)
+│   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
 │   ├── main.ts                 # bootstrap + static assets in production
 │   ├── crm/                    # Dashboard, Contacts, Organizations controllers
@@ -142,5 +155,7 @@ apps/demo
         ├── Crm/Dashboard.tsx
         ├── Contacts/{Index,Show}.tsx
         ├── Organizations/{Index,Show}.tsx
-        └── Features/Forms/Validation.tsx
+        ├── Features/Forms/Validation.tsx
+        ├── Features/DataLoading/InfiniteScroll.tsx
+        └── Features/DataLoading/OnceProps.tsx
 ```

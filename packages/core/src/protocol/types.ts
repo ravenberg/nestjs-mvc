@@ -1,3 +1,5 @@
+import type { OnceMetadata, ScrollMetadata } from './props'
+
 /** The Inertia page object sent to the client, either as JSON or embedded in the HTML shell. */
 export interface PageObject {
   component: string
@@ -6,6 +8,13 @@ export interface PageObject {
   version: string | null
   deferredProps?: Record<string, string[]>
   mergeProps?: string[]
+  prependProps?: string[]
+  /** Per scroll prop: its cursor, and whether the client must re-sync to it. */
+  scrollProps?: Record<string, ScrollMetadata & { reset: boolean }>
+  /** Per once key: which prop it caches and when the client should drop it. */
+  onceProps?: Record<string, OnceMetadata>
+  /** Flash data for this render only; the client clears it from history. */
+  flash?: Record<string, unknown>
   clearHistory?: boolean
   encryptHistory?: boolean
 }
@@ -37,9 +46,11 @@ export type TemplateFn = (
   ctx: TemplateContext,
 ) => string | Promise<string>
 
-/** Per-request state stored on the request object by the middleware. */
+/** Per-request state stored on the raw request object by the middleware. */
 export interface MvcRequestState {
   shared: Record<string, unknown>
   /** Set by `ViewService.disableSsr()`/`enableSsr()`; overrides `@Ssr()` for this request. */
   ssr?: boolean
+  /** Flash data and refresh keys queued during this request, for this render or the next. */
+  pending: { flash?: Record<string, unknown>; refresh?: string[] }
 }

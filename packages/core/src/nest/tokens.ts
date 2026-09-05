@@ -15,5 +15,8 @@ export const MVC_VITE_SERVER = 'MVC_VITE_SERVER'
 /** DI token for the asset-tag resolver (Vite dev server or build manifest). */
 export const MVC_ASSETS = 'MVC_ASSETS'
 
+/** DI token for the flash store (cookie by default; bind your own to use a session). */
+export const MVC_FLASH_STORE = 'MVC_FLASH_STORE'
+
 /** Key under which per-request state (shared props) is stored on the request object. */
 export const MVC_REQUEST_STATE = Symbol.for('nestjs-mvc:state')

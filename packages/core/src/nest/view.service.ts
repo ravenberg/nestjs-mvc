@@ -1,24 +1,23 @@
 import { Inject, Injectable, Scope } from '@nestjs/common'
 import { REQUEST } from '@nestjs/core'
-import type { Request, Response } from 'express'
-import { HEADER_INERTIA } from '../protocol/constants'
-import { MVC_REQUEST_STATE } from './tokens'
 import type { MvcRequestState } from '../protocol/types'
+import { type AnyRequest, header, requestState } from './http'
+import { MvcRedirect } from './redirect'
 
 /**
- * Request-scoped helper for sharing props and issuing external redirects.
- * Shared props are merged under the props returned by the handler.
+ * Request-scoped helper: shared props, flash data, SSR overrides and redirects.
+ * It only ever touches the request; responses are written by the exception
+ * filter through Nest's HTTP adapter, so nothing here depends on the platform.
  */
 @Injectable({ scope: Scope.REQUEST })
 export class ViewService {
-  constructor(@Inject(REQUEST) private readonly req: Request) {}
+  constructor(@Inject(REQUEST) private readonly req: AnyRequest) {}
 
   private get state(): MvcRequestState {
-    const req = this.req as Request & Record<symbol, MvcRequestState | undefined>
-    return (req[MVC_REQUEST_STATE] ??= { shared: {} })
+    return requestState(this.req)
   }
 
-  /** Shares props with the current page render (e.g. auth user, flash messages). */
+  /** Shares props with the current page render (e.g. auth user). */
   share(key: string, value: unknown): this
   share(props: Record<string, unknown>): this
   share(keyOrProps: string | Record<string, unknown>, value?: unknown): this {
@@ -29,6 +28,29 @@ export class ViewService {
 
   getShared(): Record<string, unknown> {
     return this.state.shared
+  }
+
+  /**
+   * Flashes data for the page object's `flash` field: shown on this request's
+   * render if there is one, otherwise on the next request of this client,
+   * typically after a redirect. Shown once, then gone.
+   */
+  flash(key: string, value: unknown): this
+  flash(data: Record<string, unknown>): this
+  flash(keyOrData: string | Record<string, unknown>, value?: unknown): this {
+    const data = typeof keyOrData === 'string' ? { [keyOrData]: value } : keyOrData
+    this.state.pending.flash = { ...this.state.pending.flash, ...data }
+    return this
+  }
+
+  /**
+   * Re-resolves the given `once()` keys on the next render even though the
+   * client says it still holds them. Call it from the mutation that changed
+   * the data, before redirecting back.
+   */
+  refresh(...keys: string[]): this {
+    this.state.pending.refresh = [...new Set([...(this.state.pending.refresh ?? []), ...keys])]
+    return this
   }
 
   /**
@@ -47,15 +69,24 @@ export class ViewService {
   }
 
   /**
-   * Redirects to an external (non-Inertia) URL. During an Inertia visit this
-   * sends 409 + X-Inertia-Location so the client performs a full page visit.
+   * Ends the request with a redirect, carrying any flashed data along. Uses 303
+   * after PUT/PATCH/DELETE so the follow-up visit is a GET, as the protocol
+   * requires. Nothing after this call runs.
    */
-  location(url: string): void {
-    const res = this.req.res as Response
-    if (this.req.headers[HEADER_INERTIA] === 'true') {
-      res.status(409).set('X-Inertia-Location', url).end()
-    } else {
-      res.redirect(url)
-    }
+  redirect(url: string, status?: number): never {
+    throw new MvcRedirect(url, status)
+  }
+
+  /** Redirects to the page the visit came from (the `Referer`), or `/`. */
+  back(status?: number): never {
+    throw new MvcRedirect(header(this.req, 'referer') ?? '/', status)
+  }
+
+  /**
+   * Redirects to an external (non-Inertia) URL. During an Inertia visit this
+   * answers 409 + X-Inertia-Location so the client performs a full page visit.
+   */
+  location(url: string): never {
+    throw new MvcRedirect(url, undefined, true)
   }
 }

@@ -86,7 +86,7 @@ describe('nested prop resolution', () => {
     expect(props).toEqual({ feed: { data: [1, 2] } })
     expect(mergeProps).toEqual(['feed.data'])
 
-    const reset = await resolveProps(raw, { only: ['feed'], except: [] }, ['feed.data'])
+    const reset = await resolveProps(raw, { only: ['feed'], except: [] }, { reset: ['feed.data'] })
     expect(reset.mergeProps).toEqual([])
   })
 

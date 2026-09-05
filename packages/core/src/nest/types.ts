@@ -1,4 +1,5 @@
 import type { AssetVersion, TemplateFn } from '../protocol/types'
+import type { CookieFlashStoreOptions, FlashStore } from './flash'
 import type { SsrOptions } from '../ssr/types'
 import type { ViteOptions } from './vite'
 
@@ -29,4 +30,15 @@ export interface MvcModuleOptions {
    * is the whole story, and nothing renders on the server until a route opts in.
    */
   ssr?: SsrOptions
+  /**
+   * Where flash data, validation errors and once-prop refreshes wait for the
+   * next request. Defaults to a cookie the client carries (`CookieFlashStore`),
+   * which keeps the server stateless. Bind `SessionFlashStore` or your own
+   * `FlashStore` to use a session instead.
+   */
+  flash?: {
+    /** A `FlashStore` class; it receives `cookie` as its only constructor argument. */
+    store?: new (options?: never) => FlashStore
+    cookie?: CookieFlashStoreOptions
+  }
 }

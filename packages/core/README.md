@@ -202,19 +202,20 @@ the component and the path it looked at.
 ## Rendering pages
 
 ```ts
-import { View, defer, optional, always, merge } from 'nestjs-mvc'
+import { View, defer, optional, always, merge, scroll, once } from 'nestjs-mvc'
 
 @Controller()
 export class UsersController {
   @Get('users')
   @View('Users')
-  index() {
+  index(@Query('page') page?: string) {
     return {
-      users: this.users.findAll(),                  // plain prop (may be a promise or function)
+      users: scroll(() => this.users.page(page)),   // infinite scroll: see below
       stats: defer(() => this.stats.compute()),     // deferred: fetched right after first render
       export: optional(() => this.heavyExport()),   // only evaluated on explicit partial reload
       flash: always(this.flash.pull()),             // included even in partial reloads
       feed: merge(() => this.feed.nextPage()),      // client merges instead of replaces
+      countries: once(() => this.countries.all()),  // resolved once, remembered by the client
     }
   }
 }
@@ -222,31 +223,136 @@ export class UsersController {
 
 Handlers without `@View()` are untouched — regular JSON APIs keep working next to your pages.
 
-## Shared props & external redirects
+### Infinite scroll
+
+`scroll()` wraps a paginated list for Inertia's `<InfiniteScroll data="users">`
+component. The closure returns the rows under `data` plus the cursor the client
+needs, and anything else you like:
+
+```ts
+users: scroll(async () => ({
+  data: rows,                 // the array the client appends to (or prepends)
+  currentPage: 2,             // numbers for offset paging, strings for cursors
+  previousPage: 1,
+  nextPage: 3,                // null when there is no more
+  pageName: 'page',           // the query parameter the client sends; defaults to `page`
+  total: 120,                 // extra fields travel to the client untouched
+}))
+```
+
+The adapter labels `users.data` for merging, emits the cursor under
+`scrollProps`, and honours the client's `X-Inertia-Infinite-Scroll-Merge-Intent`
+header, so scrolling up prepends and scrolling down appends. A visit that resets
+the prop (`router.reload({ reset: ['users'] })`, typically when a filter changes)
+gets page one back unlabelled with `scrollProps.users.reset = true`, and the
+client starts over.
+
+Options: `{ wrapper: 'items' }` for a differently named array, `{ defer: true }`
+(or a group name) to load the first page in the client's follow-up request like
+`defer()` does, and `{ metadata: (value) => ({ pageName, currentPage, … }) }` to
+read the cursor off your own paginator shape. There is no ORM binding in the
+adapter; the demo ships an offset and a keyset paginator over TypeORM in
+`apps/demo/src/pagination.ts` as a starting point.
+
+### Once props
+
+`once()` is for reference data that is expensive or large but rarely changes: a
+country list, the user's permissions, feature flags. It is resolved on the first
+visit and then **remembered by the client** across visits. Every later request
+carries `X-Inertia-Except-Once-Props` with the keys the client holds; for those
+the closure is not called and the prop is left out, and the client fills its copy
+back in before rendering.
+
+```ts
+countries: once(() => this.countries.all(), {
+  as: 'countries',   // cache key shared by every page that uses it; defaults to the prop path
+  until: 3600,       // seconds (or a Date); omit to keep it until a full page load
+  fresh: changed,    // re-resolve and resend even if the client says it has it
+})
+```
+
+An explicit partial reload that names the prop always re-resolves it. Nothing is
+cached on the server: the adapter only reads this request's header, so one
+process serving many users cannot leak one user's data into another's response.
+That is also why a `once()` instance is safe to hoist out of a handler — it is an
+immutable description, never a memo.
+
+After a mutation, tell the client its copy is stale from the handler that changed
+the data — the GET does not change:
+
+```ts
+@Post('countries')
+async store(@Body() dto: CreateCountryDto) {
+  await this.countries.save(dto)
+  return this.view.refresh('countries').back()
+}
+```
+
+## Shared props, redirects & flash
 
 ```ts
 import { ViewService } from 'nestjs-mvc'
 
 @Controller()
 export class AppController {
-  constructor(private readonly inertia: ViewService) {}
+  constructor(@Inject(ViewService) private readonly view: ViewService) {}
 
   @Get('profile')
   @View('Profile')
   profile() {
-    this.inertia.share('auth', { user: this.currentUser() })
+    this.view.share('auth', { user: this.currentUser() })
     return { profile: this.profiles.mine() }
+  }
+
+  @Post('profile')
+  async update(@Body() dto: UpdateProfileDto) {
+    await this.profiles.update(dto)
+    return this.view.flash('message', 'Profile saved.').back()   // or .redirect('/profile')
   }
 
   @Get('login/github')
   github() {
-    // 409 + X-Inertia-Location during Inertia visits, regular redirect otherwise
-    this.inertia.location('https://github.com/login/oauth/authorize?...')
+    // 409 + X-Inertia-Location during Inertia visits, a regular redirect otherwise
+    return this.view.location('https://github.com/login/oauth/authorize?...')
   }
 }
 ```
 
-`ViewService` is request-scoped; sharing from middleware/guards via the request state is also supported.
+`ViewService` is request-scoped. `redirect()`, `back()` and `location()` end the
+request (nothing after them runs) and answer through Nest's HTTP adapter, so they
+work on Express and Fastify alike; `redirect()` uses 303 after PUT/PATCH/DELETE,
+as the protocol requires. Sharing from middleware works through
+`requestState(req).shared`.
+
+### Flash
+
+`flash(key, value)` puts data in the page object's `flash` field for the next
+render — the one after a redirect, or this request's own — and then it is gone.
+Read it on the client with `usePage().flash` or the `flash` event. Together with
+`refresh(key)` for [once props](#once-props) it is the mutation side of the
+model: change data, leave a message, mark what the client must reload, redirect.
+
+Nothing is kept on the server. Flash data, validation errors and refresh keys
+travel in one bag that the client carries in an `HttpOnly`, `SameSite=Lax`
+cookie (`mvc_flash`), consumed by the next render. A redirect chain or a 409 in
+between leaves it untouched. Apps that already run `express-session` or
+`@fastify/session` can keep the bag in the session instead:
+
+```ts
+MvcModule.forRoot({ flash: { store: SessionFlashStore } })
+```
+
+The store is the `MVC_FLASH_STORE` provider behind a three-method `FlashStore`
+interface, so you can bring your own.
+
+### Platform support
+
+The adapter uses Nest's HTTP adapter and the raw Node request and response, not
+Express APIs: page rendering, redirects, validation errors and flash are tested on
+**Express and Fastify**. Two conveniences remain Express-only: calling
+`res.redirect()` yourself (it is patched to send 303 and carry flash data) and the
+in-process Vite dev server. On Fastify, use `ViewService.redirect()` and build the
+client separately for now.
 
 ## Validation errors
 
@@ -279,6 +385,9 @@ The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag na
 - Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props, using **dot-notation** for nested ones (`only: ['auth.notifications']`).
 - `optional()`, `defer()` and `merge()` are recognised at any depth — inside plain objects, arrays and the return values of closures — and all metadata is emitted as dot paths. A closure guarding an unrequested branch is never called.
 - `defer()` props are advertised via `deferredProps` (grouped), `merge()` props via `mergeProps` (honouring `X-Inertia-Reset`).
+- `scroll()` props label their `data` array in `mergeProps` or `prependProps` (per `X-Inertia-Infinite-Scroll-Merge-Intent`) and carry their cursor in `scrollProps`; a reset drops the label and sets `reset: true`.
+- `once()` props are described in `onceProps` (`{ prop, expiresAt }`) and skipped when their key is in `X-Inertia-Except-Once-Props`, unless `fresh`, marked by `refresh()`, or explicitly requested.
+- Flash data → the page object's `flash` field, once, carried across redirects and 409s in the same client-held bag as validation errors.
 - Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).
 - 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
 - Stale asset version on GET visits → `409` + `X-Inertia-Location`.

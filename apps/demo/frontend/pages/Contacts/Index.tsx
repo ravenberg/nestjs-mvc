@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react'
+import { InfiniteScroll, Link, router } from '@inertiajs/react'
 import { Star } from 'lucide-react'
 import { useState } from 'react'
 import { AppLayout } from '../../layouts/AppLayout'
@@ -13,12 +13,18 @@ interface ContactRow {
 }
 
 interface Props {
-  contacts: ContactRow[]
-  total: number
+  /** A `scroll()` prop: the rows under `data`, plus the paginator's cursor and totals. */
+  contacts: {
+    data: ContactRow[]
+    total: number
+    currentPage: number
+    lastPage: number
+    nextPage: number | null
+  }
   filters: { search: string; favorite: boolean }
 }
 
-export default function Index({ contacts, total, filters }: Props) {
+export default function Index({ contacts, filters }: Props) {
   const [search, setSearch] = useState(filters.search)
 
   const apply = (next: Partial<{ search: string; favorite: boolean }>) => {
@@ -26,11 +32,18 @@ export default function Index({ contacts, total, filters }: Props) {
     const merged = { search, favorite: filters.favorite, ...next }
     if (merged.search) params.search = merged.search
     if (merged.favorite) params.favorite = '1'
-    router.get('/contacts', params, { preserveState: true, replace: true })
+    // A partial visit that *resets* the scroll prop: the server answers with page 1,
+    // unlabelled, and `scrollProps.contacts.reset` tells InfiniteScroll to start over.
+    router.get('/contacts', params, {
+      only: ['contacts', 'filters'],
+      reset: ['contacts'],
+      preserveState: true,
+      replace: true,
+    })
   }
 
   return (
-    <AppLayout title="Contacts" description={`${total} contacts`}>
+    <AppLayout title="Contacts" description={`${contacts.total} contacts`}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -58,7 +71,12 @@ export default function Index({ contacts, total, filters }: Props) {
         </button>
       </form>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <InfiniteScroll
+        data="contacts"
+        buffer={200}
+        loading={<p className="py-3 text-center text-sm text-slate-500">Loading more…</p>}
+        className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+      >
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>
@@ -68,7 +86,7 @@ export default function Index({ contacts, total, filters }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {contacts.map((contact) => (
+            {contacts.data.map((contact) => (
               <tr key={contact.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <Link href={`/contacts/${contact.id}`} className="flex items-center gap-2 font-medium">
@@ -88,7 +106,7 @@ export default function Index({ contacts, total, filters }: Props) {
                 <td className="px-4 py-3 text-slate-600">{contact.email}</td>
               </tr>
             ))}
-            {contacts.length === 0 && (
+            {contacts.data.length === 0 && (
               <tr>
                 <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
                   No contacts match your filters.
@@ -97,11 +115,13 @@ export default function Index({ contacts, total, filters }: Props) {
             )}
           </tbody>
         </table>
-      </div>
+      </InfiniteScroll>
 
       <p className="mt-3 text-xs text-slate-500">
-        Showing the first {contacts.length} of {total}. Infinite scroll arrives with the
-        <code className="mx-1 rounded bg-slate-100 px-1">scroll()</code>prop.
+        Showing {contacts.data.length} of {contacts.total}
+        {contacts.nextPage === null ? ' — all loaded.' : ' — scroll for more.'} Pages are appended by
+        <code className="mx-1 rounded bg-slate-100 px-1">scroll()</code>through partial reloads; the URL follows
+        the page in view.
       </p>
     </AppLayout>
   )
