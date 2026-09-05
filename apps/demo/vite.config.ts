@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -6,7 +7,7 @@ import { defineConfig } from 'vite'
 export default defineConfig(({ command }) => ({
   // Built assets are served by Nest under /build/; in dev Vite owns the root.
   base: command === 'build' ? '/build/' : '/',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     manifest: true,
     outDir: 'dist/client',

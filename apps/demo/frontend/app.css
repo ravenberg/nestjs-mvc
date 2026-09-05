@@ -1,33 +1,10 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, -apple-system, sans-serif;
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-body {
-  margin: 0;
-  padding: 2rem;
-  max-width: 40rem;
-  margin-inline: auto;
-  line-height: 1.6;
-}
-
-nav {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-nav a {
-  font-weight: 600;
-}
-
-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-block: 1rem;
-}
-
-input {
-  flex: 1;
-  padding: 0.5rem;
+/* Inertia's progress bar is injected outside the React tree. */
+#nprogress .bar {
+  background: var(--color-blue-600);
 }

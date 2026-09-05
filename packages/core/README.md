@@ -163,7 +163,7 @@ The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag na
 
 ## Protocol behaviour handled for you
 
-- `X-Inertia` requests get the JSON page object; first loads get your HTML shell with `data-page`.
+- `X-Inertia` requests get the JSON page object; first loads get your HTML shell with the page object in a `<script type="application/json">` element.
 - Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props.
 - `defer()` props are advertised via `deferredProps` (grouped), `merge()` props via `mergeProps` (honouring `X-Inertia-Reset`).
 - Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).

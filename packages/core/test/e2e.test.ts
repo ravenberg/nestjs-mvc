@@ -16,6 +16,8 @@ class PagesController {
     this.inertia.share('auth', { user: 'raven' })
     return {
       name: 'World',
+      // Proves the slash escaping: raw, this would close the script element early.
+      bio: '</script><script>alert(1)</script>',
       secret: optional(() => 'hidden'),
       stats: defer(async () => ({ users: 42 })),
       flash: always('hello'),
@@ -55,13 +57,45 @@ describe('Inertia protocol (e2e)', () => {
     await app.close()
   })
 
-  it('serves the HTML shell with an embedded page object on first load', async () => {
+  it('serves the HTML shell with the page object in a JSON script element', async () => {
     const res = await request(app.getHttpServer()).get('/')
 
     expect(res.status).toBe(200)
     expect(res.headers['content-type']).toContain('text/html')
-    expect(res.text).toContain('data-page="')
-    expect(res.text).toContain('&quot;component&quot;:&quot;Home&quot;')
+
+    // v3 embeds the page object in a script element, not a data-page attribute.
+    expect(res.text).toContain('<script data-page="app" type="application/json">')
+    expect(res.text).toContain('<div id="app"></div>')
+
+    // JSON must be raw inside the script body — HTML entities would break parsing.
+    expect(res.text).not.toContain('&quot;')
+    expect(res.text).toContain('"component":"Home"')
+  })
+
+  it('escapes forward slashes so prop data cannot close the script element', async () => {
+    const res = await request(app.getHttpServer()).get('/')
+
+    // The url prop is "/" and must be serialized as "\/".
+    expect(res.text).toContain('"url":"\\/"')
+
+    // The bio prop contains a literal </script>; escaped, it must not appear as
+    // a real closing tag, so the document still has exactly one page script.
+    expect(res.text).toContain('<\\/script>')
+    expect(res.text.match(/<\/script>/g)).toHaveLength(1)
+  })
+
+  it('exposes a page object the v3 client can parse back', async () => {
+    const res = await request(app.getHttpServer()).get('/')
+
+    const match = res.text.match(/<script data-page="app" type="application\/json">(.*?)<\/script>/s)
+    expect(match).not.toBeNull()
+
+    // Escaped slashes are still valid JSON, so JSON.parse round-trips them.
+    const page = JSON.parse(match![1])
+    expect(page.component).toBe('Home')
+    expect(page.url).toBe('/')
+    expect(page.version).toBe('v1')
+    expect(page.props.bio).toBe('</script><script>alert(1)</script>')
   })
 
   it('serves the JSON page object for Inertia visit', async () => {
@@ -80,6 +114,7 @@ describe('Inertia protocol (e2e)', () => {
       errors: {},
       auth: { user: 'raven' },
       name: 'World',
+      bio: '</script><script>alert(1)</script>',
       flash: 'hello',
       feed: [1, 2, 3],
     })

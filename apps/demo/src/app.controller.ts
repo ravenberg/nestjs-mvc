@@ -1,48 +1,32 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common'
+import { Body, Controller, Get, Post, Redirect, Res } from '@nestjs/common'
 import type { Response } from 'express'
-import { View, ValidationException, defer } from 'nestjs-mvc'
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+import { ValidationException, View } from 'nestjs-mvc'
 
 const messages: string[] = []
 
 @Controller()
 export class AppController {
   @Get()
-  @View('Home')
-  home() {
-    return {
-      framework: 'NestJS',
-      serverTime: new Date().toISOString(),
-      messages,
-    }
+  @Redirect('/dashboard', 302)
+  root() {
+    // The CRM dashboard is the app's entry point, mirroring the official demo.
   }
 
-  @Get('users')
-  @View('Users')
-  users() {
-    return {
-      // Deferred: excluded from the first response, fetched by the client right after render.
-      users: defer(async () => {
-        await sleep(800)
-        return [
-          { id: 1, name: 'Ada Lovelace' },
-          { id: 2, name: 'Grace Hopper' },
-          { id: 3, name: 'Margaret Hamilton' },
-        ]
-      }),
-    }
+  @Get('features/forms/validation')
+  @View('Features/Forms/Validation')
+  validation() {
+    return { messages }
   }
 
-  @Post('messages')
+  @Post('features/forms/validation')
   storeMessage(@Body('message') message: string, @Res() res: Response) {
     const trimmed = message?.trim() ?? ''
     if (trimmed.length < 3) {
       // With class-validator you'd let ValidationPipe throw this via
-      // `exceptionFactory: inertiaExceptionFactory` instead.
+      // `exceptionFactory: validationExceptionFactory` instead.
       throw new ValidationException({ message: 'A message needs at least 3 characters.' })
     }
     messages.push(trimmed)
-    res.redirect('/')
+    res.redirect('/features/forms/validation')
   }
 }

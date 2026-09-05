@@ -1,12 +1,15 @@
 # Demo app
 
-A minimal NestJS + React + Vite app used to manually exercise `nestjs-mvc`
-while developing the adapter in [`packages/core`](../../packages/core).
+A NestJS + React + Tailwind app used to exercise `nestjs-mvc` while developing the
+adapter in [`packages/core`](../../packages/core). It is being built up into a
+kitchen-sink clone of the official Inertia v3 demo: a mini-CRM plus one page per
+protocol feature.
 
 ## Stack
 
 - **Server**: NestJS (`src/`) on `http://localhost:3000`
-- **Client**: React + Vite (`frontend/`), served by Nest itself — no second port
+- **Client**: React 19 + Vite + Tailwind v4 (`frontend/`), served by Nest itself — no second port
+- **Data**: TypeORM + SQLite, seeded on first boot
 - **Adapter**: `nestjs-mvc` (workspace package, linked via pnpm)
 
 ## Getting started
@@ -55,39 +58,45 @@ Reload behaviour while developing:
 
 ## What to test
 
+The app is a mini-CRM plus a Kitchen Sink of Inertia feature pages, mirroring the
+official [`inertiajs/demo-v3`](https://github.com/inertiajs/demo-v3). Sidebar entries
+without a link are on the roadmap and render muted.
+
 | Page | URL | What it demonstrates |
 |---|---|---|
-| Home | `/` | Standard Inertia render + `useForm()` submission |
-| Home | `/` | **Validation errors**: submit a message under 3 characters → `ValidationException` → redirect back with `errors.message` rendered inline |
-| Home | `/` | **Redirect after POST**: a valid submit redirects back to `/` and the message appears in the list |
-| Users | `/users` | **Deferred props** (`defer()`): renders instantly with a "Loading users…" fallback, then fetches `users` ~800ms later via a partial request |
+| Dashboard | `/dashboard` | **Deferred props**: three counters are `defer()`-ed, so the page paints instantly with skeletons and the client fetches them in one follow-up partial request. `recentActivity` is eager. |
+| Contacts | `/contacts` | Search + favourites filter via `router.get(..., { preserveState, replace })` |
+| Contact | `/contacts/:id` | **Deferred props**: the profile renders first, `notes` stream in after |
+| Organizations | `/organizations` | List with a grouped contact count (one query, no N+1) |
+| Organization | `/organizations/:id` | Deferred `contacts` list |
+| Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline |
+
+The database is SQLite (`demo.sqlite`), seeded on first boot with 4 users, 15
+organizations, 100 contacts and notes on 40 of them, spread over the last 30 days.
+Delete the file to reseed.
 
 Manual checks while developing:
 
-1. **Client-side navigation** — navigate between Home and Users and confirm no
-   full page reload; the Network tab should show an `X-Inertia` XHR, not a
-   document request.
-2. **Validation flow** — submit a short message on `/` and confirm a 303
-   redirect back, a populated `errors.message`, and no full reload.
-3. **Deferred props** — on `/users`, confirm the initial page payload omits
-   `users` and a second request fetches it. Two requests in the Network tab.
-4. **Asset versioning** — change `version` in `src/app.module.ts`, then navigate;
-   the server should answer with 409 and force a full page visit.
-5. **HMR** — edit `frontend/pages/Home.tsx` while a message is typed in the form;
-   the component should update without losing the input value.
-6. **In-memory state** — the `messages` array lives in server memory
-   (`src/app.controller.ts`), so it resets on server restart but survives
-   frontend-only edits.
+1. **Client-side navigation** — click through the sidebar and confirm no full page
+   reload; the Network tab should show `X-Inertia` XHRs, not document requests.
+2. **Deferred props** — on `/dashboard`, confirm the first response omits the three
+   counters and lists them under `deferredProps`, then a second request fills them in.
+3. **Validation flow** — submit a short message and confirm the redirect back, the
+   populated `errors.message`, and no full reload.
+4. **Asset versioning** — change `version` in `src/app.module.ts`, then navigate; the
+   server answers `409` and forces a full page visit.
+5. **HMR** — edit a page component while a form has input; it should update without
+   losing the value.
 
 Handy one-liners:
 
 ```sh
-curl -s localhost:3000/ | grep script                      # which asset tags are emitted
+curl -s localhost:3000/dashboard | grep script            # which asset tags are emitted
 curl -s -H 'X-Inertia: true' -H 'X-Inertia-Version: dev' \
-     localhost:3000/users                                  # raw page object
+     localhost:3000/dashboard                             # raw page object
 curl -s -o /dev/null -w '%{http_code}\n' \
      -H 'X-Inertia: true' -H 'X-Inertia-Version: stale' \
-     localhost:3000/users                                  # expect 409
+     localhost:3000/dashboard                             # expect 409
 ```
 
 ## Production build
@@ -99,23 +108,30 @@ pnpm --filter demo start:prod  # NODE_ENV=production is set by the script
 
 Vite does not run. `main.ts` serves `dist/client` under `/build/`, and
 `ctx.assets()` resolves hashed tags from the manifest. Verify with
-`curl -s localhost:3000/ | grep script` — you should see
+`curl -s localhost:3000/dashboard | grep script` — you should see
 `/build/assets/main-<hash>.js` and no `@vite/client`.
 
 ## Structure
 
 ```
 apps/demo
-├── src/                  # NestJS server
-│   ├── app.module.ts     # MvcModule.forRoot({ version, template, vite })
-│   ├── app.controller.ts # routes: GET /, GET /users, POST /messages
-│   ├── template.ts       # HTML shell; ctx.assets() handles dev/prod tags
-│   └── main.ts           # bootstrap + static assets in production
-├── vite.config.ts        # no `server` block — dev runs in middleware mode
-└── frontend/             # React client
-    ├── main.tsx          # Inertia app + page resolver
-    ├── Layout.tsx
+├── src/                        # NestJS server
+│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite })
+│   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
+│   ├── shared-props.middleware.ts  # shares auth.user on every response
+│   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
+│   ├── main.ts                 # bootstrap + static assets in production
+│   ├── crm/                    # Dashboard, Contacts, Organizations controllers
+│   └── database/               # TypeORM entities, module and seeder
+├── vite.config.ts              # Tailwind + React; no `server` block (middleware mode)
+└── frontend/                   # React client
+    ├── main.tsx                # Inertia app + page resolver
+    ├── navigation.ts           # sidebar config; items without href render muted
+    ├── layouts/AppLayout.tsx
+    ├── components/Sidebar.tsx
     └── pages/
-        ├── Home.tsx      # form + validation errors demo
-        └── Users.tsx     # defer() + <Deferred> demo
+        ├── Crm/Dashboard.tsx
+        ├── Contacts/{Index,Show}.tsx
+        ├── Organizations/{Index,Show}.tsx
+        └── Features/Forms/Validation.tsx
 ```

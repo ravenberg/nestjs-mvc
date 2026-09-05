@@ -35,9 +35,11 @@ export class MvcMiddleware implements NestMiddleware {
     if (isInertia && req.method === 'GET') {
       const version = await resolveVersion(this.options.version)
       if (version !== null && (req.headers[HEADER_VERSION] ?? '') !== version) {
+        // v3 echoes the current version on the mismatch 409 so the client can observe it.
         res
           .status(409)
           .set('X-Inertia-Location', `${req.protocol}://${req.get('host')}${req.originalUrl}`)
+          .set('X-Inertia-Version', version)
           .end()
         return
       }

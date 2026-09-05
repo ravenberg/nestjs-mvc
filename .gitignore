@@ -3,3 +3,6 @@ dist/
 .idea/
 *.log
 .DS_Store
+
+# Demo SQLite database (seeded on boot)
+*.sqlite
