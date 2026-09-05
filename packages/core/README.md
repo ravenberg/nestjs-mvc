@@ -408,6 +408,31 @@ throw new ValidationException({ email: 'That email is already taken.' })
 
 The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag name the client asked for. A plain `ValidationPipe` without the factory works too — the filter falls back to parsing the default message array. Non-Inertia requests are untouched and keep NestJS's regular 400 JSON response (with an added `errors` object when you use the factory).
 
+## Error pages
+
+By default an exception is Nest's JSON; on an Inertia visit the client shows it
+in its error dialog. Render your own page instead for the statuses you choose —
+the equivalent of Laravel's `Inertia::handleExceptionsUsing()`:
+
+```ts
+MvcModule.forRoot({
+  errorPages: ({ status, exception, isDevelopment }) => {
+    if (isDevelopment) return                                // keep the stack trace while developing
+    if ([403, 404, 500, 503].includes(status)) {
+      return { component: 'Errors/Show', props: { status }, shared: true }
+    }
+  },
+})
+```
+
+The callback runs for every unhandled exception with `status` (an
+`HttpException`'s, else 500), the `exception`, the `request`, `isInertia` and
+`isDevelopment`. Return a page and it is rendered like any other — SSR, shared
+props when `shared: true`, the flash bag — with the response set to the error's
+status, so a 404 page is a real 404 on first load and an Inertia visit alike.
+Return nothing to fall through to Nest. Validation errors keep their
+redirect-back flow regardless. Errors of 500 and up are still logged.
+
 ## Protocol behaviour handled for you
 
 - `X-Inertia` requests get the JSON page object; first loads get your HTML shell with the page object in a `<script type="application/json">` element.
@@ -417,6 +442,7 @@ The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag na
 - `scroll()` props label their `data` array in `mergeProps` or `prependProps` (per `X-Inertia-Infinite-Scroll-Merge-Intent`) and carry their cursor in `scrollProps`; a reset drops the label and sets `reset: true`.
 - `once()` props are described in `onceProps` (`{ prop, expiresAt }`) and skipped when their key is in `X-Inertia-Except-Once-Props`, unless `fresh`, marked by `refresh()`, or explicitly requested.
 - Flash data → the page object's `flash` field, once, carried across redirects and 409s in the same client-held bag as validation errors.
+- `errorPages` → your component with the error's status code, for the statuses you pick; everything else stays Nest's default.
 - Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).
 - 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
 - Stale asset version on GET visits → `409` + `X-Inertia-Location`.

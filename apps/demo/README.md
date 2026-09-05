@@ -75,6 +75,7 @@ without a link are on the roadmap and render muted.
 | Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
 | Once Props | `/features/data-loading/once-props` | **Once props**: `organizations` is resolved once (`as: 'organizations'`, `until: 300`) and remembered by the client; later visits send `X-Inertia-Except-Once-Props` and the response leaves the prop out. `?fresh=1` forces a re-resolve. **Flash + refresh**: the "Add an organization" form POSTs, the handler calls `view.flash(...)`, `view.refresh('organizations')` and `back()`; the redirect target shows the message once and re-resolves the once prop. A plain `serverTime` prop changes on every visit for contrast |
 | Infinite Scroll | `/features/data-loading/infinite-scroll?page=3` | **Both directions, on scroll**: lands on page 3; scrolling down appends, scrolling back to the top prepends (`X-Inertia-Infinite-Scroll-Merge-Intent: prepend` → `prependProps`) with the scroll position kept |
+| HTTP Exceptions | `/features/errors/http` | **Error pages**: each link throws; `errorPages` renders `Errors/Show` with the error's status for 403, 404, 500 and 503 (Inertia visit *and* first load), while 419 and 429 fall through to Nest's JSON and the client's error dialog. Unknown contact ids on `/contacts/:id` get the same page |
 | Dotted Keys | `/features/forms/dotted-keys` | **Standard Schema + Precognition**: a nested form validated by a Zod schema through `@Body({ schema })`; errors arrive as `user.email`, `address.postcode`, `tags.0`. Leaving a field validates it live against the same endpoint (`Precognition: true`, handler never runs). No DTO class, no `emitDecoratorMetadata` |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
@@ -108,7 +109,12 @@ Manual checks while developing:
    `Precognition-Validate-Only: user.email` answered `422`; fix it and tab out
    again: `204` with `Precognition-Success: true`, and a green check. "Accepted
    submissions" does not grow — the handler never ran.
-9. **Flash** — on the Once Props page, add an organization: the POST answers 302
+9. **Error pages** — on HTTP Exceptions, click 404: the Network tab shows a
+   response with status 404 *and* a page object, and the page renders with the
+   sidebar (shared props). Click 419: no page object, Nest's JSON in Inertia's
+   error dialog. Open `/features/errors/http/404` in a new tab: a real 404 with
+   the HTML shell.
+10. **Flash** — on the Once Props page, add an organization: the POST answers 302
    with a `Set-Cookie: mvc_flash=…` carrying the message and the refresh key, the
    GET after it shows the green message and a new resolve stamp, and the next GET
    shows neither. The cookie is the only memory.
@@ -142,10 +148,10 @@ served by a sidecar. Vite does not run. `main.ts` serves `dist/client` under
 ```
 apps/demo
 ├── src/                        # NestJS server
-│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root } })
+│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root }, errorPages })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
 │   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
-│   ├── features/               # Kitchen Sink controllers (Infinite Scroll, Once Props, Dotted Keys)
+│   ├── features/               # Kitchen Sink controllers (Infinite Scroll, Once Props, Dotted Keys, Errors)
 │   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
 │   ├── main.ts                 # bootstrap; StandardSchemaValidationPipe + static assets in production
@@ -163,6 +169,8 @@ apps/demo
         ├── Organizations/{Index,Show}.tsx
         ├── Features/Forms/Validation.tsx
         ├── Features/Forms/DottedKeys.tsx
+        ├── Features/Errors/Http.tsx
+        ├── Errors/Show.tsx         # the error page errorPages renders
         ├── Features/DataLoading/InfiniteScroll.tsx
         └── Features/DataLoading/OnceProps.tsx
 ```

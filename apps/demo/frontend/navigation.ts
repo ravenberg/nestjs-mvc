@@ -118,7 +118,7 @@ export const navigation: NavSection[] = [
       {
         label: 'Error Handling',
         icon: CircleAlert,
-        items: [{ label: 'HTTP Exceptions' }, { label: 'Network Errors' }],
+        items: [{ label: 'HTTP Exceptions', href: '/features/errors/http' }, { label: 'Network Errors' }],
       },
       { label: 'HTTP', icon: Wifi, items: [{ label: 'useHttp' }] },
     ],

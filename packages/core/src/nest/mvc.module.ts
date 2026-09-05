@@ -13,6 +13,7 @@ import { MVC_ASSETS, MVC_FLASH_STORE, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from
 import { CookieFlashStore, type FlashStore } from './flash'
 import { MvcExceptionFilter } from './mvc-exception.filter'
 import { MvcInterceptor } from './mvc.interceptor'
+import { PageRenderer } from './page-renderer'
 import { PrecognitionInterceptor } from './precognition'
 import { MvcMiddleware } from './mvc.middleware'
 import { SsrService } from './ssr.service'
@@ -72,6 +73,7 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
         },
         ViewService,
         SsrService,
+        PageRenderer,
         MvcMiddleware,
         ViteDevMiddleware,
         // Precognition first: a validate-only request never reaches the page interceptor.
@@ -79,7 +81,7 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
         { provide: APP_INTERCEPTOR, useClass: MvcInterceptor },
         { provide: APP_FILTER, useClass: MvcExceptionFilter },
       ],
-      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, MVC_FLASH_STORE, ViewService, SsrService],
+      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, MVC_FLASH_STORE, ViewService, SsrService, PageRenderer],
     }
   }
 

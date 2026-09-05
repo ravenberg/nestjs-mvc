@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module'
 import { InfiniteScrollController } from './features/infinite-scroll.controller'
 import { OncePropsController } from './features/once-props.controller'
 import { DottedKeysController } from './features/dotted-keys.controller'
+import { ErrorsController } from './features/errors.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -27,6 +28,14 @@ const root = new URL('..', import.meta.url).pathname
       // production. Entries come from nestjsMvc() in vite.config.ts, and routes
       // opt into SSR with @Ssr() — rendered in this same process either way.
       vite: { root },
+      // Our own page for the errors we choose, with the error's status code; the
+      // rest stays NestJS's default JSON. A real app would usually return nothing
+      // in development to keep the stack trace — the demo renders always so the
+      // page is visible.
+      errorPages: ({ status, exception }) =>
+        [403, 404, 500, 503].includes(status)
+          ? { component: 'Errors/Show', props: { status, reason: (exception as Error).message }, shared: true }
+          : undefined,
     }),
   ],
   controllers: [
@@ -37,6 +46,7 @@ const root = new URL('..', import.meta.url).pathname
     InfiniteScrollController,
     OncePropsController,
     DottedKeysController,
+    ErrorsController,
   ],
 })
 export class AppModule implements NestModule {

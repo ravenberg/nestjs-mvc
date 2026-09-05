@@ -1,5 +1,6 @@
 import type { AssetVersion, TemplateFn } from '../protocol/types'
 import type { CookieFlashStoreOptions, FlashStore } from './flash'
+import type { AnyRequest } from './http'
 import type { SsrOptions } from '../ssr/types'
 import type { ViteOptions } from './vite'
 
@@ -41,4 +42,39 @@ export interface MvcModuleOptions {
     store?: new (options?: never) => FlashStore
     cookie?: CookieFlashStoreOptions
   }
+  /**
+   * Renders your own page for HTTP errors instead of Nest's JSON — the
+   * equivalent of Laravel's `Inertia::handleExceptionsUsing()`. Called for every
+   * unhandled exception; return a page to render it with the error's status
+   * code, or nothing to fall through to Nest's default handling:
+   *
+   * ```ts
+   * errorPages: ({ status, isDevelopment }) => {
+   *   if (isDevelopment) return                      // keep the stack trace while developing
+   *   if ([403, 404, 500, 503].includes(status)) return { component: 'Errors/Show', props: { status }, shared: true }
+   * }
+   * ```
+   */
+  errorPages?: (context: ErrorPageContext) => ErrorPage | undefined | void | Promise<ErrorPage | undefined | void>
+}
+
+/** What `errorPages` gets to look at. */
+export interface ErrorPageContext {
+  /** The HTTP status: an `HttpException`'s, else 500. */
+  status: number
+  exception: unknown
+  request: AnyRequest
+  isInertia: boolean
+  /** `NODE_ENV !== 'production'`. */
+  isDevelopment: boolean
+}
+
+/** The page to render for an error; the response keeps the error's status code. */
+export interface ErrorPage {
+  component: string
+  props?: Record<string, unknown>
+  /** Include the props shared for this request (auth, flash, …). Default `false`. */
+  shared?: boolean
+  /** Server-render the first load, as `@Ssr()` would. Default: the route rules do not apply, so `false`. */
+  ssr?: boolean
 }
