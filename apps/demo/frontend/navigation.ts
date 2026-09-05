@@ -90,15 +90,19 @@ export const navigation: NavSection[] = [
         label: 'Prefetching',
         icon: Zap,
         items: [
-          { label: 'Link Prefetch' },
-          { label: 'Stale While Revalidate' },
-          { label: 'Cache Management' },
+          { label: 'Link Prefetch', href: '/features/prefetching/links' },
+          { label: 'Stale While Revalidate', href: '/features/prefetching/swr' },
+          { label: 'Cache Management', href: '/features/prefetching/cache' },
         ],
       },
       {
         label: 'State Management',
         icon: Layers,
-        items: [{ label: 'Remember' }, { label: 'Flash Data' }, { label: 'Shared Props', href: '/features/state/shared-props' }],
+        items: [
+          { label: 'Remember', href: '/features/state/remember' },
+          { label: 'Flash Data', href: '/features/state/flash' },
+          { label: 'Shared Props', href: '/features/state/shared-props' },
+        ],
       },
       {
         label: 'Layouts & Head',

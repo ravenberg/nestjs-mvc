@@ -80,6 +80,11 @@ without a link are on the roadmap and render muted.
 | Partial Reloads | `/features/data-loading/partial-reloads` | **Partial reloads**: props stamped with their resolve time; `only`/`except` show which closures ran (the 700 ms `stats` is skipped unless asked); `optional()` `audit` loads on request |
 | When Visible | `/features/data-loading/when-visible` | **`<WhenVisible>`**: three `optional()` sections, each fetched by a partial reload when it scrolls into view; one with `always` |
 | Polling | `/features/data-loading/polling` | **`usePoll`**: a partial reload of one prop every 2 s, start/stop, pauses in a background tab; values derive from the clock, no server state |
+| Link Prefetch | `/features/prefetching/links` | **Prefetch**: hover (default), mount, click, and none, against 400 ms pages that stamp their render time; the target page shows its age and `usePrefetch()` |
+| Stale While Revalidate | `/features/prefetching/swr` | **SWR**: `cacheFor={['3s', '1m']}` on a quote that changes every second; the stale copy shows at once and swaps when the refresh lands |
+| Cache Management | `/features/prefetching/cache` | **Cache tags**: pages prefetched with `cacheTags`, a reprice POST with `invalidateCacheTags`, and `flush` / `flushByCacheTags` / `flushAll` buttons |
+| Remember | `/features/state/remember` | **useRemember**: form state kept in the history entry so Back restores it; a `useState` twin for contrast |
+| Flash Data | `/features/state/flash` | **Flash**: one key, structured keys, flash on a GET's own render, `router.flash()` client-side, and a `router.on('flash')` log |
 | Shared Props | `/features/state/shared-props` | **Shared props**: `auth` from middleware, `locale` from the handler's `view.share()`; the page object's `sharedProps` lists both, which is what keeps the sidebar on screen during instant visits |
 | URL Fragments | `/features/navigation/fragments` | **Fragment redirects**: "Redirect to #security" POSTs to a handler redirecting to `…#security`; the response is `409` + `X-Inertia-Redirect` and the client lands on the section. "Save billing" posts from `#billing`, the handler calls `preserveFragment().back()`, and the URL keeps the fragment |
 | History Management | `/features/navigation/history` | **History encryption**: the route has `@EncryptHistory()`, so `encryptHistory: true` is on the page object and the client encrypts the entry; "Log out" POSTs to a handler calling `clearHistory().back()`, and the next page object carries `clearHistory: true` |
@@ -189,6 +194,8 @@ apps/demo
         ├── Features/Errors/Http.tsx
         ├── Features/Navigation/{History,Fragments,Links,PreserveState,PreserveScroll,Redirects}.tsx
         ├── Features/DataLoading/{PartialReloads,WhenVisible,Polling}.tsx
+        ├── Features/Prefetching/{Links,Page,Swr,Quote,Cache,Products,Product}.tsx
+        ├── Features/State/{Remember,Flash}.tsx
         ├── Features/State/SharedProps.tsx
         ├── Errors/Show.tsx         # the error page errorPages renders
         ├── Features/DataLoading/DeferredProps.tsx
