@@ -50,6 +50,9 @@ export function header(req: AnyRequest, name: string): string | undefined {
 
 export const isInertia = (req: AnyRequest): boolean => header(req, 'x-inertia') === 'true'
 
+/** A validate-only request from Inertia's `useForm` (Laravel Precognition protocol). */
+export const isPrecognitive = (req: AnyRequest): boolean => header(req, 'precognition') === 'true'
+
 export const requestMethod = (req: AnyRequest): string => (req.method ?? rawRequest(req).method ?? 'GET').toUpperCase()
 
 /** Path plus query string, as the client requested it. */
@@ -113,6 +116,17 @@ export function setHeader(res: AnyResponse, name: string, value: string | string
   if (typeof res.setHeader === 'function') res.setHeader(name, value)
   else if (typeof res.header === 'function') res.header(name, value)
   else res.raw?.setHeader(name, value)
+}
+
+/** Adds a value to the `Vary` header without dropping what is already there. */
+export function appendVary(res: AnyResponse, value: string): void {
+  const existing = getHeader(res, 'Vary')
+  const values = (Array.isArray(existing) ? existing : existing ? [String(existing)] : [])
+    .flatMap((entry) => entry.split(','))
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+  if (!values.some((entry) => entry.toLowerCase() === value.toLowerCase())) values.push(value)
+  setHeader(res, 'Vary', values.join(', '))
 }
 
 /** Adds or replaces our `Set-Cookie` entry for `name`, leaving other cookies alone. */

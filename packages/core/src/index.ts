@@ -5,6 +5,7 @@ export { MvcModule, type MvcModuleAsyncOptions } from './nest/mvc.module'
 export type { MvcModuleOptions } from './nest/types'
 export { ViewService } from './nest/view.service'
 export { MvcRedirect } from './nest/redirect'
+export { MvcPrecognition, PrecognitionInterceptor } from './nest/precognition'
 export {
   CookieFlashStore,
   SessionFlashStore,
@@ -15,6 +16,8 @@ export {
 } from './nest/flash'
 export {
   isInertia,
+  isPrecognitive,
+  appendVary,
   header,
   requestUrl,
   requestPath,
@@ -33,7 +36,16 @@ export { SsrService } from './nest/ssr.service'
 export { MvcInterceptor } from './nest/mvc.interceptor'
 export { MvcMiddleware } from './nest/mvc.middleware'
 export { MvcExceptionFilter } from './nest/mvc-exception.filter'
-export { ValidationException, validationExceptionFactory, flattenValidationErrors } from './nest/validation'
+export {
+  ValidationException,
+  validationExceptionFactory,
+  flattenValidationErrors,
+  standardSchemaExceptionFactory,
+  flattenIssues,
+  extractFieldErrors,
+  ROOT_ERROR_KEY,
+  type StandardSchemaIssue,
+} from './nest/validation'
 export {
   MVC_MODULE_OPTIONS,
   MVC_VIEW_METADATA,

@@ -18,6 +18,7 @@ import type { FlashStore } from './flash'
 import {
   type AnyRequest,
   type AnyResponse,
+  appendVary,
   header,
   isInertia,
   requestMethod,
@@ -114,7 +115,7 @@ export class MvcInterceptor implements NestInterceptor {
     if (Object.keys(onceProps).length > 0) page.onceProps = onceProps
     if (Object.keys(flash).length > 0) page.flash = flash
 
-    setHeader(res, 'Vary', 'X-Inertia')
+    appendVary(res, 'X-Inertia')
 
     if (inertia) {
       setHeader(res, 'X-Inertia', 'true')

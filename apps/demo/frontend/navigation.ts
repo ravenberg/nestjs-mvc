@@ -58,7 +58,7 @@ export const navigation: NavSection[] = [
           { label: 'File Uploads' },
           { label: 'Precognition' },
           { label: 'Optimistic Updates' },
-          { label: 'Dotted Keys' },
+          { label: 'Dotted Keys', href: '/features/forms/dotted-keys' },
         ],
       },
       {

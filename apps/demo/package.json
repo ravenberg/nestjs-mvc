@@ -21,7 +21,8 @@
     "react-dom": "^19.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^1.1.1"
+    "typeorm": "^1.1.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

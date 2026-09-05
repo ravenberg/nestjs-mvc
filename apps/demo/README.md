@@ -75,6 +75,7 @@ without a link are on the roadmap and render muted.
 | Organization | `/organizations/:id` | **Deferred + scroll**: `contacts` arrives in the follow-up request, then pages by keyset cursor (`?cursor=<id>`) behind a manual "Load more" |
 | Once Props | `/features/data-loading/once-props` | **Once props**: `organizations` is resolved once (`as: 'organizations'`, `until: 300`) and remembered by the client; later visits send `X-Inertia-Except-Once-Props` and the response leaves the prop out. `?fresh=1` forces a re-resolve. **Flash + refresh**: the "Add an organization" form POSTs, the handler calls `view.flash(...)`, `view.refresh('organizations')` and `back()`; the redirect target shows the message once and re-resolves the once prop. A plain `serverTime` prop changes on every visit for contrast |
 | Infinite Scroll | `/features/data-loading/infinite-scroll?page=3` | **Both directions, on scroll**: lands on page 3; scrolling down appends, scrolling back to the top prepends (`X-Inertia-Infinite-Scroll-Merge-Intent: prepend` → `prependProps`) with the scroll position kept |
+| Dotted Keys | `/features/forms/dotted-keys` | **Standard Schema + Precognition**: a nested form validated by a Zod schema through `@Body({ schema })`; errors arrive as `user.email`, `address.postcode`, `tags.0`. Leaving a field validates it live against the same endpoint (`Precognition: true`, handler never runs). No DTO class, no `emitDecoratorMetadata` |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
 The database is SQLite (`demo.sqlite`), seeded on first boot with 4 users, 15
@@ -102,7 +103,12 @@ Manual checks while developing:
    `data-server-rendered="true"` and the stylesheet link *before* the body, in dev
    too, so there is no flash of unstyled content. `/features/forms/validation-csr`
    shows the page-object script instead.
-8. **Flash** — on the Once Props page, add an organization: the POST answers 302
+8. **Precognition** — on Dotted Keys, type an invalid email and tab out: the
+   Network tab shows a POST with `Precognition: true` and
+   `Precognition-Validate-Only: user.email` answered `422`; fix it and tab out
+   again: `204` with `Precognition-Success: true`, and a green check. "Accepted
+   submissions" does not grow — the handler never ran.
+9. **Flash** — on the Once Props page, add an organization: the POST answers 302
    with a `Set-Cookie: mvc_flash=…` carrying the message and the refresh key, the
    GET after it shows the green message and a new resolve stamp, and the next GET
    shows neither. The cookie is the only memory.
@@ -139,10 +145,10 @@ apps/demo
 │   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root } })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
 │   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
-│   ├── features/               # Kitchen Sink controllers (Data Loading → Infinite Scroll, Once Props)
+│   ├── features/               # Kitchen Sink controllers (Infinite Scroll, Once Props, Dotted Keys)
 │   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
 │   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
-│   ├── main.ts                 # bootstrap + static assets in production
+│   ├── main.ts                 # bootstrap; StandardSchemaValidationPipe + static assets in production
 │   ├── crm/                    # Dashboard, Contacts, Organizations controllers
 │   └── database/               # TypeORM entities, module and seeder
 ├── vite.config.ts              # react() + tailwindcss() + nestjsMvc(); no entries, no build block
@@ -156,6 +162,7 @@ apps/demo
         ├── Contacts/{Index,Show}.tsx
         ├── Organizations/{Index,Show}.tsx
         ├── Features/Forms/Validation.tsx
+        ├── Features/Forms/DottedKeys.tsx
         ├── Features/DataLoading/InfiniteScroll.tsx
         └── Features/DataLoading/OnceProps.tsx
 ```

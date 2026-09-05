@@ -8,6 +8,7 @@ import { OrganizationsController } from './crm/organizations.controller'
 import { DatabaseModule } from './database/database.module'
 import { InfiniteScrollController } from './features/infinite-scroll.controller'
 import { OncePropsController } from './features/once-props.controller'
+import { DottedKeysController } from './features/dotted-keys.controller'
 import { Note } from './database/entities/note.entity'
 import { User } from './database/entities/user.entity'
 import { SharedPropsMiddleware } from './shared-props.middleware'
@@ -35,6 +36,7 @@ const root = new URL('..', import.meta.url).pathname
     OrganizationsController,
     InfiniteScrollController,
     OncePropsController,
+    DottedKeysController,
   ],
 })
 export class AppModule implements NestModule {

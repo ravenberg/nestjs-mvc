@@ -367,7 +367,36 @@ import { validationExceptionFactory } from 'nestjs-mvc'
 app.useGlobalPipes(new ValidationPipe({ exceptionFactory: validationExceptionFactory }))
 ```
 
-> Building without `emitDecoratorMetadata` (tsx, esbuild, SWC without the transform)? Pass the DTO explicitly: `@Body(new ValidationPipe({ expectedType: CreateUserDto, exceptionFactory: validationExceptionFactory }))`.
+> Building without `emitDecoratorMetadata` (tsx, esbuild, SWC without the transform)? Either pass the DTO explicitly — `@Body(new ValidationPipe({ expectedType: CreateUserDto, exceptionFactory: validationExceptionFactory }))` — or skip DTO classes altogether with a schema, below.
+
+**Standard Schema (Zod, Valibot, ArkType).** NestJS v12 validates `@Body({ schema })` with `StandardSchemaValidationPipe`, no decorator metadata needed. Pair it with the matching factory and nested paths arrive as the dot keys Inertia's form helpers expect:
+
+```ts
+app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: standardSchemaExceptionFactory }))
+
+@Post('contacts')
+store(@Body({ schema: CreateContactSchema }) body: CreateContact) { ... }
+// invalid → redirect back with errors like { 'user.email': 'Invalid email', 'tags.0': 'Empty tag' }
+```
+
+Issues without a path are keyed `_form`. Without the factory the filter still parses the pipe's default `"user.email: Invalid email"` messages, and `ValidationPipe({ errorFormat: 'grouped' })` is understood too.
+
+### Live validation (Precognition)
+
+Inertia v3's `useForm` can validate a field the moment the user leaves it, against the **same** endpoint and the **same** rules as the real submission — no second endpoint. Nothing to configure on the server: a request carrying `Precognition: true` runs the handler's pipes (global, `@UsePipes()`, and the parameter's own) and stops before the handler.
+
+```tsx
+const form = useForm('post', '/contacts', { user: { name: '', email: '' } })
+<input onBlur={() => form.validate('user.email')} />   // 204 when fine, 422 + errors when not
+```
+
+| Request | Response |
+|---|---|
+| `Precognition: true` | `Precognition: true`, plus `204` + `Precognition-Success: true` or `422` + `{ errors }` |
+| `Precognition-Validate-Only: user.email` | errors narrowed to that field (nested paths included) |
+| any request to the route | `Vary: Precognition` |
+
+The same pipes run, so a pipe with side effects runs too; a pipe failure that carries no field errors (a `ParseIntPipe` on a route param, say) surfaces as the usual 400.
 
 You can also throw errors yourself, e.g. from a service:
 
