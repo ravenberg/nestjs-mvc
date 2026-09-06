@@ -1,9 +1,9 @@
-# Demo app
+# Kitchen sink
 
-A NestJS + React + Tailwind app used to exercise `nestjs-mvc` while developing the
-adapter in [`packages/core`](../../packages/core). It is being built up into a
-kitchen-sink clone of the official Inertia v3 demo: a mini-CRM plus one page per
-protocol feature.
+A NestJS + React + Tailwind app that exercises every feature of `nestjs-mvc`
+while the adapter in [`packages/core`](../../packages/core) is developed: a
+mini-CRM plus one page per protocol feature, and the Playwright regression suite
+that runs against it. It is a test bed, not the documentation.
 
 ## Stack
 
@@ -110,9 +110,32 @@ without a link are on the roadmap and render muted.
 | Dotted Keys | `/features/forms/dotted-keys` | **Standard Schema + Precognition**: a nested form validated by a Zod schema through `@Body({ schema })`; errors arrive as `user.email`, `address.postcode`, `tags.0`. Leaving a field validates it live against the same endpoint (`Precognition: true`, handler never runs). No DTO class, no `emitDecoratorMetadata` |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
-The database is SQLite (`demo.sqlite`), seeded on first boot with 4 users, 15
+The database is SQLite (`kitchen-sink.sqlite`), seeded on first boot with 4 users, 15
 organizations, 100 contacts and notes on 40 of them, spread over the last 30 days.
 Delete the file to reseed.
+
+## Regression tests (Playwright)
+
+```sh
+pnpm test:e2e            # from the repo root; or `npx playwright test` in apps/kitchen-sink
+npx playwright test --ui # step through a test
+```
+
+`e2e/` runs against the dev server on `:3000`, reusing one that is already
+running (otherwise it starts `pnpm dev` itself). Two layers:
+
+- `smoke.spec.ts` derives every page from `frontend/navigation.ts`, loads each
+  one on a first load with no console errors, then clicks through all of them
+  from the sidebar and checks each was an Inertia visit, not a reload.
+- One spec per sidebar group (`forms`, `navigation`, `data-loading`,
+  `prefetching-state`, `layouts-events-errors`) exercises the behaviour a page
+  demonstrates: errors come back, flash shows once, the once prop keeps its
+  stamp, the persistent layout stays mounted, the 404 answers 404 with a page,
+  the SSR route ships markup, and so on.
+
+State is in memory per server, so tests use unique values and never assume an
+empty list. Restart the server after editing `frontend/` from a script: Vite
+does not always notice those writes.
 
 Manual checks while developing:
 
@@ -167,8 +190,8 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 ## Production build
 
 ```sh
-pnpm --filter demo build       # one `vite build`: dist/client + dist/ssr
-pnpm --filter demo start:prod  # NODE_ENV=production is set by the script
+pnpm --filter kitchen-sink build       # one `vite build`: dist/client + dist/ssr
+pnpm --filter kitchen-sink start:prod  # NODE_ENV=production is set by the script
 ```
 
 Still one process: the SSR bundle is imported into the Nest process rather than
@@ -180,7 +203,7 @@ served by a sidecar. Vite does not run. `main.ts` serves `dist/client` under
 ## Structure
 
 ```
-apps/demo
+apps/kitchen-sink
 ├── src/                        # NestJS server
 │   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root }, errorPages })
 │   ├── app.controller.ts       # / redirect + the Forms/Validation feature page

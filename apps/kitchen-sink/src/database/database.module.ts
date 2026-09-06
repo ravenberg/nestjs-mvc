@@ -13,7 +13,7 @@ const entities = [User, Organization, Contact, Note]
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       // A file rather than :memory: so the seeded data survives tsx watch restarts.
-      database: new URL('../../demo.sqlite', import.meta.url).pathname,
+      database: new URL('../../kitchen-sink.sqlite', import.meta.url).pathname,
       entities,
       // Demo app: let TypeORM own the schema instead of shipping migrations.
       synchronize: true,

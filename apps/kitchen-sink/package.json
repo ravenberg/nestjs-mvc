@@ -1,12 +1,14 @@
 {
-  "name": "demo",
+  "name": "kitchen-sink",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "vite build",
-    "start:prod": "NODE_ENV=production tsx src/main.ts"
+    "start:prod": "NODE_ENV=production tsx src/main.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@inertiajs/react": "^3.7.0",
@@ -25,6 +27,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/express": "^5.0.0",
     "@types/react": "^19.0.0",

@@ -9,3 +9,8 @@ dist/
 
 # Demo SQLite database (seeded on boot)
 *.sqlite
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

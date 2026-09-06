@@ -2,15 +2,16 @@
   "name": "nestjs-mvc-monorepo",
   "private": true,
   "version": "0.0.0",
-  "description": "Monorepo for nestjs-mvc — a modern Inertia.js adapter for NestJS",
+  "description": "Monorepo for nestjs-mvc \u2014 a modern Inertia.js adapter for NestJS",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24"
   },
   "scripts": {
     "build": "pnpm -r --filter './packages/*' build",
     "test": "pnpm -r --filter './packages/*' test",
-    "dev": "pnpm --filter demo dev",
-    "lint": "oxlint packages/core/src apps/demo/src apps/demo/frontend"
+    "dev": "pnpm --filter kitchen-sink dev",
+    "lint": "oxlint packages/core/src apps/kitchen-sink/src apps/kitchen-sink/frontend apps/kitchen-sink/e2e",
+    "test:e2e": "pnpm --filter kitchen-sink test:e2e"
   },
   "packageManager": "pnpm@10.0.0",
   "pnpm": {

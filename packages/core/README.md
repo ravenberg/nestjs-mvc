@@ -279,6 +279,6 @@ That is the whole loop. A GET renders a page, a POST changes something and redir
 
 Everything from the controller side: partial reloads, deferred props (`defer()`), lazy props (`optional()`), merge and prepend for lists, infinite scroll (`scroll()`), once-props, prefetch-aware responses, flash data without sessions, error bags, live validation (Precognition) through the same pipes, history encryption, your own error pages, and opt-in server-side rendering with `@Ssr()` on the routes that need it. Express and Fastify are both supported.
 
-The documentation site is on its way. Until then, the [demo app](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/demo) exercises every feature with a page per topic.
+The documentation site is on its way. Until then, the [kitchen sink](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/kitchen-sink) exercises every feature with a page per topic.
 
 nestjs-mvc is a community project and is not affiliated with the NestJS team. MIT licensed.

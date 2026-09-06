@@ -12,6 +12,8 @@ export default function VisitCallbacks({ renderedAt }: { renderedAt: string }) {
 
   const visit = (url: string, extra: Record<string, unknown> = {}) =>
     router.visit(url, {
+      // Keep this component (and its log) when the visit lands on this same page.
+      preserveState: true,
       ...extra,
       onBefore: (v) => {
         push(`onBefore ${v.url.pathname}${v.url.search}`)

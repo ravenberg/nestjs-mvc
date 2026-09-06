@@ -50,7 +50,7 @@ users() {
 ## Repository layout
 
 - [`packages/core`](packages/core) — the adapter (`nestjs-mvc`)
-- [`apps/demo`](apps/demo) — NestJS + React + Vite demo app
+- [`apps/kitchen-sink`](apps/kitchen-sink) — NestJS + React + Vite kitchen sink: one page per feature, plus the Playwright regression suite
 
 ## Development
 
