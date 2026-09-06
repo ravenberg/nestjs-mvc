@@ -11,9 +11,10 @@
     "test": "pnpm -r --filter './packages/*' test",
     "dev": "pnpm --filter kitchen-sink dev",
     "lint": "oxlint packages/core/src apps/kitchen-sink/src apps/kitchen-sink/frontend apps/kitchen-sink/e2e",
-    "test:e2e": "pnpm --filter kitchen-sink test:e2e"
+    "test:e2e": "pnpm --filter kitchen-sink test:e2e",
+    "typecheck": "pnpm -r typecheck"
   },
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@10.28.1",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",

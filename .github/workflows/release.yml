@@ -1,0 +1,40 @@
+name: Release
+
+# Publishes packages/core to npm when a version tag is pushed:
+#
+#   cd packages/core && pnpm version 0.2.0      # bumps package.json
+#   git commit -am "release: 0.2.0" && git tag v0.2.0 && git push --tags
+#
+# No token is stored anywhere. Publishing uses npm's trusted publishing (OIDC):
+# on npmjs.com, open the nestjs-mvc package → Settings → Trusted Publisher, and
+# register this repository with workflow file "release.yml". Until that is set
+# up, the publish step fails and nothing is released. Every release then carries
+# a provenance attestation linking it to the commit and this workflow run.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Tag must match the package version
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          [ "v$version" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != package version v$version"; exit 1; }
+      # prepublishOnly builds and tests again inside publish.
+      - run: pnpm lint && pnpm typecheck
+      - run: pnpm --filter nestjs-mvc publish --provenance --access public --no-git-checks
