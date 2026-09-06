@@ -1,4 +1,4 @@
-import { router, useForm } from '@inertiajs/react'
+import { router, useForm } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Todo {

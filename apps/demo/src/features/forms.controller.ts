@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { ValidationException, View, ViewService } from 'nestjs-mvc'
+import { flattenIssues, ValidationException, View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
 
 /** What multer hands `@UploadedFile()`; declared here so the demo needs no `@types/multer`. */
@@ -42,6 +42,17 @@ let nextId = 100
 const MessageSchema = z.object({
   author: z.string().trim().min(2, 'Who is writing? At least 2 characters.'),
   body: z.string().trim().min(5, 'Say a little more: at least 5 characters.').max(200, 'Keep it under 200 characters.'),
+})
+
+// One field, four rules. Zod reports every failing rule, and the handler
+// below keeps all of them instead of the first (see `messages: 'all'`).
+const PasswordSchema = z.object({
+  password: z
+    .string()
+    .min(12, 'At least 12 characters.')
+    .regex(/[0-9]/, 'At least one digit.')
+    .regex(/[A-Z]/, 'At least one capital letter.')
+    .refine((p) => !/password/i.test(p), 'Not the word "password".'),
 })
 
 const SubscribeSchema = z.object({
@@ -95,6 +106,19 @@ export class FormsController {
     await sleep(600) // so `processing` is visible
     messages.unshift({ id: nextId++, ...body, sentAt: new Date().toISOString() })
     return this.view.flash('message', `Thanks, ${body.author}.`).back()
+  }
+
+  /**
+   * All messages per field. The global pipe keeps the first message (the
+   * client's default `ErrorValue` is a string), so this handler validates
+   * itself and flattens with `messages: 'all'`. App-wide, the same switch is
+   * `createStandardSchemaExceptionFactory({ messages: 'all' })` on the pipe.
+   */
+  @Post('use-form/password')
+  async setPassword(@Body() body: unknown) {
+    const result = await PasswordSchema['~standard'].validate(body)
+    if (result.issues) throw new ValidationException(flattenIssues(result.issues, { messages: 'all' }))
+    return this.view.flash('message', 'That password passes every rule.').back()
   }
 
   // ── <Form> component ─────────────────────────────────────────────────────

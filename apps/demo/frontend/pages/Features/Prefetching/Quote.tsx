@@ -1,4 +1,4 @@
-import { Link, usePrefetch } from '@inertiajs/react'
+import { Link, usePrefetch } from 'nestjs-mvc/react'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 

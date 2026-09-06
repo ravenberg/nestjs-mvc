@@ -35,13 +35,18 @@ function generated(plugin: Plugin, id: string): string {
 }
 
 describe('nestjsMvc() plugin', () => {
-  it('detects React from package.json', () => {
-    const plugin = nestjsMvc()
-    expect(() => configure(plugin, { root: project({ '@inertiajs/react': '^3' }) }, serve)).not.toThrow()
+  it('detects React from package.json, by react itself or by the adapter', () => {
+    expect(() => configure(nestjsMvc(), { root: project({ react: '^19', '@inertiajs/react': '^3' }) }, serve)).not.toThrow()
+    expect(() => configure(nestjsMvc(), { root: project({ react: '^19', '@inertiajs/react': '^3' }) }, serve)).not.toThrow()
   })
 
-  it('explains itself when no adapter is installed, or an unsupported one', () => {
-    expect(() => configure(nestjsMvc(), { root: project({}) }, serve)).toThrow(/install @inertiajs\/react/)
+  it('asks for the adapter when the app declares react but not @inertiajs/react', () => {
+    expect(() => configure(nestjsMvc(), { root: project({ react: '^19' }) }, serve)).toThrow(/pnpm add @inertiajs\/react/)
+  })
+
+  it('explains itself when no framework is installed, or an unsupported one', () => {
+    expect(() => configure(nestjsMvc(), { root: project({}) }, serve)).toThrow(/add react and react-dom/)
+    expect(() => configure(nestjsMvc(), { root: project({ vue: '^3' }) }, serve)).toThrow(/only React is supported so far/)
     expect(() => configure(nestjsMvc(), { root: project({ '@inertiajs/vue3': '^3' }) }, serve)).toThrow(
       /only React is supported so far/,
     )
@@ -49,13 +54,15 @@ describe('nestjsMvc() plugin', () => {
 
   it('generates a client entry that lazily resolves pages from the pages directory', () => {
     const plugin = nestjsMvc()
-    configure(plugin, { root: project({ '@inertiajs/react': '^3' }) }, serve)
+    configure(plugin, { root: project({ react: '^19', '@inertiajs/react': '^3' }) }, serve)
 
     const code = generated(plugin, CLIENT_ENTRY)
 
     expect(code).toContain(`import.meta.glob("/frontend/pages/**/*.{tsx,jsx}")`)
     expect(code).toContain('pages[key]()')
-    expect(code).toContain("from '@inertiajs/react'")
+    // The same import path as the app's pages: one client instance.
+    expect(code).toContain("from 'nestjs-mvc/react'")
+    expect(code).not.toContain('@inertiajs')
     expect(code).toContain('createRoot(el)')
     // Plain JavaScript: no framework plugin has to transform it.
     expect(code).not.toMatch(/<[A-Z]/)
@@ -63,7 +70,7 @@ describe('nestjsMvc() plugin', () => {
 
   it('generates an SSR entry that eagerly resolves pages and default-exports a render function', () => {
     const plugin = nestjsMvc({ pages: 'resources/pages' })
-    configure(plugin, { root: project({ '@inertiajs/react': '^3' }) }, serve)
+    configure(plugin, { root: project({ react: '^19', '@inertiajs/react': '^3' }) }, serve)
 
     const code = generated(plugin, SSR_ENTRY)
 
@@ -74,14 +81,14 @@ describe('nestjsMvc() plugin', () => {
 
   it('names the page it could not find, in terms of @View()', () => {
     const plugin = nestjsMvc()
-    configure(plugin, { root: project({ '@inertiajs/react': '^3' }) }, serve)
+    configure(plugin, { root: project({ react: '^19', '@inertiajs/react': '^3' }) }, serve)
 
     expect(generated(plugin, CLIENT_ENTRY)).toContain('check the string passed to @View()')
   })
 
   it('links frontend/app.css by default when it exists, and honours css overrides', () => {
-    const withCss = project({ '@inertiajs/react': '^3' }, ['frontend/app.css'])
-    const without = project({ '@inertiajs/react': '^3' })
+    const withCss = project({ react: '^19', '@inertiajs/react': '^3' }, ['frontend/app.css'])
+    const without = project({ react: '^19', '@inertiajs/react': '^3' })
 
     const a = nestjsMvc()
     configure(a, { root: withCss }, serve)
@@ -101,7 +108,7 @@ describe('nestjsMvc() plugin', () => {
   })
 
   it('contributes nothing to the dev config, and a two-environment build otherwise', () => {
-    const root = project({ '@inertiajs/react': '^3' }, ['frontend/app.css'])
+    const root = project({ react: '^19', '@inertiajs/react': '^3' }, ['frontend/app.css'])
     const plugin = nestjsMvc()
 
     expect(configure(plugin, { root }, serve)).toBeNull()
@@ -123,7 +130,7 @@ describe('nestjsMvc() plugin', () => {
 
   it('leaves a base the user chose alone', () => {
     const plugin = nestjsMvc()
-    const config = configure(plugin, { root: project({ '@inertiajs/react': '^3' }), base: '/static/' }, build)!
+    const config = configure(plugin, { root: project({ react: '^19', '@inertiajs/react': '^3' }), base: '/static/' }, build)!
     expect(config.base).toBe('/static/')
   })
 })

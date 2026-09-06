@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react'
+import { useForm, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Message {
@@ -17,6 +17,11 @@ const Flag = ({ on, label }: { on: boolean; label: string }) => (
 export default function UseForm({ messages }: { messages: Message[] }) {
   const flash = usePage().flash?.message as string | undefined
   const form = useForm({ author: '', body: '' })
+  // A second form on the same page: its errors live under their own bag, so a
+  // failure here never touches `form.hasErrors` above.
+  const pw = useForm({ password: '' })
+  // The server sends every message for this field; the client type says string.
+  const passwordErrors = ([] as string[]).concat((pw.errors.password as unknown as string | string[] | undefined) ?? [])
 
   // Runs on submit, on the data about to be sent, without touching the inputs.
   form.transform((data) => ({ ...data, body: data.body.trim() }))
@@ -82,6 +87,42 @@ export default function UseForm({ messages }: { messages: Message[] }) {
             <Flag on={form.hasErrors} label="hasErrors" />
             <Flag on={form.wasSuccessful} label="wasSuccessful" />
             <Flag on={form.recentlySuccessful} label="recentlySuccessful" />
+          </div>
+        </form>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            pw.post('/features/forms/use-form/password', { errorBag: 'password', onSuccess: () => pw.reset() })
+          }}
+          className="rounded-xl border border-slate-200 bg-white p-6 text-sm md:col-span-2"
+        >
+          <h2 className="font-semibold">All messages per field</h2>
+          <p className="mt-1 text-slate-600">
+            By default the first message per field is sent, like Laravel. This handler flattens with{' '}
+            <code className="rounded bg-slate-100 px-1">{"{ messages: 'all' }"}</code> and the field arrives as an array. It also
+            posts with <code className="rounded bg-slate-100 px-1">errorBag: 'password'</code>, so its errors are scoped away
+            from the form above.
+          </p>
+          <div className="mt-3 flex items-start gap-2">
+            <div className="flex-1">
+              <input
+                value={pw.data.password}
+                onChange={(e) => pw.setData('password', e.target.value)}
+                placeholder="Try: password"
+                className={`block w-full rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${passwordErrors.length ? 'border-red-400' : 'border-slate-300'}`}
+              />
+              {passwordErrors.length > 0 && (
+                <ul className="mt-1 list-disc pl-5 text-xs text-red-600">
+                  {passwordErrors.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button type="submit" disabled={pw.processing} className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+              Check
+            </button>
           </div>
         </form>
 

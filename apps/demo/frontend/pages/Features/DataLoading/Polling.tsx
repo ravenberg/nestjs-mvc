@@ -1,4 +1,4 @@
-import { usePoll } from '@inertiajs/react'
+import { usePoll } from 'nestjs-mvc/react'
 import { useState } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 

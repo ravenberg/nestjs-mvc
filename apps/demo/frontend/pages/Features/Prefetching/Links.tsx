@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 const card = 'rounded-xl border border-slate-200 bg-white p-5 text-sm'

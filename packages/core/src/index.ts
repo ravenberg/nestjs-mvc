@@ -42,12 +42,16 @@ export { MvcExceptionFilter } from './nest/mvc-exception.filter'
 export {
   ValidationException,
   validationExceptionFactory,
+  createValidationExceptionFactory,
   flattenValidationErrors,
   standardSchemaExceptionFactory,
+  createStandardSchemaExceptionFactory,
   flattenIssues,
   extractFieldErrors,
   ROOT_ERROR_KEY,
   type StandardSchemaIssue,
+  type FieldErrors,
+  type ValidationOptions,
 } from './nest/validation'
 export {
   MVC_MODULE_OPTIONS,

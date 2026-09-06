@@ -1,4 +1,4 @@
-import { useHttp } from '@inertiajs/react'
+import { useHttp } from 'nestjs-mvc/react'
 import { useEffect } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
@@ -65,10 +65,11 @@ export default function UseHttp({ renderedAt }: { renderedAt: string }) {
         >
           <h2 className="font-semibold">Mutation (POST) with validation</h2>
           <p className="mt-1 text-slate-600">
-            Errors arrive like a form's: the endpoint answers <code className="rounded bg-slate-100 px-1">422</code> with{' '}
-            <code className="rounded bg-slate-100 px-1">{'{ errors }'}</code>, the Laravel convention the client expects for
-            JSON, and <code className="rounded bg-slate-100 px-1">echo.errors</code> fills in. Success lands in{' '}
-            <code className="rounded bg-slate-100 px-1">echo.response</code>.
+            Errors arrive like a form's. The handler validates with the same global pipe as every form; because the
+            module sets <code className="rounded bg-slate-100 px-1">validation.jsonStatus: 422</code>, a non-Inertia failure is
+            answered <code className="rounded bg-slate-100 px-1">422</code> + <code className="rounded bg-slate-100 px-1">{'{ errors }'}</code>{' '}
+            (the Laravel convention this client expects) and <code className="rounded bg-slate-100 px-1">echo.errors</code> fills in.
+            Success lands in <code className="rounded bg-slate-100 px-1">echo.response</code>.
           </p>
           <label className="mt-3 block">
             <span className="text-slate-700">Name</span>

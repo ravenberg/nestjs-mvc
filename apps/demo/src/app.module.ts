@@ -44,6 +44,9 @@ const root = new URL('..', import.meta.url).pathname
       // rest stays NestJS's default JSON. A real app would usually return nothing
       // in development to keep the stack trace — the demo renders always so the
       // page is visible.
+      // JSON clients (useHttp, fetch) get Laravel's 422 + { errors } on a
+      // validation failure instead of Nest's 400; Inertia visits are unaffected.
+      validation: { jsonStatus: 422 },
       errorPages: ({ status, exception }) =>
         [403, 404, 500, 503].includes(status)
           ? { component: 'Errors/Show', props: { status, reason: (exception as Error).message }, shared: true }

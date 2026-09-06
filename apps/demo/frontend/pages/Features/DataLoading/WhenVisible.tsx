@@ -1,4 +1,4 @@
-import { WhenVisible } from '@inertiajs/react'
+import { WhenVisible } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Section {

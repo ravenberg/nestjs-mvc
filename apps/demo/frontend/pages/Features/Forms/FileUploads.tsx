@@ -1,4 +1,4 @@
-import { useForm, usePage } from '@inertiajs/react'
+import { useForm, usePage } from 'nestjs-mvc/react'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 

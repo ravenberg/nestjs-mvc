@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react'
+import { useForm } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 export default function Validation({ messages }: { messages: string[] }) {

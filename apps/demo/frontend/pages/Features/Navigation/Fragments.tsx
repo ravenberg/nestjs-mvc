@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react'
+import { router, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 const SECTIONS = ['profile', 'security', 'billing'] as const

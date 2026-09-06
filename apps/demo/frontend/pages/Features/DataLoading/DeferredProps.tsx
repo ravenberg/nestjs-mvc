@@ -1,4 +1,4 @@
-import { Deferred, router, usePage } from '@inertiajs/react'
+import { Deferred, router, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Props {

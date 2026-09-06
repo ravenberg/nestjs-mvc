@@ -1,4 +1,4 @@
-import { Form, usePage } from '@inertiajs/react'
+import { Form, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Subscriber {

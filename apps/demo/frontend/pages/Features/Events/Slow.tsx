@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 export default function Slow({ renderedAt, waited }: { renderedAt: string; waited: number }) {

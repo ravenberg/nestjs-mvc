@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Query, UnprocessableEntityException } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
 
@@ -82,19 +82,14 @@ export class EventsController {
   }
 
   /**
-   * A JSON mutation. `useHttp` (built on the Precognition client) expects
-   * validation failures as 422 + `{ errors }`, the Laravel convention, so this
-   * endpoint validates itself and answers that way instead of Nest's 400.
+   * A JSON mutation, validated by the same global pipe as every form. `useHttp`
+   * (built on the Precognition client) expects a failure as 422 + `{ errors }`;
+   * `validation: { jsonStatus: 422 }` in the module answers that way for
+   * non-Inertia requests instead of Nest's 400.
    */
   @Post('http/echo')
-  async echo(@Body() body: unknown) {
+  async echo(@Body({ schema: EchoSchema }) body: z.infer<typeof EchoSchema>) {
     await sleep(300)
-    const parsed = await EchoSchema.safeParseAsync(body)
-    if (!parsed.success) {
-      const errors: Record<string, string> = {}
-      for (const issue of parsed.error.issues) errors[issue.path.map(String).join('.')] ??= issue.message
-      throw new UnprocessableEntityException({ message: 'The given data was invalid.', errors })
-    }
-    return { received: parsed.data, total: parsed.data.amount * 1.21, at: stamp() }
+    return { received: body, total: body.amount * 1.21, at: stamp() }
   }
 }

@@ -1,4 +1,4 @@
-import { Link, setLayoutProps } from '@inertiajs/react'
+import { Link, setLayoutProps } from 'nestjs-mvc/react'
 import { PersistentLayout } from '../../../layouts/PersistentLayout'
 
 const ACCENTS: Record<string, string> = { light: '#2563eb', dark: '#f59e0b', ocean: '#0891b2' }

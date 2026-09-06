@@ -12,7 +12,9 @@ import {
 import { ApplicationConfig, ModuleRef } from '@nestjs/core'
 import { Observable, from, switchMap } from 'rxjs'
 import { type AnyRequest, type AnyResponse, appendVary, header, isPrecognitive, setHeader } from './http'
-import { extractFieldErrors } from './validation'
+import { MVC_MODULE_OPTIONS } from './tokens'
+import type { MvcModuleOptions } from './types'
+import { extractFieldErrors, type FieldErrors } from './validation'
 
 /**
  * Thrown by the `PrecognitionInterceptor` to end a precognitive request with
@@ -20,7 +22,7 @@ import { extractFieldErrors } from './validation'
  * `204` + `Precognition-Success` when the inputs pass, `422` + `errors` when not.
  */
 export class MvcPrecognition extends Error {
-  constructor(readonly errors: Record<string, string> | null) {
+  constructor(readonly errors: FieldErrors | null) {
     super(errors ? 'Precognition: validation failed' : 'Precognition: success')
     this.name = 'MvcPrecognition'
   }
@@ -59,6 +61,7 @@ export class PrecognitionInterceptor implements NestInterceptor {
   constructor(
     @Inject(ApplicationConfig) private readonly config: ApplicationConfig,
     @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
+    @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -99,7 +102,7 @@ export class PrecognitionInterceptor implements NestInterceptor {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean)
-    const errors: Record<string, string> = {}
+    const errors: FieldErrors = {}
 
     for (const [key, meta] of Object.entries(params)) {
       const type = PIPEABLE[Number(key.split(':')[0])]
@@ -117,7 +120,7 @@ export class PrecognitionInterceptor implements NestInterceptor {
       try {
         for (const pipe of pipes) value = await pipe.transform(value, metadata)
       } catch (cause) {
-        const fields = cause instanceof BadRequestException ? extractFieldErrors(cause) : null
+        const fields = cause instanceof BadRequestException ? extractFieldErrors(cause, this.options.validation) : null
         // Anything without field errors is not a validation verdict: let it surface as usual.
         if (!fields) throw cause
         for (const [field, message] of Object.entries(fields)) errors[field] ??= message
@@ -150,8 +153,8 @@ export class PrecognitionInterceptor implements NestInterceptor {
 }
 
 /** Keeps the errors for the requested fields, including their nested paths. */
-function pick(errors: Record<string, string>, only: string[]): Record<string, string> {
-  const out: Record<string, string> = {}
+function pick(errors: FieldErrors, only: string[]): FieldErrors {
+  const out: FieldErrors = {}
   for (const [key, message] of Object.entries(errors)) {
     if (only.some((field) => key === field || key.startsWith(`${field}.`))) out[key] = message
   }

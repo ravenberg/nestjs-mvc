@@ -14,7 +14,7 @@ export interface NestjsMvcPluginOptions {
    * `frontend/app.css` when that file exists; pass `false` to link nothing.
    */
   css?: string | string[] | false
-  /** Detected from `package.json` (`@inertiajs/react`, …). Set it to skip detection. */
+  /** Detected from `package.json` (`react`, …). Set it to skip detection. */
   framework?: Framework
 }
 
@@ -67,7 +67,9 @@ export function nestjsMvc(options: NestjsMvcPluginOptions = {}): Plugin {
     config(user, { command }) {
       const root = resolve(user.root ?? process.cwd())
       api.css = stylesheets(options.css, root)
-      preset = presets[detectFramework(root, options.framework)]
+      const framework = detectFramework(root, options.framework)
+      requireAdapter(root, framework)
+      preset = presets[framework]
 
       if (command !== 'build') return null
 
@@ -140,30 +142,51 @@ function stylesheets(css: NestjsMvcPluginOptions['css'], root: string): string[]
   return (Array.isArray(css) ? css : [css]).map((file) => file.replace(/^\//, ''))
 }
 
-const ADAPTERS: Record<string, Framework> = {
+/** The app names its UI framework in `package.json`; the matching Inertia adapter is an optional peer of nestjs-mvc. */
+const FRAMEWORKS: Record<string, Framework> = {
+  react: 'react',
   '@inertiajs/react': 'react',
 }
 
-const UNSUPPORTED = ['@inertiajs/vue3', '@inertiajs/svelte']
+const UNSUPPORTED = ['vue', 'svelte', '@inertiajs/vue3', '@inertiajs/svelte']
+
+/** `nestjs-mvc/<framework>` re-exports this package; the app installs it next to nestjs-mvc. */
+const ADAPTERS: Record<Framework, string> = { react: '@inertiajs/react' }
+
+function declaredDependencies(root: string): Record<string, unknown> {
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as Record<string, unknown>
+    return { ...(pkg.dependencies as object), ...(pkg.devDependencies as object) }
+  } catch {
+    return {}
+  }
+}
 
 function detectFramework(root: string, explicit?: Framework): Framework {
   if (explicit) return explicit
+  const deps = declaredDependencies(root)
 
-  let deps: Record<string, unknown> = {}
-  try {
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as Record<string, unknown>
-    deps = { ...(pkg.dependencies as object), ...(pkg.devDependencies as object) }
-  } catch {
-    // No package.json at the root: fall through to the error below.
-  }
-
-  for (const [adapter, framework] of Object.entries(ADAPTERS)) if (adapter in deps) return framework
+  for (const [dep, framework] of Object.entries(FRAMEWORKS)) if (dep in deps) return framework
 
   const installed = UNSUPPORTED.find((adapter) => adapter in deps)
   throw new Error(
     installed
       ? `[nestjs-mvc] ${installed} is installed, but only React is supported so far.`
-      : '[nestjs-mvc] Could not detect the frontend framework: install @inertiajs/react, ' +
+      : '[nestjs-mvc] Could not detect the frontend framework: add react and react-dom to package.json, ' +
           'or pass { framework } to nestjsMvc().',
+  )
+}
+
+/**
+ * The adapter is an optional peer, so a package manager does not install it
+ * on its own; an app that forgot it would otherwise fail deep inside Vite's
+ * resolver. Declared in package.json or present in node_modules both count.
+ */
+function requireAdapter(root: string, framework: Framework): void {
+  const adapter = ADAPTERS[framework]
+  if (adapter in declaredDependencies(root)) return
+  if (existsSync(join(root, 'node_modules', adapter, 'package.json'))) return
+  throw new Error(
+    `[nestjs-mvc] nestjs-mvc/${framework} needs ${adapter} next to nestjs-mvc: run \`pnpm add ${adapter}\`.`,
   )
 }

@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react'
+import { Link, router } from 'nestjs-mvc/react'
 import { useState } from 'react'
 import { AppLayout } from '../../layouts/AppLayout'
 

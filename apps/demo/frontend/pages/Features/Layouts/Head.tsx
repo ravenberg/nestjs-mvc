@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link } from 'nestjs-mvc/react'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 

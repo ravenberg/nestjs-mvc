@@ -1,4 +1,4 @@
-import { Deferred, InfiniteScroll, Link } from '@inertiajs/react'
+import { Deferred, InfiniteScroll, Link } from 'nestjs-mvc/react'
 import { Star } from 'lucide-react'
 import { AppLayout } from '../../layouts/AppLayout'
 

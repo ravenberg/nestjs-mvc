@@ -1,4 +1,5 @@
 import type { AssetVersion, TemplateFn } from '../protocol/types'
+import type { ValidationOptions } from './validation'
 import type { CookieFlashStoreOptions, FlashStore } from './flash'
 import type { AnyRequest } from './http'
 import type { SsrOptions } from '../ssr/types'
@@ -74,6 +75,12 @@ export interface MvcModuleOptions {
    * `expose_shared_prop_keys`.
    */
   exposeSharedProps?: boolean
+  /**
+   * How validation failures are reported: one or all messages per field, and
+   * the status of the JSON answer on non-Inertia requests (`422` for
+   * `useHttp()` and other JSON clients that expect Laravel's convention).
+   */
+  validation?: ValidationOptions
 }
 
 /** What `errorPages` gets to look at. */

@@ -1,4 +1,4 @@
-import { Link, router, usePage, usePrefetch } from '@inertiajs/react'
+import { Link, router, usePage, usePrefetch } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface Product {

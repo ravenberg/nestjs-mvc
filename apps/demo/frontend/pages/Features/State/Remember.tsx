@@ -1,4 +1,4 @@
-import { Link, useRemember } from '@inertiajs/react'
+import { Link, useRemember } from 'nestjs-mvc/react'
 import { useState } from 'react'
 import { AppLayout } from '../../../layouts/AppLayout'
 

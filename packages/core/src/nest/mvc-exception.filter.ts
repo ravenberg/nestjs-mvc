@@ -8,7 +8,7 @@ import { MvcPrecognition } from './precognition'
 import { MvcRedirect } from './redirect'
 import { MVC_FLASH_STORE, MVC_MODULE_OPTIONS } from './tokens'
 import type { MvcModuleOptions } from './types'
-import { extractFieldErrors } from './validation'
+import { extractFieldErrors, type FieldErrors } from './validation'
 
 /**
  * Four protocol flows end here, all answered through Nest's HTTP adapter so
@@ -17,8 +17,9 @@ import { extractFieldErrors } from './validation'
  * - Validation failures on Inertia visits become the redirect-back flow: the
  *   field errors go into the flash bag and the client is sent back to the
  *   previous page, where the interceptor renders them as the `errors` prop.
- *   Honours `X-Inertia-Error-Bag`. Anything without field errors, and every
- *   non-Inertia request, falls through to Nest's default handling.
+ *   Honours `X-Inertia-Error-Bag`. Anything without field errors falls through
+ *   to Nest's default handling, and so does every non-Inertia request unless
+ *   `validation.jsonStatus: 422` asks for Laravel's `422` + `{ errors }`.
  * - `MvcRedirect`, thrown by `ViewService.redirect()` / `back()` / `location()`:
  *   pending flash data is stored, then the redirect is written — 303 after
  *   PUT/PATCH/DELETE, 409 + X-Inertia-Location for an external destination, or
@@ -53,9 +54,10 @@ export class MvcExceptionFilter extends BaseExceptionFilter {
     if (exception instanceof MvcPrecognition) return this.precognition(exception, res)
     if (exception instanceof MvcRedirect) return this.redirect(exception, req, res)
 
-    if (exception instanceof BadRequestException && isInertia(req)) {
-      const errors = extractFieldErrors(exception)
-      if (errors) return this.validationFailed(errors, req, res)
+    if (exception instanceof BadRequestException) {
+      const errors = extractFieldErrors(exception, this.options.validation)
+      if (errors && isInertia(req)) return this.validationFailed(errors, req, res)
+      if (errors && this.options.validation?.jsonStatus === 422) return this.unprocessable(errors, res)
     }
 
     if (await this.errorPage(exception, req, res)) return
@@ -63,12 +65,17 @@ export class MvcExceptionFilter extends BaseExceptionFilter {
   }
 
   /** The redirect-back flow: field errors into the bag, back to the referer. */
-  private async validationFailed(errors: Record<string, string>, req: AnyRequest, res: AnyResponse): Promise<void> {
+  private async validationFailed(errors: FieldErrors, req: AnyRequest, res: AnyResponse): Promise<void> {
     const bag = header(req, HEADER_ERROR_BAG)
     const payload = bag ? { [bag]: errors } : errors
 
     await this.carry(req, res, { errors: payload })
     this.host.httpAdapter.redirect(res, this.statusFor(req, undefined), header(req, 'referer') ?? '/')
+  }
+
+  /** Laravel's answer to an invalid JSON request, opted into with `validation.jsonStatus: 422`. */
+  private unprocessable(errors: FieldErrors, res: AnyResponse): void {
+    this.host.httpAdapter.reply(res, { message: 'The given data was invalid.', errors }, 422)
   }
 
   /** Renders the configured error page, if any; `false` means "not handled here". */

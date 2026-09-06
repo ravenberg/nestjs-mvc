@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "overrides": [
+    {
+      "files": ["apps/**/*.ts", "apps/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@inertiajs/*"],
+                "message": "Every client import goes through nestjs-mvc: use 'nestjs-mvc/react'."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

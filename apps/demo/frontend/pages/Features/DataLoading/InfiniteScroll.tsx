@@ -1,4 +1,4 @@
-import { InfiniteScroll, Link } from '@inertiajs/react'
+import { InfiniteScroll, Link } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 interface NoteRow {

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link } from 'nestjs-mvc/react'
 import type { ReactNode } from 'react'
 
 /** The inner of a nested layout pair: a tab strip that persists across its section pages. */

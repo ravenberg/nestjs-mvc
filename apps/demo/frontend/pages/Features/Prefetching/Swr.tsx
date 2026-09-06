@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react'
+import { Link } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 const btn = 'rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50'

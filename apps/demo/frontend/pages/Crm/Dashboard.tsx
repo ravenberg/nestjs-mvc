@@ -1,4 +1,4 @@
-import { Deferred, Link } from '@inertiajs/react'
+import { Deferred, Link } from 'nestjs-mvc/react'
 import { AppLayout } from '../../layouts/AppLayout'
 
 interface Activity {

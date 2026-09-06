@@ -1,4 +1,4 @@
-import { Link, router, usePage } from '@inertiajs/react'
+import { Link, router, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 export default function History({ secret, visitedAt }: { secret: { iban: string; note: string }; visitedAt: string }) {

@@ -94,6 +94,19 @@ describe('validation errors (e2e)', () => {
     expect(res.body.props.errors).toEqual({})
   })
 
+  it('includes errors on a partial reload that does not name it, so the client can preserveErrors', async () => {
+    // The client keeps its current errors on polls, infinite scroll and deferred
+    // loads only when the response carries an *empty* errors object; a missing
+    // key would be read as "no news" too, but `always()` is the contract.
+    const res = await request(app.getHttpServer())
+      .get('/users/create')
+      .set('X-Inertia', 'true')
+      .set('X-Inertia-Partial-Component', 'Users/Create')
+      .set('X-Inertia-Partial-Data', 'title')
+    expect(res.status).toBe(200)
+    expect(res.body.props).toEqual({ title: 'New user', errors: {} })
+  })
+
   it('scopes errors under the bag from X-Inertia-Error-Bag', async () => {
     const flash = await request(app.getHttpServer())
       .post('/users')

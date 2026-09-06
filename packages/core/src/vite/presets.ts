@@ -2,6 +2,9 @@
  * Per-framework templates for the generated entries. Each receives the page
  * resolver (a `pages` glob plus `resolvePage(name)`) and returns plain JavaScript —
  * no JSX, no TypeScript — so the code needs no framework plugin to be transformed.
+ *
+ * The entries import the client from `nestjs-mvc/react`, the same path the
+ * app's pages use, so there is exactly one client instance in the bundle.
  */
 export interface Preset {
   /** Page component extensions, in lookup order. */
@@ -16,7 +19,7 @@ const react: Preset = {
   extensions: ['tsx', 'jsx'],
 
   client: (resolver) => `
-import { createInertiaApp } from '@inertiajs/react'
+import { createInertiaApp } from 'nestjs-mvc/react'
 import { createRoot } from 'react-dom/client'
 import { createElement } from 'react'
 ${resolver}
@@ -29,7 +32,7 @@ createInertiaApp({
 `,
 
   ssr: (resolver) => `
-import { createInertiaApp } from '@inertiajs/react'
+import { createInertiaApp } from 'nestjs-mvc/react'
 import { renderToString } from 'react-dom/server'
 import { createElement } from 'react'
 ${resolver}

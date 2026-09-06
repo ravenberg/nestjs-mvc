@@ -1,4 +1,4 @@
-import { Deferred, Link, usePage } from '@inertiajs/react'
+import { Deferred, Link, usePage } from 'nestjs-mvc/react'
 import { Bell, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { navigation, type NavGroup } from '../navigation'

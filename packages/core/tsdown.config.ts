@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: { index: 'src/index.ts', vite: 'src/vite-plugin.ts' },
+  entry: { index: 'src/index.ts', vite: 'src/vite-plugin.ts', react: 'src/react.ts' },
   format: ['esm'],
   dts: true,
   clean: true,
@@ -9,6 +9,6 @@ export default defineConfig({
   // ESM-only: let the extension follow "type": "module" (.js) instead of forcing .mjs.
   fixedExtension: false,
   deps: {
-    neverBundle: ['@nestjs/common', '@nestjs/core', 'rxjs', 'express', 'vite'],
+    neverBundle: ['@nestjs/common', '@nestjs/core', 'rxjs', 'express', 'vite', '@inertiajs/react', 'react', 'react-dom'],
   },
 })

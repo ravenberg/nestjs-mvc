@@ -1,522 +1,284 @@
 # nestjs-mvc
 
-Modern [Inertia.js](https://inertiajs.com) adapter for NestJS (Express platform). See the [repository README](../../README.md) for the project overview.
+## NestJS in MVC mode, where the View is your frontend framework
+
+The NestJS docs have an MVC page. It tells you to install Handlebars and use `@Render()`. This package is the answer to that page: your controllers keep deciding everything, and the view is a React component tree instead of a template. Pages are delivered over the [Inertia](https://inertiajs.com) protocol, so the app feels like a single-page app while you build it like a monolith.
+
+- **The monolith is back.** NestJS modules are the best modular monolith in TypeScript.
+- **MVC with a real V.** `@View('Contacts/Index')` on a handler, props returned as a plain object, a component on the other side.
+- **Zero API.** The request/response cycle is your state management. No endpoints designed for your own frontend, no DTOs typed twice, no cache invalidation choreography. Mutate with a POST, handle failure with an `errors` prop, redirect back, and the page is fresh.
+
+One process, one port, one codebase: `nest start --watch` runs the Vite dev server inside your Nest process, and a single `vite build` produces the production assets. Client-rendered by default; server rendering is one decorator away on the routes that need it.
+
+Below is the whole loop with a small CRM: a contacts list from TypeORM, the page that renders it, and the form that adds a contact.
 
 ## Install
 
 ```sh
-pnpm add nestjs-mvc
+pnpm add nestjs-mvc @inertiajs/react react react-dom
+pnpm add -D vite @vitejs/plugin-react
 ```
 
-Peer dependencies: `@nestjs/common`, `@nestjs/core` and `@nestjs/platform-express` `^12`, `reflect-metadata ^0.2`, `rxjs ^7`. `vite` is an optional peer — only needed if you use the built-in dev-server integration below.
-
-Requires Node `^20.19 || ^22.12 || >=24` (NestJS v12's `require(esm)` floor). The package is
-**ESM-only**, but stays loadable from CommonJS via `require(esm)` since it ships no top-level `await`.
-
-> NestJS v12 imports `reflect-metadata` itself, so you no longer need `import 'reflect-metadata'`
-> at the top of your `main.ts`.
+Requires NestJS 12, React 19 and Node `^20.19 || ^22.12 || >=24`. `@inertiajs/react` is the client that `nestjs-mvc/react` re-exports; you install it, you never import it.
 
 ## Setup
 
+Three files. The Vite config, the module, and the HTML shell.
+
 ```ts
-import { MvcModule, viewBody } from 'nestjs-mvc'
+// vite.config.ts
+import react from '@vitejs/plugin-react'
+import { nestjsMvc } from 'nestjs-mvc/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [react(), nestjsMvc()],
+})
+```
+
+There is no `main.tsx` to write. `nestjsMvc()` generates the client entry from the pages in `frontend/pages/`, links `frontend/app.css` if it exists, and makes `vite build` output both the client and the SSR bundle.
+
+```ts
+// src/app.module.ts
+import { Module } from '@nestjs/common'
+import { MvcModule } from 'nestjs-mvc'
+import { template } from './template'
 
 @Module({
   imports: [
     MvcModule.forRoot({
-      // Asset version for cache busting; version mismatch on a GET visit
-      // returns 409 + X-Inertia-Location so the client does a full visit.
-      version: () => myBuildHash(),
-      // HTML shell for the initial page load.
-      template: (page, ctx) => `<!DOCTYPE html>
-<html>
-<head>${ctx.assets()}</head>
-<body>${viewBody(page)}</body>
-</html>`,
+      template,
+      // Boots Vite in middleware mode inside this process during development;
+      // resolves hashed asset tags from the build manifest in production.
+      vite: {},
     }),
   ],
 })
 export class AppModule {}
 ```
 
-`MvcModule.forRootAsync({ imports, inject, useFactory })` is available for config-driven setups. The module registers itself globally, applies the protocol middleware, and binds the render interceptor.
-
-## Single-process Vite integration
-
-Two lines, and the client dev server runs **inside your Nest process**, on the
-same port. No `concurrently`, no second terminal, no `localhost:5173` —
-`nest start --watch` stays the whole story:
-
 ```ts
-// vite.config.ts
-import { nestjsMvc } from 'nestjs-mvc/vite'
-export default defineConfig({ plugins: [react(), nestjsMvc()] })
+// src/template.ts
+import type { PageObject, TemplateContext } from 'nestjs-mvc'
 
-// app.module.ts
-MvcModule.forRoot({ version: () => myBuildHash(), template, vite: {} })
-```
-
-There is no `main.tsx` and no SSR entry to write: **the page a route renders is
-the entry point.** `nestjsMvc()` generates both entries, resolves `@View('Users/Index')`
-to `frontend/pages/Users/Index.tsx`, and makes one `vite build` produce the client
-bundle (`dist/client`, with a manifest) and the SSR bundle (`dist/ssr/ssr.js`).
-Stylesheets are entries of their own, linked as `<link rel="stylesheet">` in
-development *and* production, so a server-rendered page never flashes unstyled.
-
-Plugin options:
-
-| Option | Default | Purpose |
-|---|---|---|
-| `pages` | `'frontend/pages'` | Directory holding the page components. |
-| `css` | `'frontend/app.css'` if it exists | Stylesheet(s) to link; `false` links nothing. |
-| `framework` | detected from `package.json` | `'react'` for now; Vue and Svelte follow. |
-
-Module options (`vite`):
-
-| Option | Default | Purpose |
-|---|---|---|
-| `root` | `process.cwd()` | Directory containing `vite.config.*`. Pass an absolute path if the process may start elsewhere. |
-| `dev` | `NODE_ENV !== 'production'` | Whether to boot the dev server. |
-| `buildDir` | `'dist/client'` | Build output dir, relative to `root`. |
-| `base` | `'/build'` | Public URL prefix for built assets. |
-| `entry` | generated | Bring your own client entry (see Advanced). |
-| `config` | — | Extra inline Vite config, merged into the dev server config. |
-
-What it does:
-
-- **Development** — boots Vite with `middlewareMode` and `appType: 'custom'`, then serves its middleware from the Nest port. The HMR websocket is attached to Nest's own HTTP server, so no extra port is opened. `ctx.assets()` emits the stylesheet links and the entry script; Vite's `transformIndexHtml` injects the HMR client and plugin preambles (e.g. React Refresh).
-- **Production** — no Vite involved. `ctx.assets()` reads `<root>/<buildDir>/.vite/manifest.json` and emits hashed `<link>`/`<script>` tags under `base`, walking the import graph so CSS from shared chunks is included.
-
-Serve the built assets yourself, matching `base`:
-
-```ts
-app.useStaticAssets(join(root, 'dist/client'), { prefix: '/build/' })
-```
-
-### Advanced: bring your own entry
-
-Set `vite.entry` and the plugin's generated client entry is ignored — you write
-`main.tsx` yourself and configure the build:
-
-```ts
-vite: { entry: 'frontend/main.tsx' }          // matches build.rollupOptions.input
-```
-
-```ts
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/build/' : '/',
-  build: { manifest: true, outDir: 'dist/client', rollupOptions: { input: 'frontend/main.tsx' } },
-}))
-```
-
-Prefer to keep Vite out of Nest? Omit the `vite` option and write your own asset
-tags in `template` — everything else works unchanged.
-
-## Server-side rendering
-
-SSR is opt-in per route and off everywhere else. The app you build with
-`nestjs-mvc` is a client-rendered SPA that feels like a multi-page app; SSR is for
-the few pages that need to be indexable — a landing page, a blog — and nothing
-more. Put `@Ssr()` on the handler:
-
-```ts
-@Get()
-@View('Home')
-@Ssr()
-home() { ... }
-```
-
-On a controller it covers every handler, and a handler can opt back out:
-
-```ts
-@Controller('blog')
-@Ssr()
-export class BlogController {
-  @Get()        @View('Blog/Index')  index()  { ... }   // server-rendered
-  @Get('drafts') @View('Blog/Drafts') @Ssr(false) drafts() { ... }
-}
-```
-
-A guard or service can override the decorator for one request through
-`ViewService`, for example once you know the visitor is logged in:
-
-```ts
-this.view.disableSsr()   // or enableSsr()
-```
-
-Runtime call → decorator on the handler → decorator on the controller → off.
-Inertia visits are never server-rendered; only the initial HTML load is.
-
-That is all the configuration there is. With `nestjsMvc()` in your Vite config the
-SSR entry is generated, `vite build` writes `dist/ssr/ssr.js`, and the adapter
-finds both by convention.
-
-**One process, in development and production.** In development the generated
-entry runs in-process through Vite, so edits apply immediately. In production the
-built bundle is `import()`ed into the same process. Inertia's reference adapter
-posts to a separate Node SSR server only because PHP cannot execute JavaScript —
-NestJS already runs on Node, so that hop buys nothing.
-
-Your template receives the two SSR slots:
-
-```ts
-template: (page, ctx) => `<!DOCTYPE html>
-<html>
-<head>${ctx.assets()}${ctx.head()}</head>
+export function template(page: PageObject, ctx: TemplateContext): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM</title>
+${ctx.assets()}
+${ctx.head()}
+</head>
 <body>${ctx.body()}</body>
 </html>`
-```
-
-`ctx.body()` returns the server-rendered markup when SSR ran, and falls back to
-the root element plus page-object script otherwise, so one template covers both.
-
-### Advanced
-
-Bring your own SSR entry, or put the bundle elsewhere:
-
-```ts
-ssr: {
-  entry: 'frontend/ssr.tsx',   // dev, executed in-process through Vite
-  bundle: 'dist/ssr/ssr.js',   // production, imported in-process
 }
 ```
 
-The entry default-exports a function that takes the page object and returns
-`{ head, body }`; build it with `vite build --ssr frontend/ssr.tsx --outDir dist/ssr`.
-
-If you *do* want rendering on its own service — to scale or isolate it — set
-`url` and the adapter posts to a standalone Inertia SSR server instead. It is an
-explicit opt-in, never a default:
+The shell is rendered once, on the first request. Every navigation after that is a JSON exchange the client turns into a page. Two lines in `main.ts` complete the setup: a validation pipe whose field errors flow back to your forms, and the built assets in production.
 
 ```ts
-ssr: { url: 'http://127.0.0.1:13714', timeout: 5000 }
+// src/main.ts
+import { StandardSchemaValidationPipe } from '@nestjs/common'
+import { NestFactory } from '@nestjs/core'
+import type { NestExpressApplication } from '@nestjs/platform-express'
+import { standardSchemaExceptionFactory } from 'nestjs-mvc'
+import { join } from 'node:path'
+import { AppModule } from './app.module'
+
+const app = await NestFactory.create<NestExpressApplication>(AppModule)
+app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: standardSchemaExceptionFactory }))
+if (process.env.NODE_ENV === 'production') {
+  app.useStaticAssets(join(process.cwd(), 'dist/client'), { prefix: '/build/' })
+}
+await app.listen(3000)
 ```
 
-**Failures are never fatal.** A render that throws, times out, or cannot reach the
-SSR server is reported through `onError` (or logged) and the response falls back
-to client-side rendering, so a broken SSR build never takes the site down. Errors
-are classified as `browser-api`, `component-resolution`, `render` or `connection`.
-A route that opts in before the bundle is built is reported the same way, naming
-the component and the path it looked at.
+## A page from a controller
 
-## Rendering pages
+A handler with `@View()` returns props. Everything else, from data access to authorization, is plain NestJS.
 
 ```ts
-import { View, defer, optional, always, merge, scroll, once } from 'nestjs-mvc'
+// src/contacts/contacts.controller.ts
+import { Controller, Get, Query } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { View } from 'nestjs-mvc'
+import { ILike, Repository } from 'typeorm'
+import { Contact } from './contact.entity'
 
-@Controller()
-export class UsersController {
-  @Get('users')
-  @View('Users')
-  index(@Query('page') page?: string) {
+@Controller('contacts')
+export class ContactsController {
+  constructor(@InjectRepository(Contact) private readonly contacts: Repository<Contact>) {}
+
+  @Get()
+  @View('Contacts/Index')
+  async index(@Query('search') search = '') {
+    const contacts = await this.contacts.find({
+      where: search ? [{ lastName: ILike(`%${search}%`) }, { email: ILike(`%${search}%`) }] : {},
+      order: { lastName: 'ASC' },
+      take: 50,
+    })
+
     return {
-      users: scroll(() => this.users.page(page)),   // infinite scroll: see below
-      stats: defer(() => this.stats.compute()),     // deferred: fetched right after first render
-      tips: defer(() => this.tips.fetch(), { rescue: true }), // may fail without taking the page down
-      export: optional(() => this.heavyExport()),   // only evaluated on explicit partial reload
-      flash: always(this.flash.pull()),             // included even in partial reloads
-      feed: merge(() => this.feed.nextPage()),      // client appends instead of replacing
-      countries: once(() => this.countries.all()),  // resolved once, remembered by the client
+      search,
+      contacts: contacts.map((c) => ({ id: c.id, name: `${c.firstName} ${c.lastName}`, email: c.email })),
     }
   }
 }
 ```
 
-Handlers without `@View()` are untouched — regular JSON APIs keep working next to your pages.
+The returned object is the page's props. On a first visit it is embedded in the HTML shell; on every visit after that it is the JSON response to the client's request.
 
-### Deferred props that may fail
+## Rendering the page
 
-A deferred prop that throws fails the whole follow-up request, and every other
-prop in its group with it. For data the page can live without — a
-recommendations widget, an external feed — let it fail alone:
-
-```ts
-recommendations: defer(() => this.recommendations.fetch(), { rescue: true })
-```
-
-The error is reported (`onRescue` on the module, else a logged warning naming
-the prop), the prop is left out, and its path is listed under `rescuedProps` so
-the client's `<Deferred rescue={...}>` slot can show a fallback. `defer()` also
-takes `{ group }` here, next to the plain group string.
-
-### Merging instead of replacing
-
-On a partial reload the client normally replaces a prop. `merge()` and its
-variants tell it to combine instead, so a "load more" or a live feed keeps what
-is already on screen:
-
-```ts
-feed: merge(() => this.feed.page(n)),                          // append
-alerts: prepend(() => this.alerts.since(last)),                // new ones in front
-users: merge(() => this.users.page(n), { matchOn: 'id' }),     // a known id updates in place, never duplicates
-inbox: merge(() => inbox, { append: ['data'], matchOn: 'data.id' }), // merge a nested array, not the whole object
-tree: deepMerge(() => tree, { matchOn: 'items.id' }),          // objects key by key, arrays inside them too
-```
-
-The page object carries `mergeProps`, `prependProps`, `deepMergeProps` and
-`matchPropsOn` (`<path>.<field>`); a path listed in `X-Inertia-Reset` gets no
-label, so the client replaces it — that is how a changed filter starts a list
-over. `scroll()` (next) is built on the same labels and takes `matchOn` too.
-
-### Infinite scroll
-
-`scroll()` wraps a paginated list for Inertia's `<InfiniteScroll data="users">`
-component. The closure returns the rows under `data` plus the cursor the client
-needs, and anything else you like:
-
-```ts
-users: scroll(async () => ({
-  data: rows,                 // the array the client appends to (or prepends)
-  currentPage: 2,             // numbers for offset paging, strings for cursors
-  previousPage: 1,
-  nextPage: 3,                // null when there is no more
-  pageName: 'page',           // the query parameter the client sends; defaults to `page`
-  total: 120,                 // extra fields travel to the client untouched
-}))
-```
-
-The adapter labels `users.data` for merging, emits the cursor under
-`scrollProps`, and honours the client's `X-Inertia-Infinite-Scroll-Merge-Intent`
-header, so scrolling up prepends and scrolling down appends. A visit that resets
-the prop (`router.reload({ reset: ['users'] })`, typically when a filter changes)
-gets page one back unlabelled with `scrollProps.users.reset = true`, and the
-client starts over.
-
-Options: `{ wrapper: 'items' }` for a differently named array, `{ defer: true }`
-(or a group name) to load the first page in the client's follow-up request like
-`defer()` does, and `{ metadata: (value) => ({ pageName, currentPage, … }) }` to
-read the cursor off your own paginator shape. There is no ORM binding in the
-adapter; the demo ships an offset and a keyset paginator over TypeORM in
-`apps/demo/src/pagination.ts` as a starting point.
-
-### Once props
-
-`once()` is for reference data that is expensive or large but rarely changes: a
-country list, the user's permissions, feature flags. It is resolved on the first
-visit and then **remembered by the client** across visits. Every later request
-carries `X-Inertia-Except-Once-Props` with the keys the client holds; for those
-the closure is not called and the prop is left out, and the client fills its copy
-back in before rendering.
-
-```ts
-countries: once(() => this.countries.all(), {
-  as: 'countries',   // cache key shared by every page that uses it; defaults to the prop path
-  until: 3600,       // seconds (or a Date); omit to keep it until a full page load
-  fresh: changed,    // re-resolve and resend even if the client says it has it
-})
-```
-
-An explicit partial reload that names the prop always re-resolves it. Nothing is
-cached on the server: the adapter only reads this request's header, so one
-process serving many users cannot leak one user's data into another's response.
-That is also why a `once()` instance is safe to hoist out of a handler — it is an
-immutable description, never a memo.
-
-After a mutation, tell the client its copy is stale from the handler that changed
-the data — the GET does not change:
-
-```ts
-@Post('countries')
-async store(@Body() dto: CreateCountryDto) {
-  await this.countries.save(dto)
-  return this.view.refresh('countries').back()
-}
-```
-
-## Shared props, redirects & flash
-
-```ts
-import { ViewService } from 'nestjs-mvc'
-
-@Controller()
-export class AppController {
-  constructor(@Inject(ViewService) private readonly view: ViewService) {}
-
-  @Get('profile')
-  @View('Profile')
-  profile() {
-    this.view.share('auth', { user: this.currentUser() })
-    return { profile: this.profiles.mine() }
-  }
-
-  @Post('profile')
-  async update(@Body() dto: UpdateProfileDto) {
-    await this.profiles.update(dto)
-    return this.view.flash('message', 'Profile saved.').back()   // or .redirect('/profile')
-  }
-
-  @Get('login/github')
-  github() {
-    // 409 + X-Inertia-Location during Inertia visits, a regular redirect otherwise
-    return this.view.location('https://github.com/login/oauth/authorize?...')
-  }
-}
-```
-
-Every page object lists the shared props' keys under `sharedProps`, so the
-client keeps `auth` and friends on screen during an instant visit instead of
-blanking the layout; `exposeSharedProps: false` on the module turns that off.
-
-`ViewService` is request-scoped. `redirect()`, `back()` and `location()` end the
-request (nothing after them runs) and answer through Nest's HTTP adapter, so they
-work on Express and Fastify alike; `redirect()` uses 303 after PUT/PATCH/DELETE,
-as the protocol requires. Sharing from middleware works through
-`requestState(req).shared`.
-
-A redirect whose target has a fragment (`/settings#security`) would lose it,
-because XHR follows redirects without the hash; on an Inertia visit the adapter
-answers `409` + `X-Inertia-Redirect` instead and the client visits the URL
-itself. And `this.view.preserveFragment().back()` keeps the fragment the user
-was on across a redirect back — a form on `#billing` saves and stays there.
-
-### Flash
-
-`flash(key, value)` puts data in the page object's `flash` field for the next
-render — the one after a redirect, or this request's own — and then it is gone.
-Read it on the client with `usePage().flash` or the `flash` event. Together with
-`refresh(key)` for [once props](#once-props) it is the mutation side of the
-model: change data, leave a message, mark what the client must reload, redirect.
-
-Nothing is kept on the server. Flash data, validation errors and refresh keys
-travel in one bag that the client carries in an `HttpOnly`, `SameSite=Lax`
-cookie (`mvc_flash`), consumed by the next render. A redirect chain or a 409 in
-between leaves it untouched. Apps that already run `express-session` or
-`@fastify/session` can keep the bag in the session instead:
-
-```ts
-MvcModule.forRoot({ flash: { store: SessionFlashStore } })
-```
-
-The store is the `MVC_FLASH_STORE` provider behind a three-method `FlashStore`
-interface, so you can bring your own.
-
-### Platform support
-
-The adapter uses Nest's HTTP adapter and the raw Node request and response, not
-Express APIs: page rendering, redirects, validation errors and flash are tested on
-**Express and Fastify**. Two conveniences remain Express-only: calling
-`res.redirect()` yourself (it is patched to send 303 and carry flash data) and the
-in-process Vite dev server. On Fastify, use `ViewService.redirect()` and build the
-client separately for now.
-
-## Validation errors
-
-Invalid form submissions follow the redirect-back flow Inertia's form helpers expect: the module registers an exception filter that catches validation failures on Inertia visits, flashes the field errors to a short-lived cookie, and redirects back. The next render shares them as the `errors` prop (always present, `{}` when clean) — so `useForm().errors` just works, no session middleware required.
-
-Wire `ValidationPipe` up with the provided `exceptionFactory` to get errors keyed by field (including nested `parent.child` paths):
-
-```ts
-import { ValidationPipe } from '@nestjs/common'
-import { validationExceptionFactory } from 'nestjs-mvc'
-
-app.useGlobalPipes(new ValidationPipe({ exceptionFactory: validationExceptionFactory }))
-```
-
-> Building without `emitDecoratorMetadata` (tsx, esbuild, SWC without the transform)? Either pass the DTO explicitly — `@Body(new ValidationPipe({ expectedType: CreateUserDto, exceptionFactory: validationExceptionFactory }))` — or skip DTO classes altogether with a schema, below.
-
-**Standard Schema (Zod, Valibot, ArkType).** NestJS v12 validates `@Body({ schema })` with `StandardSchemaValidationPipe`, no decorator metadata needed. Pair it with the matching factory and nested paths arrive as the dot keys Inertia's form helpers expect:
-
-```ts
-app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: standardSchemaExceptionFactory }))
-
-@Post('contacts')
-store(@Body({ schema: CreateContactSchema }) body: CreateContact) { ... }
-// invalid → redirect back with errors like { 'user.email': 'Invalid email', 'tags.0': 'Empty tag' }
-```
-
-Issues without a path are keyed `_form`. Without the factory the filter still parses the pipe's default `"user.email: Invalid email"` messages, and `ValidationPipe({ errorFormat: 'grouped' })` is understood too.
-
-### Live validation (Precognition)
-
-Inertia v3's `useForm` can validate a field the moment the user leaves it, against the **same** endpoint and the **same** rules as the real submission — no second endpoint. Nothing to configure on the server: a request carrying `Precognition: true` runs the handler's pipes (global, `@UsePipes()`, and the parameter's own) and stops before the handler.
+The component lives at `frontend/pages/Contacts/Index.tsx`, the path named in `@View()`. Its props are the object the controller returned.
 
 ```tsx
-const form = useForm('post', '/contacts', { user: { name: '', email: '' } })
-<input onBlur={() => form.validate('user.email')} />   // 204 when fine, 422 + errors when not
+// frontend/pages/Contacts/Index.tsx
+import { Head, Link, router, usePage } from 'nestjs-mvc/react'
+
+interface Props {
+  search: string
+  contacts: { id: number; name: string; email: string | null }[]
+}
+
+export default function Index({ search, contacts }: Props) {
+  const flash = usePage().flash?.success as string | undefined
+
+  return (
+    <>
+      <Head title="Contacts" />
+      <h1>Contacts</h1>
+      {flash && <p className="notice">{flash}</p>}
+
+      <input
+        defaultValue={search}
+        placeholder="Search"
+        onChange={(e) => router.get('/contacts', { search: e.target.value }, { preserveState: true, replace: true })}
+      />
+      <Link href="/contacts/create">New contact</Link>
+
+      <ul>
+        {contacts.map((contact) => (
+          <li key={contact.id}>
+            <Link href={`/contacts/${contact.id}`}>{contact.name}</Link> {contact.email}
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
 ```
 
-| Request | Response |
-|---|---|
-| `Precognition: true` | `Precognition: true`, plus `204` + `Precognition-Success: true` or `422` + `{ errors }` |
-| `Precognition-Validate-Only: user.email` | errors narrowed to that field (nested paths included) |
-| any request to the route | `Vary: Precognition` |
+`Link` navigates without a full page load, `router.get()` re-runs the same controller with new query parameters, and `Head` sets the document title. Everything a page needs is imported from `nestjs-mvc/react`.
 
-The same pipes run, so a pipe with side effects runs too; a pipe failure that carries no field errors (a `ParseIntPipe` on a route param, say) surfaces as the usual 400.
+## Handling a form submission
 
-You can also throw errors yourself, e.g. from a service:
+A POST handler validates, saves, flashes a message and redirects. Validation is a schema on the parameter: when it fails, nestjs-mvc sends the client back to the form with the field errors as the `errors` prop. There is no error response to design and nothing to catch.
+
+```ts
+// src/contacts/contacts.controller.ts — the same controller, the mutation side
+import { Body, Controller, Get, Post } from '@nestjs/common'
+import { View, ViewService } from 'nestjs-mvc'
+import { z } from 'zod'
+
+const ContactSchema = z.object({
+  firstName: z.string().trim().min(1, 'First name is required.'),
+  lastName: z.string().trim().min(1, 'Last name is required.'),
+  // An empty input is "no email", anything else has to be one.
+  email: z.email('That is not an email address.').or(z.literal('')),
+})
+
+@Controller('contacts')
+export class ContactsController {
+  constructor(
+    private readonly view: ViewService,
+    @InjectRepository(Contact) private readonly contacts: Repository<Contact>,
+  ) {}
+
+  @Get('create')
+  @View('Contacts/Create')
+  create() {
+    return {}
+  }
+
+  @Post()
+  async store(@Body({ schema: ContactSchema }) body: z.infer<typeof ContactSchema>) {
+    const contact = await this.contacts.save(this.contacts.create({ ...body, email: body.email || null }))
+    return this.view.flash('success', `${contact.firstName} was added.`).redirect('/contacts')
+  }
+}
+```
+
+Any Standard Schema library works in `@Body({ schema })` (Zod, Valibot, ArkType). Prefer class-validator DTOs? Use `ValidationPipe` with `validationExceptionFactory` from `nestjs-mvc` instead; the errors reach the form the same way.
+
+Business rules that are not schema rules throw a `ValidationException` from anywhere in the handler:
 
 ```ts
 import { ValidationException } from 'nestjs-mvc'
 
-throw new ValidationException({ email: 'That email is already taken.' })
-```
-
-The `X-Inertia-Error-Bag` header is honoured: errors are scoped under the bag name the client asked for. A plain `ValidationPipe` without the factory works too — the filter falls back to parsing the default message array. Non-Inertia requests are untouched and keep NestJS's regular 400 JSON response (with an added `errors` object when you use the factory).
-
-## History encryption
-
-Inertia keeps each page's props in `history.state` so back/forward is instant.
-For sensitive pages, ask the client to encrypt those entries — per route, per
-controller, or for the whole app — and clear them on logout:
-
-```ts
-@Get('settings') @View('Settings') @EncryptHistory()   // this page's entry is encrypted
-@Controller('vault') @EncryptHistory()                  // every handler; @EncryptHistory(false) opts one out
-MvcModule.forRoot({ history: { encrypt: true } })       // the default for every page
-
-@Post('logout')
-logout() {
-  return this.view.clearHistory().redirect('/login')    // rides the flash bag to the next render
+if (await this.contacts.existsBy({ email: body.email })) {
+  throw new ValidationException({ email: 'A contact with this email already exists.' })
 }
 ```
 
-Precedence: `ViewService.encryptHistory()` for one request → decorator on the
-handler → on the controller → module default. The page object carries
-`encryptHistory: true` / `clearHistory: true` only when set; the client does
-the encrypting and keeps the key in `sessionStorage`.
+## The form
 
-## Error pages
+`useForm` holds the data, sends it, and receives the errors after the redirect back. The submit is a POST to the handler above; a success is the redirect it returns.
 
-By default an exception is Nest's JSON; on an Inertia visit the client shows it
-in its error dialog. Render your own page instead for the statuses you choose —
-the equivalent of Laravel's `Inertia::handleExceptionsUsing()`:
+```tsx
+// frontend/pages/Contacts/Create.tsx
+import { Head, Link, useForm } from 'nestjs-mvc/react'
 
-```ts
-MvcModule.forRoot({
-  errorPages: ({ status, exception, isDevelopment }) => {
-    if (isDevelopment) return                                // keep the stack trace while developing
-    if ([403, 404, 500, 503].includes(status)) {
-      return { component: 'Errors/Show', props: { status }, shared: true }
-    }
-  },
-})
+export default function Create() {
+  const form = useForm({ firstName: '', lastName: '', email: '' })
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    form.post('/contacts')
+  }
+
+  return (
+    <>
+      <Head title="New contact" />
+      <h1>New contact</h1>
+
+      <form onSubmit={submit}>
+        <label>
+          First name
+          <input value={form.data.firstName} onChange={(e) => form.setData('firstName', e.target.value)} />
+          {form.errors.firstName && <span className="error">{form.errors.firstName}</span>}
+        </label>
+
+        <label>
+          Last name
+          <input value={form.data.lastName} onChange={(e) => form.setData('lastName', e.target.value)} />
+          {form.errors.lastName && <span className="error">{form.errors.lastName}</span>}
+        </label>
+
+        <label>
+          Email
+          <input value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} />
+          {form.errors.email && <span className="error">{form.errors.email}</span>}
+        </label>
+
+        <button type="submit" disabled={form.processing}>
+          {form.processing ? 'Saving…' : 'Save'}
+        </button>
+        <Link href="/contacts">Cancel</Link>
+      </form>
+    </>
+  )
+}
 ```
 
-The callback runs for every unhandled exception with `status` (an
-`HttpException`'s, else 500), the `exception`, the `request`, `isInertia` and
-`isDevelopment`. Return a page and it is rendered like any other — SSR, shared
-props when `shared: true`, the flash bag — with the response set to the error's
-status, so a 404 page is a real 404 on first load and an Inertia visit alike.
-Return nothing to fall through to Nest. Validation errors keep their
-redirect-back flow regardless. Errors of 500 and up are still logged.
+That is the whole loop. A GET renders a page, a POST changes something and redirects, and the next GET renders the fresh state. Nothing on the client remembers what the server knows better.
 
-## Protocol behaviour handled for you
+## What else is in the box
 
-- `X-Inertia` requests get the JSON page object; first loads get your HTML shell with the page object in a `<script type="application/json">` element.
-- Partial reloads (`X-Inertia-Partial-Data` / `-Except` / `-Component`) resolve only the requested props, using **dot-notation** for nested ones (`only: ['auth.notifications']`).
-- `optional()`, `defer()` and `merge()` are recognised at any depth — inside plain objects, arrays and the return values of closures — and all metadata is emitted as dot paths. A closure guarding an unrequested branch is never called.
-- `defer()` props are advertised via `deferredProps` (grouped); `merge()` / `prepend()` / `deepMerge()` via `mergeProps` / `prependProps` / `deepMergeProps`, with `matchPropsOn` for identifying fields, all honouring `X-Inertia-Reset`.
-- `scroll()` props label their `data` array in `mergeProps` or `prependProps` (per `X-Inertia-Infinite-Scroll-Merge-Intent`) and carry their cursor in `scrollProps`; a reset drops the label and sets `reset: true`.
-- `once()` props are described in `onceProps` (`{ prop, expiresAt }`) and skipped when their key is in `X-Inertia-Except-Once-Props`, unless `fresh`, marked by `refresh()`, or explicitly requested.
-- Flash data → the page object's `flash` field, once, carried across redirects and 409s in the same client-held bag as validation errors.
-- `errorPages` → your component with the error's status code, for the statuses you pick; everything else stays Nest's default.
-- `defer(fn, { rescue: true })` → a failing deferred prop is reported, left out and listed in `rescuedProps`; the rest of the response is unaffected.
-- `@EncryptHistory()` / `history.encrypt` → `encryptHistory: true`; `ViewService.clearHistory()` → `clearHistory: true` on this or the next render.
-- A redirect to a URL with a fragment → `409` + `X-Inertia-Redirect` (not for prefetches); `ViewService.preserveFragment()` → `preserveFragment: true`.
-- Shared prop keys → `sharedProps` on every page object (`exposeSharedProps: false` to omit).
-- Validation failures → redirect back with the `errors` prop (with `X-Inertia-Error-Bag` support).
-- 302 → 303 conversion for `PUT`/`PATCH`/`DELETE` redirects.
-- Stale asset version on GET visits → `409` + `X-Inertia-Location`.
-- `Vary: X-Inertia` on every page response.
-- SSR per route via `@Ssr()`, off by default; Inertia visits are never server-rendered.
-- Optional single-process Vite dev server (middleware mode, HMR on the app port), with generated entries via `nestjs-mvc/vite`.
+Everything from the controller side: partial reloads, deferred props (`defer()`), lazy props (`optional()`), merge and prepend for lists, infinite scroll (`scroll()`), once-props, prefetch-aware responses, flash data without sessions, error bags, live validation (Precognition) through the same pipes, history encryption, your own error pages, and opt-in server-side rendering with `@Ssr()` on the routes that need it. Express and Fastify are both supported.
+
+The documentation site is on its way. Until then, the [demo app](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/demo) exercises every feature with a page per topic.
+
+nestjs-mvc is a community project and is not affiliated with the NestJS team. MIT licensed.

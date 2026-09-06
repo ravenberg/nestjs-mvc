@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react'
+import { usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 export default function SharedProps({ pageOnly }: { pageOnly: string }) {
