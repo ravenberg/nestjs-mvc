@@ -14,3 +14,6 @@ dist/
 test-results/
 playwright-report/
 blob-report/
+
+# Purchased template (Tailwind Plus license: not redistributable); the port lives in apps/docs
+apps/docs/tailwind-plus-syntax/

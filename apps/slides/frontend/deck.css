@@ -1,0 +1,229 @@
+/*
+ * The deck style: Reveal's white theme with the docs site's typography on
+ * top (Inter for text, Lexend for headings), calmer headings, roomier and
+ * smaller code blocks, and a few layout helpers the Markdown can use as
+ * plain HTML: .split, .illustration, .scatter, .one-liner.
+ */
+@import 'reveal.js/theme/white.css';
+
+@font-face {
+  font-family: 'Lexend';
+  src: url('./fonts/lexend.woff2') format('woff2');
+  font-display: swap;
+}
+
+.reveal-viewport {
+  height: 100vh;
+  background: #ffffff;
+}
+
+.reveal {
+  --r-background-color: #ffffff;
+  --r-main-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --r-main-font-size: 34px;
+  --r-main-color: #0f172a; /* slate-900 */
+  --r-heading-font: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+  --r-heading-color: #0f172a;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: -0.01em;
+  --r-heading-font-weight: 500;
+  --r-heading1-size: 2.2em;
+  --r-heading2-size: 1.5em;
+  --r-heading3-size: 1.1em;
+  --r-link-color: #0284c7; /* sky-600 */
+  --r-link-color-hover: #0369a1;
+  --r-selection-background-color: #bae6fd;
+  --r-code-font: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-feature-settings: 'ss01';
+}
+
+.reveal .slides section {
+  text-align: left;
+}
+
+.reveal .slides section.center-slide {
+  text-align: center;
+}
+
+.reveal h1,
+.reveal h2 {
+  margin-bottom: 0.6em;
+}
+
+.reveal p,
+.reveal li {
+  line-height: 1.5;
+  color: #334155; /* slate-700 */
+}
+
+.reveal ul {
+  margin-left: 0.6em;
+}
+
+.reveal li + li {
+  margin-top: 0.25em;
+}
+
+.reveal strong {
+  color: #0f172a;
+}
+
+/* Inline code */
+.reveal :not(pre) > code {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.3em;
+  background: #f1f5f9; /* slate-100 */
+  color: #0f172a;
+}
+
+/* Code blocks: Shiki's HTML in a card with room around it, sized to fit without scrolling.
+   The theme's colours (including the background) are inline; the card is ours. */
+.reveal pre {
+  width: 100%;
+  margin: 0.8em 0;
+  padding: 1.1em 1.3em;
+  border-radius: 0.75em;
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.15);
+  font-size: 0.5em;
+  line-height: 1.55;
+}
+
+.reveal pre code {
+  display: block;
+  padding: 0;
+  max-height: none;
+  background: transparent;
+  overflow: hidden;
+  white-space: pre;
+  font-family: var(--r-code-font);
+}
+
+/* Line focus: steps dim the lines outside the current group */
+.reveal .code-steps .line {
+  transition: opacity 0.25s ease;
+}
+
+.reveal .code-steps .line.dim {
+  opacity: 0.22;
+}
+
+.reveal .code-steps .code-step {
+  display: none;
+}
+
+/* Two columns: text and an illustration. Slightly smaller type so a paragraph
+   or five bullets sit next to a drawing without wrapping every three words. */
+.reveal .split {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5em;
+  align-items: center;
+  font-size: 0.88em;
+}
+
+.reveal .split.reverse {
+  grid-template-columns: 1fr 1.4fr;
+}
+
+/* Until an illustration file exists, the text takes the whole width. */
+.reveal .split.no-image,
+.reveal .split.reverse.no-image {
+  grid-template-columns: 1fr;
+}
+
+.reveal .split > div > h2:first-child {
+  margin-top: 0;
+}
+
+.reveal .illustration {
+  width: 100%;
+  max-height: 62vh;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+.reveal .illustration.small {
+  max-height: 34vh;
+  width: auto;
+}
+
+/* The highlighted one-liner */
+.reveal .one-liner {
+  margin: 1em 0;
+  padding: 1em 1.4em;
+  border-left: 6px solid #38bdf8; /* sky-400 */
+  border-radius: 0.5em;
+  background: #f0f9ff; /* sky-50 */
+  font-family: var(--r-heading-font);
+  font-size: 1em;
+  line-height: 1.4;
+  color: #0f172a;
+}
+
+/* The positioning chart: dashed axes, one dot per stack, hand-lettered corners */
+.reveal .scatter {
+  width: 86%;
+  margin: 0 auto;
+}
+
+.reveal .scatter svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 64vh;
+  overflow: visible;
+}
+
+.reveal .scatter .axis {
+  stroke: #0f172a;
+  stroke-width: 3;
+  stroke-dasharray: 10 9;
+  stroke-linecap: round;
+}
+
+.reveal .scatter .axis-name {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  fill: #334155;
+}
+
+.reveal .scatter .corner {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  fill: #475569;
+}
+
+.reveal .scatter .dot {
+  stroke: #0f172a;
+  stroke-width: 2.5;
+}
+
+.reveal .scatter .dot.blue { fill: #bae6fd; }
+.reveal .scatter .dot.purple { fill: #e9d5ff; }
+.reveal .scatter .dot.green { fill: #bbf7d0; }
+.reveal .scatter .dot.red { fill: #fecaca; }
+
+.reveal .scatter .dot.us {
+  fill: #0ea5e9;
+  stroke: #0f172a;
+  stroke-width: 3;
+}
+
+.reveal .scatter .label {
+  font-family: var(--r-main-font);
+  font-size: 15px;
+  fill: #334155;
+}
+
+.reveal .scatter .label.us {
+  font-family: var(--r-heading-font);
+  font-size: 18px;
+  fill: #0f172a;
+}
+
+/* Speaker notes are Markdown too; keep them readable in the notes window */
+.reveal aside.notes {
+  display: none;
+}

@@ -39,9 +39,14 @@ export class ModuleSsrRenderer implements SsrRenderer {
       // Node caches this, so the bundle is evaluated once per process.
       module = (await import(pathToFileURL(path).href)) as Record<string, unknown>
     } catch (cause) {
+      // Missing file and broken module are different problems; say which.
+      const reason = cause instanceof Error ? cause.message.split('\n')[0] : String(cause)
+      const missing = (cause as { code?: string })?.code === 'ERR_MODULE_NOT_FOUND' && reason.includes(path)
       throw new Error(
-        `[nestjs-mvc] Could not load the SSR bundle at ${path}. Build it first ` +
-          '(e.g. `vite build --ssr`) or point `ssr.bundle` at the right file.',
+        `[nestjs-mvc] Could not load the SSR bundle at ${path}: ${reason}. ` +
+          (missing
+            ? 'Build it first (`vite build`) or point `ssr.bundle` at the right file.'
+            : 'The bundle exists but fails to import; a CommonJS dependency kept external usually needs `ssr.noExternal` in vite.config.'),
         { cause },
       )
     }

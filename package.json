@@ -10,9 +10,11 @@
     "build": "pnpm -r --filter './packages/*' build",
     "test": "pnpm -r --filter './packages/*' test",
     "dev": "pnpm --filter kitchen-sink dev",
-    "lint": "oxlint packages/core/src apps/kitchen-sink/src apps/kitchen-sink/frontend apps/kitchen-sink/e2e",
+    "lint": "oxlint packages/core/src apps/kitchen-sink/src apps/kitchen-sink/frontend apps/kitchen-sink/e2e apps/docs/src apps/docs/frontend apps/slides/src apps/slides/frontend",
     "test:e2e": "pnpm --filter kitchen-sink test:e2e",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "dev:docs": "pnpm --filter docs dev",
+    "dev:slides": "pnpm --filter slides dev"
   },
   "packageManager": "pnpm@10.28.1",
   "pnpm": {
