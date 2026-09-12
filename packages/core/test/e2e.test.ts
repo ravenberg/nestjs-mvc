@@ -129,7 +129,7 @@ describe('Inertia protocol (e2e)', () => {
       .set('X-Inertia-Version', 'stale')
 
     expect(res.status).toBe(409)
-    expect(res.headers['x-inertia-location']).toContain('/')
+    expect(res.headers['x-inertia-location']).toBe('/')
   })
 
   it('resolves only requested props (plus always-props) on partial reload', async () => {

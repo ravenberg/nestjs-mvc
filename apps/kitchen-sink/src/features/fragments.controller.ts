@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Inject, Post } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Navigation → URL Fragments. Two things XHR-driven navigation would otherwise
@@ -12,6 +13,7 @@ import { View, ViewService } from 'nestjs-mvc'
  *   to the same page, the client keeps `#profile` on the new URL instead of
  *   jumping to the top.
  */
+@Public()
 @Controller('features/navigation')
 export class FragmentsController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

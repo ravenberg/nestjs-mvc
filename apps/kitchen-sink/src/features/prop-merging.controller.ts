@@ -1,5 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common'
 import { View, deepMerge, merge, prepend } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Data Loading → Prop Merging. Every reload bumps `tick`; each prop shows one
@@ -15,6 +16,7 @@ import { View, deepMerge, merge, prepend } from 'nestjs-mvc'
  *
  * A reset (`router.reload({ reset: [...] })`) makes the client replace instead.
  */
+@Public()
 @Controller('features/data-loading')
 export class PropMergingController {
   @Get('prop-merging')

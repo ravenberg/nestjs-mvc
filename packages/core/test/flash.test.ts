@@ -5,6 +5,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   CookieFlashStore,
+  KeyRing,
   MvcModule,
   SessionFlashStore,
   ValidationException,
@@ -19,6 +20,8 @@ import {
 } from '../src/index'
 
 // ── units ─────────────────────────────────────────────────────────────────────
+
+const keys = new KeyRing(['a'.repeat(32)])
 
 describe('cookie helpers', () => {
   it('serializes a safe-by-default cookie', () => {
@@ -51,7 +54,7 @@ describe('cookie helpers', () => {
 
 describe('flash stores', () => {
   it('CookieFlashStore round-trips a bag through the Cookie header and clears it', () => {
-    const store = new CookieFlashStore({ maxAge: 60 })
+    const store = new CookieFlashStore({ maxAge: 60, keys })
     const headers: Record<string, string | string[]> = {}
     const res = {
       getHeader: (name: string) => headers[name],
@@ -69,6 +72,18 @@ describe('flash stores', () => {
     store.clear(req, res)
     expect((headers['Set-Cookie'] as string[])[0]).toContain('Max-Age=0')
     expect(store.read({ headers: { cookie: 'mvc_flash=not-json' } })).toBeUndefined()
+  })
+
+  it('CookieFlashStore ignores a bag it did not sign', () => {
+    const store = new CookieFlashStore({ keys })
+    const cookie = (value: string) => ({ headers: { cookie: `mvc_flash=${encodeURIComponent(value)}` } })
+    const json = JSON.stringify({ flash: { message: 'Forged' } })
+
+    expect(store.read(cookie(keys.sign('flash', json)))).toEqual({ flash: { message: 'Forged' } })
+    expect(store.read(cookie(json))).toBeUndefined() // unsigned: the pre-`keys` format
+    expect(store.read(cookie(`${json}.${keys.sign('flash', '{}').split('.').pop()}`))).toBeUndefined() // edited
+    expect(store.read(cookie(new KeyRing(['b'.repeat(32)]).sign('flash', json)))).toBeUndefined() // another app's key
+    expect(store.read(cookie(keys.sign('csrf', json)))).toBeUndefined() // signed for another purpose
   })
 
   it('SessionFlashStore keeps the bag in the session and explains a missing session', () => {
@@ -213,11 +228,21 @@ describe.each(platforms)('flash on the wire (%s)', (platform, adapter) => {
       .set('X-Inertia-Version', 'stale')
       .set('Cookie', cookie)
     expect(stale.status).toBe(409)
-    expect(stale.headers['x-inertia-location']).toContain('/contacts/create')
+    expect(stale.headers['x-inertia-location']).toBe('/contacts/create')
     expect(flashCookie(stale)).toBeUndefined() // untouched, so still valid in the browser
 
     const full = await request(app.getHttpServer()).get('/contacts/create').set('Cookie', cookie)
     expect(full.text).toContain('"flash":{"message":"Created Acme"}')
+  })
+
+  it('signs the cookie, and ignores a bag the server did not write', async () => {
+    const post = await inertia(request(app.getHttpServer()).post('/organizations')).send({ name: 'Acme' })
+    expect(decodeURIComponent(flashCookie(post)!)).toMatch(/^mvc_flash=\{.*\}\.[\w-]{43}$/)
+
+    const forged = `mvc_flash=${encodeURIComponent(JSON.stringify({ flash: { message: 'Forged' }, errors: { name: 'Forged' } }))}`
+    const next = await inertia(request(app.getHttpServer()).get('/contacts/create')).set('Cookie', forged)
+    expect(next.body.flash).toBeUndefined()
+    expect(next.body.props.errors).toEqual({})
   })
 
   it('shows data flashed during a request on that same render', async () => {

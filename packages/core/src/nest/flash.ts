@@ -1,4 +1,5 @@
 import { type AnyRequest, type AnyResponse, clearCookie, rawRequest, readCookie, writeCookie } from './http'
+import type { KeyRing } from './keys'
 
 /**
  * What one request leaves for the next request of the same client: flash
@@ -59,28 +60,38 @@ export interface CookieFlashStoreOptions {
   secure?: boolean
 }
 
+/** Signing purpose of the flash cookie; see `KeyRing`. */
+const FLASH_PURPOSE = 'flash'
+
 /**
  * The default: the client carries its own bag in an `HttpOnly`, `SameSite=Lax`
  * cookie. Nothing is kept on the server, so one process serving many users
  * cannot mix them up, and a redirect chain or a 409 in between simply leaves the
  * cookie untouched — Laravel's "reflash" without a session.
+ *
+ * The cookie is signed with the app's keys: a bag the server did not write
+ * (edited, forged, or signed with a key that has since been dropped) is
+ * ignored, as if there were none.
  */
 export class CookieFlashStore implements FlashStore {
   private readonly name: string
   private readonly maxAge: number
   private readonly secure: boolean
+  private readonly keys: KeyRing
 
-  constructor(options: CookieFlashStoreOptions = {}) {
+  constructor(options: CookieFlashStoreOptions & { keys: KeyRing }) {
     this.name = options.name ?? 'mvc_flash'
     this.maxAge = options.maxAge ?? 300
     this.secure = options.secure ?? false
+    this.keys = options.keys
   }
 
   read(req: AnyRequest): FlashBag | undefined {
     const raw = readCookie(req, this.name)
-    if (raw === undefined) return undefined
+    const json = raw === undefined ? undefined : this.keys.verify(FLASH_PURPOSE, raw)
+    if (json === undefined) return undefined
     try {
-      const parsed: unknown = JSON.parse(raw)
+      const parsed: unknown = JSON.parse(json)
       return typeof parsed === 'object' && parsed !== null ? (parsed as FlashBag) : undefined
     } catch {
       return undefined
@@ -89,7 +100,10 @@ export class CookieFlashStore implements FlashStore {
 
   write(req: AnyRequest, res: AnyResponse, bag: FlashBag): void {
     if (isEmptyBag(bag)) return this.clear(req, res)
-    writeCookie(res, this.name, JSON.stringify(bag), { maxAge: this.maxAge, secure: this.secure })
+    writeCookie(res, this.name, this.keys.sign(FLASH_PURPOSE, JSON.stringify(bag)), {
+      maxAge: this.maxAge,
+      secure: this.secure,
+    })
   }
 
   clear(_req: AnyRequest, res: AnyResponse): void {

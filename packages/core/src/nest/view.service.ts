@@ -1,8 +1,11 @@
 import { Inject, Injectable, Scope } from '@nestjs/common'
 import { REQUEST } from '@nestjs/core'
 import type { MvcRequestState } from '../protocol/types'
-import { type AnyRequest, header, requestState } from './http'
+import { MvcAuth } from './auth'
+import { type AnyRequest, previousUrl, requestState } from './http'
 import { MvcRedirect } from './redirect'
+import { MVC_MODULE_OPTIONS } from './tokens'
+import type { MvcModuleOptions } from './types'
 
 /**
  * Request-scoped helper: shared props, flash data, SSR overrides and redirects.
@@ -11,7 +14,11 @@ import { MvcRedirect } from './redirect'
  */
 @Injectable({ scope: Scope.REQUEST })
 export class ViewService {
-  constructor(@Inject(REQUEST) private readonly req: AnyRequest) {}
+  constructor(
+    @Inject(REQUEST) private readonly req: AnyRequest,
+    @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
+    @Inject(MvcAuth) private readonly auth: MvcAuth,
+  ) {}
 
   private get state(): MvcRequestState {
     return requestState(this.req)
@@ -106,9 +113,32 @@ export class ViewService {
     throw new MvcRedirect(url, status)
   }
 
-  /** Redirects to the page the visit came from (the `Referer`), or `/`. */
-  back(status?: number): never {
-    throw new MvcRedirect(header(this.req, 'referer') ?? '/', status)
+  /**
+   * Redirects to the page the visit came from (the `Referer`), when that page
+   * is on this app; otherwise to `fallback`. A `Referer` from another site is
+   * never followed, so a link from elsewhere cannot turn `back()` into an
+   * open redirect.
+   */
+  back(fallback = '/', status?: number): never {
+    throw new MvcRedirect(previousUrl(this.req, fallback, this.options.url), status)
+  }
+
+  /**
+   * After a login: redirects to the page the visitor was on its way to when a
+   * 401 sent it to the login page, or to `fallback` when there is none (or it
+   * is not on this app). The remembered URL is forgotten either way.
+   *
+   * ```ts
+   * @Post('login') @Public()
+   * async login(@Body() credentials: Credentials) {
+   *   await this.auth.signIn(credentials)
+   *   return this.view.intended('/dashboard')
+   * }
+   * ```
+   */
+  intended(fallback = '/'): never {
+    this.state.forgetIntended = true
+    throw new MvcRedirect(this.auth.intended(this.req) ?? fallback)
   }
 
   /**

@@ -20,6 +20,34 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('listitem').filter({ hasText: '"title":"New item"' }).first()).toBeVisible()
   })
 
+  test('Asset version: a stale client gets a full page load of the page it asked for', async ({ page }) => {
+    type Marked = Window & { sameDocument?: boolean }
+    await page.goto('/features/navigation/links')
+    await page.evaluate(() => void ((window as Marked).sameDocument = true))
+
+    // Pretend a deploy happened after this tab loaded: its next visit carries an old version.
+    // The server answers 409 with a relative X-Inertia-Location, which the client must resolve
+    // against the page it is on and load as a new document. Only once: the new document has
+    // the current version, and its own requests must go through untouched.
+    let stale = true
+    await page.route(
+      (url) => url.searchParams.get('tab') === 'details',
+      (route) => {
+        const headers = route.request().headers()
+        if (!stale || !headers['x-inertia']) return route.continue()
+        stale = false
+        return route.continue({ headers: { ...headers, 'x-inertia-version': 'stale' } })
+      },
+    )
+    const mismatch = page.waitForResponse((res) => res.status() === 409)
+    await page.getByRole('link', { name: 'details', exact: true }).click()
+    expect((await mismatch).headers()['x-inertia-location']).toBe('/features/navigation/links?tab=details')
+
+    await expect(page.getByText('Current tab prop: details')).toBeVisible()
+    expect(page.url()).toMatch(/\/features\/navigation\/links\?tab=details$/)
+    expect(await page.evaluate(() => (window as Marked).sameDocument)).toBeUndefined()
+  })
+
   test('Preserve State: the same component instance keeps a draft, a plain visit remounts', async ({ page }) => {
     await page.goto('/features/navigation/preserve-state')
     const draft = page.getByPlaceholder('Type, then switch tabs…')
@@ -50,7 +78,7 @@ test.describe('Navigation', () => {
   test('History: the route asks for encryption, logout clears the history', async ({ page }) => {
     await page.goto('/features/navigation/history')
     await expect(page.getByText('encryptHistory: true')).toBeVisible()
-    await page.getByRole('button', { name: 'Log out (clearHistory)' }).click()
+    await page.getByRole('button', { name: 'Simulate a logout (clearHistory)' }).click()
     await expect(page.getByText('History cleared: the key was rotated and stored pages are gone.')).toBeVisible()
   })
 

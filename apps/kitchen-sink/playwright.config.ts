@@ -19,7 +19,16 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // The CRM needs a login: `setup` logs in once through the real form and every
+  // spec starts from that state. auth.spec.ts starts logged out on purpose.
+  projects: [
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+  ],
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:3000/dashboard',

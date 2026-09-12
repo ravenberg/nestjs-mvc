@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
+import { Public } from '../auth/public.decorator'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const stamp = () => new Date().toISOString()
@@ -17,6 +18,7 @@ const EchoSchema = z.object({
  * event system, its progress bar, network failures, and `useHttp` for plain
  * JSON endpoints next to Inertia pages.
  */
+@Public()
 @Controller('features')
 export class EventsController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

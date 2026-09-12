@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Inject, Post } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Forms → Dotted Keys. A nested form validated by a Zod schema through NestJS
@@ -25,6 +26,7 @@ type CreateContact = z.infer<typeof CreateContactSchema>
 
 const submissions: CreateContact[] = []
 
+@Public()
 @Controller('features/forms')
 export class DottedKeysController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

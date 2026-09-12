@@ -2,6 +2,8 @@ import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { MvcModule } from 'nestjs-mvc'
 import { AppController } from './app.controller'
+import { AuthModule } from './auth/auth.module'
+import { CspMiddleware } from './csp.middleware'
 import { ContactsController } from './crm/contacts.controller'
 import { DashboardController } from './crm/dashboard.controller'
 import { OrganizationsController } from './crm/organizations.controller'
@@ -33,9 +35,21 @@ const root = new URL('..', import.meta.url).pathname
   imports: [
     DatabaseModule,
     TypeOrmModule.forFeature([User, Note]),
+    AuthModule,
     MvcModule.forRoot({
       version: 'dev',
       template,
+      // The logged-in user on every page, as `auth.user`: only these fields
+      // reach the browser (the entity carries a password hash). The guard in
+      // auth/auth.guard.ts puts the user on the request; nestjs-mvc does the rest.
+      auth: {
+        share: (user: User) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          verified: !!user.emailVerifiedAt,
+        }),
+      },
       // Runs Vite in-process during dev; resolves hashed manifest assets in
       // production. Entries come from nestjsMvc() in vite.config.ts, and routes
       // opt into SSR with @Ssr() — rendered in this same process either way.
@@ -47,10 +61,14 @@ const root = new URL('..', import.meta.url).pathname
       // JSON clients (useHttp, fetch) get Laravel's 422 + { errors } on a
       // validation failure instead of Nest's 400; Inertia visits are unaffected.
       validation: { jsonStatus: 422 },
-      errorPages: ({ status, exception }) =>
-        [403, 404, 500, 503].includes(status)
+      // A 429 is something to recover from rather than a page to show: back to
+      // where the visitor was, with a message. (A CSRF 419 gets that by default.)
+      errorPages: ({ status, exception }) => {
+        if (status === 429) return { redirect: 'back', flash: { message: (exception as Error).message } }
+        return [403, 404, 500, 503].includes(status)
           ? { component: 'Errors/Show', props: { status, reason: (exception as Error).message }, shared: true }
-          : undefined,
+          : undefined
+      },
     }),
   ],
   controllers: [
@@ -78,6 +96,8 @@ const root = new URL('..', import.meta.url).pathname
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(SharedPropsMiddleware).forRoutes('{*splat}')
+    // The CSP first: it asks nestjs-mvc for the nonce, which every script tag
+    // on the page then carries.
+    consumer.apply(CspMiddleware, SharedPropsMiddleware).forRoutes('{*splat}')
   }
 }

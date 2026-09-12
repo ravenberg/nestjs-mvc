@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { NONCE_PLACEHOLDER } from '../protocol/constants'
 import { CLIENT_CHUNK, PLUGIN_NAME, type NestjsMvcPluginApi } from '../vite/plugin'
 
 /** Options for running Vite inside the Nest process (dev) and resolving built assets (production). */
@@ -112,9 +113,13 @@ export class ViteAssets {
     return this.holder?.server ?? null
   }
 
-  tags(): string {
+  /** The tags for the entry; each carries `nonce` when this request has one. */
+  tags(nonce?: string): string {
     if (!this.options) return ''
-    return this.devServer ? this.devTags(this.options, this.devServer) : this.productionTags(this.options)
+    const tags = this.devServer ? this.devTags(this.options, this.devServer) : this.productionTags(this.options)
+    // In development Vite adds the attribute itself (see NONCE_PLACEHOLDER), to
+    // its own tags as well as ours.
+    return !nonce || this.devServer ? tags : tags.replaceAll('<script ', `<script nonce="${nonce}" `).replaceAll('<link ', `<link nonce="${nonce}" `)
   }
 
   /** Vite's transformIndexHtml later injects the HMR client and any plugin preamble (e.g. React Refresh). */
@@ -135,10 +140,22 @@ export class ViteAssets {
     ].join('\n')
   }
 
-  /** In dev, lets Vite plugins rewrite the HTML (HMR client, React Refresh preamble). */
-  async transformHtml(url: string, html: string): Promise<string> {
+  /**
+   * In dev, lets Vite plugins rewrite the HTML (HMR client, React Refresh
+   * preamble). Vite writes `NONCE_PLACEHOLDER` on every script and style it
+   * touches, which becomes this request's nonce — or goes away again when the
+   * app uses none.
+   */
+  async transformHtml(url: string, html: string, nonce?: string): Promise<string> {
     const dev = this.devServer
-    return dev ? dev.transformIndexHtml(url, html) : html
+    if (!dev) return html
+    const transformed = await dev.transformIndexHtml(url, html)
+    if (nonce) return transformed.split(NONCE_PLACEHOLDER).join(nonce)
+    return transformed
+      .split(` nonce="${NONCE_PLACEHOLDER}"`)
+      .join('')
+      .split('<meta property="csp-nonce">')
+      .join('')
   }
 
   private productionTags(options: ViteOptions): string {

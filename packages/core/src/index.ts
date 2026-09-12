@@ -3,10 +3,39 @@ export { View } from './nest/view.decorator'
 export { Ssr } from './nest/ssr.decorator'
 export { EncryptHistory } from './nest/history.decorator'
 export { MvcModule, type MvcModuleAsyncOptions } from './nest/mvc.module'
-export type { MvcModuleOptions, ErrorPage, ErrorPageContext } from './nest/types'
+export type { MvcModuleOptions, MvcAuthOptions, ErrorPage, ErrorPageContext, ErrorRedirect } from './nest/types'
 export { PageRenderer, type RenderOptions, type Rendered } from './nest/page-renderer'
 export { ViewService } from './nest/view.service'
 export { MvcRedirect } from './nest/redirect'
+export { KeyRing, createKeyRing, MIN_KEY_LENGTH } from './nest/keys'
+export { nonce, currentNonce } from './nest/csp'
+export {
+  MvcAuth,
+  wantsPage,
+  isUnauthenticated,
+  versionFor,
+  identityInVersion,
+  INTENDED_COOKIE,
+  IDENTITY_COOKIE,
+} from './nest/auth'
+export {
+  SignedUrls,
+  SignedUrlGuard,
+  ValidSignature,
+  InvalidSignatureException,
+  SIGNATURE_PARAM,
+  EXPIRES_PARAM,
+  type SignedUrlOptions,
+  type SignatureVerdict,
+} from './nest/signed-urls'
+export {
+  CsrfGuard,
+  SkipCsrf,
+  CsrfTokenMismatchException,
+  CrossSiteRequestException,
+  csrfSettings,
+  type CsrfSettings,
+} from './nest/csrf'
 export { MvcPrecognition, PrecognitionInterceptor } from './nest/precognition'
 export {
   CookieFlashStore,
@@ -26,6 +55,9 @@ export {
   requestPath,
   requestMethod,
   absoluteUrl,
+  requestOrigin,
+  isSafeRedirect,
+  previousUrl,
   requestState,
   readCookie,
   writeCookie,
@@ -38,7 +70,7 @@ export {
 export { SsrService } from './nest/ssr.service'
 export { MvcInterceptor } from './nest/mvc.interceptor'
 export { MvcMiddleware } from './nest/mvc.middleware'
-export { MvcExceptionFilter } from './nest/mvc-exception.filter'
+export { MvcExceptionFilter, PAGE_EXPIRED_MESSAGE } from './nest/mvc-exception.filter'
 export {
   ValidationException,
   validationExceptionFactory,
@@ -62,6 +94,7 @@ export {
   MVC_VITE_SERVER,
   MVC_ASSETS,
   MVC_FLASH_STORE,
+  MVC_KEYS,
 } from './nest/tokens'
 
 // ── SSR ───────────────────────────────────────────────────────────────────────
@@ -133,4 +166,4 @@ export type {
   TemplateFn,
   TemplateContext,
 } from './protocol/types'
-export { FLASH_COOKIE } from './protocol/constants'
+export { FLASH_COOKIE, XSRF_COOKIE, HEADER_XSRF_TOKEN, NONCE_PLACEHOLDER } from './protocol/constants'

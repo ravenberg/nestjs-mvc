@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { ValidationException, View, ViewService, once } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Organization } from '../database/entities/organization.entity'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Data Loading → Once Props. `organizations` is resolved on the first visit and
@@ -14,6 +15,7 @@ import { Organization } from '../database/entities/organization.entity'
  * Nothing is cached on the server. The only memory is the client's, and the only
  * input is this request's header.
  */
+@Public()
 @Controller('features/data-loading')
 export class OncePropsController {
   constructor(

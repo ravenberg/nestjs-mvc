@@ -5,6 +5,7 @@ import { Repository } from 'typeorm'
 import { Contact } from '../database/entities/contact.entity'
 import { Note } from '../database/entities/note.entity'
 import { Organization } from '../database/entities/organization.entity'
+import { Public } from '../auth/public.decorator'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const stamp = () => new Date().toISOString()
@@ -14,6 +15,7 @@ const stamp = () => new Date().toISOString()
  * time it was resolved, so the page can show *which* props a request touched —
  * no counters on the server, nothing shared between requests.
  */
+@Public()
 @Controller('features/data-loading')
 export class DataLoadingController {
   constructor(

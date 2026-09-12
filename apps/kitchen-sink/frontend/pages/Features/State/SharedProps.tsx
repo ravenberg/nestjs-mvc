@@ -11,8 +11,10 @@ export default function SharedProps({ pageOnly }: { pageOnly: string }) {
     <AppLayout title="Shared Props" description="Props every page gets, and how the client knows which ones they are">
       <section className="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 text-sm">
         <p className="text-slate-600">
-          <code className="rounded bg-slate-100 px-1">auth</code> is shared for every page by a middleware (the
-          sidebar reads it); <code className="rounded bg-slate-100 px-1">locale</code> is shared by this page's handler
+          <code className="rounded bg-slate-100 px-1">auth.user</code> is added to every page by nestjs-mvc from{' '}
+          <code className="rounded bg-slate-100 px-1">auth.share</code>, after the guards have run, and{' '}
+          <code className="rounded bg-slate-100 px-1">auth.notifications</code> next to it by a middleware (the sidebar
+          reads both); <code className="rounded bg-slate-100 px-1">locale</code> is shared by this page's handler
           with <code className="rounded bg-slate-100 px-1">view.share()</code>. The page object lists their keys under{' '}
           <code className="rounded bg-slate-100 px-1">sharedProps</code>, so when you click a sidebar link the client can
           keep them while it shows the next page's placeholder — the sidebar never blanks.

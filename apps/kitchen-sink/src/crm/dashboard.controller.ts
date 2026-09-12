@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { View, defer } from 'nestjs-mvc'
+import { View, defer, once } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
+import { CurrentUser } from '../auth/public.decorator'
+import type { User } from '../database/entities/user.entity'
 import { Contact } from '../database/entities/contact.entity'
 import { Note } from '../database/entities/note.entity'
 import { Organization } from '../database/entities/organization.entity'
@@ -16,10 +18,15 @@ export class DashboardController {
 
   @Get('dashboard')
   @View('Crm/Dashboard')
-  async dashboard() {
+  async dashboard(@CurrentUser() user: User) {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
     return {
+      // Resolved once and then kept by the client, like a user's settings or
+      // permissions would be. The kind of prop that must not survive a switch
+      // of user in the same tab: nestjs-mvc resets the client when `auth.user`
+      // changes, so the next user never sees this one's copy.
+      you: once(async () => ({ name: user.name, notes: await this.notes.countBy({ userId: user.id }) })),
       // The counters are deferred: the page paints immediately and the client
       // fetches these in a follow-up partial request.
       totalContacts: defer(() => this.contacts.count()),

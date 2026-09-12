@@ -1,13 +1,16 @@
 import { Controller, Get, Inject } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /**
- * State Management → Shared Props. `auth` is shared for every page by
- * `SharedPropsMiddleware`; this handler shares one more thing for this page
- * only. The page object lists the keys under `sharedProps`, which is what lets
- * the client keep them on screen while an instant visit's placeholder page is
- * shown.
+ * State Management → Shared Props. `auth.user` comes from `auth.share` in
+ * `app.module.ts` (nestjs-mvc adds it after the guards ran),
+ * `auth.notifications` from `SharedPropsMiddleware`, and this handler shares
+ * one more thing for this page only. The page object lists the keys under
+ * `sharedProps`, which is what lets the client keep them on screen while an
+ * instant visit's placeholder page is shown.
  */
+@Public()
 @Controller('features/state')
 export class SharedPropsController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

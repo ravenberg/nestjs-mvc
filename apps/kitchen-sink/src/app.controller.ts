@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Inject, Post, Redirect } from '@nestjs/common'
 import { Ssr, ValidationException, View, ViewService } from 'nestjs-mvc'
+import { Public } from './auth/public.decorator'
 
 const messages: string[] = []
 
+@Public()
 @Controller()
 export class AppController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ConfigEnv, Plugin, UserConfig } from 'vite'
 import { describe, expect, it } from 'vitest'
 import { CLIENT_ENTRY, SSR_ENTRY, nestjsMvc, type NestjsMvcPluginApi } from '../src/vite-plugin'
-import { ViteAssets, pluginApi } from '../src/index'
+import { NONCE_PLACEHOLDER, ViteAssets, pluginApi } from '../src/index'
 
 /** A project root with a package.json and, optionally, a default stylesheet. */
 function project(deps: Record<string, string>, files: string[] = []): string {
@@ -107,11 +107,14 @@ describe('nestjsMvc() plugin', () => {
     expect((d.api as NestjsMvcPluginApi).css).toEqual([])
   })
 
-  it('contributes nothing to the dev config, and a two-environment build otherwise', () => {
+  it('contributes only the CSP nonce placeholder to the dev config, and a two-environment build otherwise', () => {
     const root = project({ react: '^19', '@inertiajs/react': '^3' }, ['frontend/app.css'])
     const plugin = nestjsMvc()
 
-    expect(configure(plugin, { root }, serve)).toBeNull()
+    // Vite then writes it on every script and style it hands back; the adapter
+    // swaps it for the request's nonce, or takes it out again.
+    expect(configure(plugin, { root }, serve)).toEqual({ html: { cspNonce: NONCE_PLACEHOLDER } })
+    expect(configure(plugin, { root, html: { cspNonce: 'mine' } }, serve)).toEqual({ html: { cspNonce: 'mine' } })
 
     const config = configure(plugin, { root }, build)!
     expect(config.base).toBe('/build/')

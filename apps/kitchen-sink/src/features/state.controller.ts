@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Inject, Post } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /** State Management: remember, flash data. */
+@Public()
 @Controller('features/state')
 export class StateController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

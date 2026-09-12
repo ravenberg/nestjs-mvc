@@ -1,17 +1,26 @@
-import { Link } from 'nestjs-mvc/react'
+import { Link, usePage } from 'nestjs-mvc/react'
 import { AppLayout } from '../../../layouts/AppLayout'
 
 export default function Http({ statuses }: { statuses: { status: number; reason: string }[] }) {
+  const flash = usePage().flash?.message as string | undefined
+
   return (
     <AppLayout title="HTTP Exceptions" description="Your own error pages for the statuses you choose">
+      {flash && (
+        <div role="status" className="mb-4 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {flash}
+        </div>
+      )}
       <section className="max-w-2xl rounded-xl border border-slate-200 bg-white p-6">
         <p className="text-sm text-slate-600">
           Each link hits a handler that throws. The <code className="rounded bg-slate-100 px-1">errorPages</code>{' '}
           callback on <code className="rounded bg-slate-100 px-1">MvcModule.forRoot()</code> renders{' '}
           <code className="rounded bg-slate-100 px-1">Errors/Show</code> for 403, 404, 500 and 503 — as an Inertia visit
           (watch the Network tab: the response has the error status <em>and</em> a page object) or as a first load
-          (open one in a new tab). 419 and 429 are left to NestJS on purpose, so you see the default JSON
-          in the error dialog.
+          (open one in a new tab). For 429 it returns{' '}
+          <code className="rounded bg-slate-100 px-1">{"{ redirect: 'back', flash }"}</code> instead: you land back here
+          with a message. 419 is the exception the CSRF guard throws for a stale token; nestjs-mvc sends an Inertia
+          visit back with “This page has expired” by itself, no configuration.
         </p>
         <ul className="mt-4 grid gap-2 sm:grid-cols-2">
           {statuses.map(({ status, reason }) => (

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, extname, join, resolve } from 'node:path'
 import type { Plugin, UserConfig } from 'vite'
+import { NONCE_PLACEHOLDER } from '../protocol/constants'
 import { type Framework, type Preset, presets } from './presets'
 
 export type { Framework } from './presets'
@@ -71,7 +72,13 @@ export function nestjsMvc(options: NestjsMvcPluginOptions = {}): Plugin {
       requireAdapter(root, framework)
       preset = presets[framework]
 
-      if (command !== 'build') return null
+      if (command !== 'build') {
+        // Vite then writes this on every script and style it hands back — its
+        // own client, a plugin's preamble, ours — and the adapter swaps it for
+        // the request's nonce, so a page works under a strict CSP in
+        // development too. Nothing to configure.
+        return { html: { cspNonce: user.html?.cspNonce ?? NONCE_PLACEHOLDER } }
+      }
 
       const cssInputs = Object.fromEntries(api.css.map((file) => [basename(file, extname(file)), file]))
       const config: UserConfig = {

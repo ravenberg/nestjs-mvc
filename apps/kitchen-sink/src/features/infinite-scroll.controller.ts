@@ -4,6 +4,7 @@ import { View, scroll } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Note } from '../database/entities/note.entity'
 import { paginate } from '../pagination'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Data Loading → Infinite Scroll. Lands mid-way (`?page=3` from the sidebar) so
@@ -11,6 +12,7 @@ import { paginate } from '../pagination'
  * end it wants through `X-Inertia-Infinite-Scroll-Merge-Intent`, and the adapter
  * answers with `prependProps` or `mergeProps` accordingly.
  */
+@Public()
 @Controller('features/data-loading')
 export class InfiniteScrollController {
   constructor(@InjectRepository(Note) private readonly notes: Repository<Note>) {}

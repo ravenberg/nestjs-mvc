@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, Post } from '@nestjs/common'
 import { EncryptHistory, View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /**
  * Navigation → History Management. `@EncryptHistory()` asks the client to
@@ -8,6 +9,7 @@ import { EncryptHistory, View, ViewService } from 'nestjs-mvc'
  * which rides the flash bag to the redirect target and tells the client to
  * rotate its key and drop what it stored.
  */
+@Public()
 @Controller('features/navigation')
 export class HistoryController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

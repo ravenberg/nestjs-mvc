@@ -95,6 +95,16 @@ if (process.env.NODE_ENV === 'production') {
 await app.listen(3000)
 ```
 
+In production, set `APP_KEY` in the environment: everything nestjs-mvc hands the browser (the flash cookie, for one) is signed with it, and the app refuses to start without one. Generate a key with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; to rotate, move the old one to `APP_PREVIOUS_KEYS`. In development a random key per process is used, with a warning. Behind a reverse proxy, tell your platform to trust it (`app.set('trust proxy', 1)` on Express, `new FastifyAdapter({ trustProxy: true })` on Fastify); nestjs-mvc reads the origin the platform works out, and `back()` never redirects to another site.
+
+CSRF protection is on without configuration: a POST, PUT, PATCH or DELETE must come from your own pages (`Sec-Fetch-Site`/`Origin`) and echo the `XSRF-TOKEN` cookie as `X-XSRF-TOKEN`, which the client does on every request. Put `@SkipCsrf()` on webhooks and on controllers that machines call with a bearer token. It is off under a test runner (`NODE_ENV=test`) unless you set `csrf` explicitly, so your supertest suite needs no tokens.
+
+A Content Security Policy needs every script on the page to carry the same nonce as the header. Ask for it where you build that header — `nonce(req)`, in your helmet configuration — and nestjs-mvc puts it on the tags it renders, including the ones Vite injects while you develop. `ctx.nonce` is there for a script of your own.
+
+For links that have to work without a login — an invite, an unsubscribe link, a password reset — `SignedUrls.sign('/invitations/7', { expiresIn: 3600 })` makes one that carries its own proof, and `@ValidSignature()` refuses it when it was changed or has expired. Bind a link to something that changes (`bind: passwordHash`) and it becomes single-use without a table of tokens.
+
+Authentication stays yours — a NestJS guard, Passport, a hosted provider — and nestjs-mvc makes it behave in a browser. A guard's `UnauthorizedException` on a page load or Inertia visit becomes a redirect to `/login` (JSON clients keep the 401), and `this.view.intended('/dashboard')` in your login handler sends the user back where they were going. Add `auth: { share: (user) => ({ id: user.id, name: user.name }) }` to show the logged-in user on every page as `auth.user`; only what you return reaches the browser. When the user changes — a login, a logout, a switch in another tab — the next request from a page rendered for the previous user gets one full page load instead, so nothing that user loaded is shown to the next, and a form rendered for them is not submitted as someone else.
+
 ## A page from a controller
 
 A handler with `@View()` returns props. Everything else, from data access to authorization, is plain NestJS.

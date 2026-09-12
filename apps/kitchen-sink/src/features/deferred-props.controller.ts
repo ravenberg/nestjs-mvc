@@ -4,6 +4,7 @@ import { View, defer } from 'nestjs-mvc'
 import { Repository } from 'typeorm'
 import { Contact } from '../database/entities/contact.entity'
 import { Note } from '../database/entities/note.entity'
+import { Public } from '../auth/public.decorator'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -14,6 +15,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
  * others down — it is reported, left out, and listed under `rescuedProps`, so
  * the client's `<Deferred rescue>` slot can show something sensible.
  */
+@Public()
 @Controller('features/data-loading')
 export class DeferredPropsController {
   constructor(

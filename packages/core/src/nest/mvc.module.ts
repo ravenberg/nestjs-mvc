@@ -1,6 +1,7 @@
 import {
   DynamicModule,
   Inject,
+  Logger,
   MiddlewareConsumer,
   Module,
   NestModule,
@@ -8,11 +9,15 @@ import {
   OnModuleDestroy,
   Provider,
 } from '@nestjs/common'
-import { APP_FILTER, APP_INTERCEPTOR, HttpAdapterHost } from '@nestjs/core'
-import { MVC_ASSETS, MVC_FLASH_STORE, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, HttpAdapterHost } from '@nestjs/core'
+import { CsrfGuard } from './csrf'
+import { MVC_ASSETS, MVC_FLASH_STORE, MVC_KEYS, MVC_MODULE_OPTIONS, MVC_VITE_SERVER } from './tokens'
 import { CookieFlashStore, type FlashStore } from './flash'
+import { createKeyRing, type KeyRing } from './keys'
 import { MvcExceptionFilter } from './mvc-exception.filter'
 import { MvcInterceptor } from './mvc.interceptor'
+import { MvcAuth } from './auth'
+import { SignedUrls } from './signed-urls'
 import { PageRenderer } from './page-renderer'
 import { PrecognitionInterceptor } from './precognition'
 import { MvcMiddleware } from './mvc.middleware'
@@ -28,13 +33,32 @@ export interface MvcModuleAsyncOptions {
   useFactory: (...args: never[]) => MvcModuleOptions | Promise<MvcModuleOptions>
 }
 
+/** A bad `url` would make every `back()` fall back; refuse it at boot instead. */
+function assertAppUrl(url: string | undefined): void {
+  if (url === undefined) return
+  let parsed: URL | undefined
+  try {
+    parsed = new URL(url)
+  } catch {
+    // reported below
+  }
+  if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+    throw new Error(`[nestjs-mvc] MvcModule url must be an absolute http(s) URL such as https://app.example.com; got "${url}".`)
+  }
+}
+
 @Module({})
 export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDestroy {
   constructor(
     @Inject(MVC_MODULE_OPTIONS) private readonly options: MvcModuleOptions,
     @Inject(MVC_VITE_SERVER) private readonly holder: ViteDevServerHolder,
     @Inject(HttpAdapterHost) private readonly adapterHost: HttpAdapterHost,
-  ) {}
+  ) {
+    assertAppUrl(options.url)
+    if (options.csrf === false && process.env.NODE_ENV !== 'test') {
+      new Logger('MvcCsrf').warn('CSRF protection is off (csrf: false): any site can make your users submit forms.')
+    }
+  }
 
   static forRoot(options: MvcModuleOptions = {}): DynamicModule {
     return this.build({ provide: MVC_MODULE_OPTIONS, useValue: options })
@@ -66,22 +90,42 @@ export class MvcModule implements NestModule, OnApplicationBootstrap, OnModuleDe
           inject: [MVC_MODULE_OPTIONS, MVC_VITE_SERVER],
         },
         {
-          provide: MVC_FLASH_STORE,
-          useFactory: (options: MvcModuleOptions): FlashStore =>
-            new (options.flash?.store ?? CookieFlashStore)(options.flash?.cookie as never),
+          provide: MVC_KEYS,
+          useFactory: (options: MvcModuleOptions): KeyRing => createKeyRing(options.keys),
           inject: [MVC_MODULE_OPTIONS],
         },
+        {
+          provide: MVC_FLASH_STORE,
+          useFactory: (options: MvcModuleOptions, keys: KeyRing): FlashStore =>
+            new (options.flash?.store ?? CookieFlashStore)({ ...options.flash?.cookie, keys } as never),
+          inject: [MVC_MODULE_OPTIONS, MVC_KEYS],
+        },
+        MvcAuth,
+        SignedUrls,
         ViewService,
         SsrService,
         PageRenderer,
         MvcMiddleware,
         ViteDevMiddleware,
+        // CSRF is a guard: it reads @SkipCsrf() and runs before Precognition and the handler.
+        { provide: APP_GUARD, useClass: CsrfGuard },
         // Precognition first: a validate-only request never reaches the page interceptor.
         { provide: APP_INTERCEPTOR, useClass: PrecognitionInterceptor },
         { provide: APP_INTERCEPTOR, useClass: MvcInterceptor },
         { provide: APP_FILTER, useClass: MvcExceptionFilter },
       ],
-      exports: [MVC_MODULE_OPTIONS, MVC_ASSETS, MVC_VITE_SERVER, MVC_FLASH_STORE, ViewService, SsrService, PageRenderer],
+      exports: [
+        MVC_MODULE_OPTIONS,
+        MVC_ASSETS,
+        MVC_VITE_SERVER,
+        MVC_KEYS,
+        MVC_FLASH_STORE,
+        MvcAuth,
+        SignedUrls,
+        ViewService,
+        SsrService,
+        PageRenderer,
+      ],
     }
   }
 

@@ -109,11 +109,13 @@ test.describe('Data Loading', () => {
     const onceStamp = page.locator('section', { has: page.getByRole('heading', { name: 'Once prop', exact: true }) }).locator('p').first()
     const stamp = await onceStamp.innerText()
 
-    // Wait for the visit to land: the component remounts, so typing before that would be lost.
+    // Wait for the visit to land *and* be rendered: the component remounts, so
+    // typing between the response and the render would be lost.
     await Promise.all([
       page.waitForResponse((r) => r.url().endsWith('/once-props') && r.request().headers()['x-inertia'] === 'true'),
       page.getByRole('link', { name: 'Visit again' }).click(),
     ])
+    await page.waitForLoadState('networkidle')
     await expect(onceStamp).toHaveText(stamp)
 
     const name = `Initech ${unique()}`

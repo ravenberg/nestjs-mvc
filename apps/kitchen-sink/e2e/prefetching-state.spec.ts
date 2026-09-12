@@ -70,9 +70,12 @@ test.describe('State', () => {
     await expect(page.getByText('Set on the client with router.flash(); same page.flash, no request.', { exact: true })).toBeVisible()
   })
 
-  test('Shared props: auth from middleware, locale from the handler, both listed', async ({ page }) => {
+  test('Shared props: the user from auth.share, notifications from middleware, locale from the handler', async ({ page }) => {
     await page.goto('/features/state/shared-props')
     await expect(page.locator('dd', { hasText: '"auth"' })).toContainText('"locale"')
+    // auth.user comes from `auth.share` (after the guards), and the sidebar's
+    // notification count from the middleware's deferred closure.
     await expect(page.getByText('Test User · test@example.com')).toBeVisible()
+    await expect(page.locator('aside').getByTitle(/recent notes by you/)).toBeVisible()
   })
 })

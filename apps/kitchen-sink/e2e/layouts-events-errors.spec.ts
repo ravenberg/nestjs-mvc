@@ -75,6 +75,18 @@ test.describe('Error handling', () => {
     await expect(page.getByRole('heading', { name: '503 · Service unavailable' })).toBeVisible()
   })
 
+  test('a recoverable error sends the visitor back with a message instead of an error dialog', async ({ page }) => {
+    await page.goto('/features/errors/http')
+    // The flash, not the link that carries the same words.
+    await page.getByRole('link', { name: /^429/ }).click()
+    await expect(page.getByRole('status')).toHaveText('Slow down: too many requests.')
+    await expect(page).toHaveURL(/\/features\/errors\/http$/)
+
+    await page.getByRole('link', { name: /^419/ }).click()
+    await expect(page.getByRole('status')).toHaveText('This page has expired. Please try again.')
+    await expect(page).toHaveURL(/\/features\/errors\/http$/)
+  })
+
   test('a network error is reported through onNetworkError, and a hanging request can be cancelled', async ({ page }) => {
     await page.goto('/features/errors/network')
     await page.getByRole('button', { name: 'visit an unreachable host' }).click()

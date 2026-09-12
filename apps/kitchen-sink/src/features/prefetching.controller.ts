@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const stamp = () => new Date().toISOString()
@@ -25,6 +26,7 @@ const products: { id: number; name: string; price: number; updatedAt: string }[]
  * can show whether a visit was served from the client's cache or freshly
  * rendered. Nothing here is cached on the server; the cache is the client's.
  */
+@Public()
 @Controller('features/prefetching')
 export class PrefetchingController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

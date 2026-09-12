@@ -11,6 +11,8 @@ import { defaultTemplate, viewBody } from '../protocol/html'
 import { PartialReload, always, resolveProps } from '../protocol/props'
 import type { PageObject, TemplateContext } from '../protocol/types'
 import { resolveVersion } from '../protocol/version'
+import { MvcAuth } from './auth'
+import { currentNonce, nonce as nonceFor } from './csp'
 import type { FlashStore } from './flash'
 import {
   type AnyRequest,
@@ -60,6 +62,7 @@ export class PageRenderer {
     @Optional() @Inject(MVC_ASSETS) private readonly assets: ViteAssets | null,
     @Optional() @Inject(SsrService) private readonly ssr: SsrService | null,
     @Inject(MVC_FLASH_STORE) private readonly flash: FlashStore,
+    @Inject(MvcAuth) private readonly auth: MvcAuth,
   ) {}
 
   async render(
@@ -79,6 +82,10 @@ export class PageRenderer {
     const flash = { ...bag.flash, ...state.pending.flash }
     const refreshOnce = [...(bag.refresh ?? []), ...(state.pending.refresh ?? [])]
 
+    // Shared props, plus `auth.user` from the app's guards when it shares one.
+    // Resolved here, after the guards ran, which a middleware cannot do.
+    const shared = options.shared === false ? {} : await this.withUser(state.shared, req)
+
     const {
       props,
       deferredProps,
@@ -90,7 +97,7 @@ export class PageRenderer {
       onceProps,
       rescuedProps,
     } = await resolveProps(
-      { errors: always(bag.errors ?? {}), ...(options.shared === false ? {} : state.shared), ...raw },
+      { errors: always(bag.errors ?? {}), ...shared, ...raw },
       partial,
       {
         reset: splitHeader(header(req, HEADER_RESET)),
@@ -111,7 +118,8 @@ export class PageRenderer {
       component,
       props,
       url: requestUrl(req),
-      version: await resolveVersion(this.options.version),
+      // The asset version, plus who the page is rendered for (see MvcAuth.pageVersion).
+      version: this.auth.pageVersion(req, await resolveVersion(this.options.version)),
     }
     if (Object.keys(deferredProps).length > 0) page.deferredProps = deferredProps
     if (mergeProps.length > 0) page.mergeProps = mergeProps
@@ -127,11 +135,17 @@ export class PageRenderer {
     if (state.encryptHistory ?? options.encryptHistoryDecorator ?? this.options.history?.encrypt ?? false) {
       page.encryptHistory = true
     }
-    if (bag.clearHistory || state.pending.clearHistory) page.clearHistory = true
+    // A different user than this browser's last page, on a load that carried no
+    // page version (a full-page login, an OAuth callback): forget the previous
+    // user's history too. Inertia requests from a stale page never get here; the
+    // interceptor answered them with a full page load first.
+    const identity = this.auth.identityChange(req)
+    if (identity?.changed) this.auth.rememberIdentity(req, res, identity.current)
+    if (bag.clearHistory || state.pending.clearHistory || identity?.changed) page.clearHistory = true
     if (bag.preserveFragment || state.pending.preserveFragment) page.preserveFragment = true
     // Which top-level props came from sharing: the client carries those into the
     // placeholder page of an instant visit, so the layout does not flicker.
-    const sharedKeys = options.shared === false ? [] : Object.keys(state.shared).map((key) => key.split('.')[0])
+    const sharedKeys = Object.keys(shared).map((key) => key.split('.')[0])
     if (sharedKeys.length > 0 && (this.options.exposeSharedProps ?? true)) page.sharedProps = [...new Set(sharedKeys)]
 
     appendVary(res, 'X-Inertia')
@@ -142,6 +156,10 @@ export class PageRenderer {
     }
 
     setHeader(res, 'Content-Type', 'text/html; charset=utf-8')
+
+    // A nonce for this page when the app builds a CSP with one (its helmet
+    // config calls `nonce(req)`), or when the module asks for one always.
+    const nonce = this.options.csp?.nonce ? nonceFor(req) : currentNonce(req)
 
     // SSR only applies to the initial HTML load; Inertia visits swap on the client.
     const ssr =
@@ -157,13 +175,23 @@ export class PageRenderer {
       )) ?? null
 
     const ctx: TemplateContext = {
-      assets: () => this.assets?.tags() ?? '',
+      assets: () => this.assets?.tags(nonce) ?? '',
       head: () => ssr?.head.join('\n') ?? '',
       body: () => ssr?.body ?? viewBody(page),
+      nonce: nonce ?? '',
     }
     const html = await (this.options.template ?? defaultTemplate)(page, ctx)
     // In dev this lets Vite inject the HMR client and plugin preambles (e.g. React Refresh).
-    return { kind: 'html', html: this.assets ? await this.assets.transformHtml(requestUrl(req), html) : html }
+    return { kind: 'html', html: this.assets ? await this.assets.transformHtml(requestUrl(req), html, nonce) : html }
+  }
+
+  /** The shared props with `auth.user` added, merged into an `auth` object the app shares itself. */
+  private async withUser(shared: Record<string, unknown>, req: AnyRequest): Promise<Record<string, unknown>> {
+    const user = await this.auth.sharedUser(req)
+    if (user === undefined) return shared
+    const auth = shared.auth
+    const isPlainObject = typeof auth === 'object' && auth !== null && Object.getPrototypeOf(auth) === Object.prototype
+    return { ...shared, auth: isPlainObject ? { ...auth, user } : { user } }
   }
 
   private detectPartial(req: AnyRequest, component: string): PartialReload | null {

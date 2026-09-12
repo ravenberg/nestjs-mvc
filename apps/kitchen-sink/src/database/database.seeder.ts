@@ -5,6 +5,10 @@ import { Contact } from './entities/contact.entity'
 import { Note } from './entities/note.entity'
 import { Organization } from './entities/organization.entity'
 import { User } from './entities/user.entity'
+import { hashPassword } from '../auth/passwords'
+
+/** The password of every seeded user; this is a demo. */
+export const DEMO_PASSWORD = 'password'
 
 const ORGANIZATIONS = [
   'Acme Corporation', 'Globex', 'Initech', 'Umbrella Health', 'Soylent Industries',
@@ -56,7 +60,7 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if ((await this.users.count()) > 0) return
+    if ((await this.users.count()) > 0) return this.ensureDemoPasswords()
 
     const random = makeRandom(42)
     const pick = <T>(list: T[]): T => list[Math.floor(random() * list.length)]
@@ -112,5 +116,25 @@ export class DatabaseSeeder implements OnApplicationBootstrap {
     this.logger.log(
       `Seeded ${allUsers.length} users, ${organizations.length} organizations, ${contacts.length} contacts`,
     )
+    await this.ensureDemoPasswords()
+  }
+
+  /**
+   * The seeded users log in with `password` and count as verified — on every
+   * boot, so the demo is the same after someone has played with it (a reset
+   * through the UI, say) and on a database from before logins existed.
+   * Accounts registered through the app are left alone.
+   */
+  private async ensureDemoPasswords(): Promise<void> {
+    const emails = ['test@example.com', 'user1@example.com', 'user2@example.com', 'user3@example.com']
+    const users = await this.users.find({ where: emails.map((email) => ({ email })), select: { id: true, email: true } })
+    if (users.length === 0) return
+
+    const passwordHash = await hashPassword(DEMO_PASSWORD)
+    await this.users.update(
+      users.map((user) => user.id),
+      { passwordHash, emailVerifiedAt: new Date() },
+    )
+    this.logger.log(`Demo logins: ${users.map((user) => user.email).join(', ')} / ${DEMO_PASSWORD}`)
   }
 }

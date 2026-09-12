@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Put, Query } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 /** Received non-GET requests, newest first; in-memory kitchen-sink state. */
 const received: { id: number; method: string; payload: unknown; at: string }[] = []
@@ -17,6 +18,7 @@ const CITIES = ['Amsterdam', 'Rotterdam', 'Utrecht', 'Eindhoven', 'Groningen', '
  * Everything here is ordinary Nest routing; what the pages demonstrate is what
  * the client does with the responses.
  */
+@Public()
 @Controller('features/navigation')
 export class NavigationController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

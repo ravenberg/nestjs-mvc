@@ -14,6 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { flattenIssues, ValidationException, View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
+import { Public } from '../auth/public.decorator'
 
 /** What multer hands `@UploadedFile()`; declared here so the demo needs no `@types/multer`. */
 interface UploadedImage {
@@ -89,6 +90,7 @@ const TodoSchema = z.object({
  * and a valid one flashes and redirects back — the same two paths for every
  * form, whichever client-side helper drives it.
  */
+@Public()
 @Controller('features/forms')
 export class FormsController {
   constructor(@Inject(ViewService) private readonly view: ViewService) {}

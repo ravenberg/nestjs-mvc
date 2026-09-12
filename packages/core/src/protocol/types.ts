@@ -47,6 +47,12 @@ export interface TemplateContext {
    * element plus the page-object script that `viewBody(page)` produces.
    */
   body: () => string
+  /**
+   * This request's CSP nonce, for anything of your own in the template
+   * (`<script nonce="${ctx.nonce}">`); empty when the app uses no nonce. The
+   * tags `assets()` returns already carry it.
+   */
+  nonce: string
 }
 
 export type TemplateFn = (
@@ -63,4 +69,14 @@ export interface MvcRequestState {
   encryptHistory?: boolean
   /** Flash data, refresh keys and page flags queued during this request, for this render or the next. */
   pending: { flash?: Record<string, unknown>; refresh?: string[]; clearHistory?: boolean; preserveFragment?: boolean }
+  /**
+   * Set once the exception filter has written this response's flash bag, so
+   * the Express `res.redirect` patch does not write it a second time (without
+   * the errors the filter added).
+   */
+  flashCarried?: boolean
+  /** Set by `ViewService.intended()`: the redirect that answers it also forgets the intended URL. */
+  forgetIntended?: boolean
+  /** This request's CSP nonce, once something asked for one (`nonce(req)`). */
+  nonce?: string
 }

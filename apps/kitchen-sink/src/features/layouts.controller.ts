@@ -1,5 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common'
 import { View } from 'nestjs-mvc'
+import { Public } from '../auth/public.decorator'
 
 const stamp = () => new Date().toISOString()
 
@@ -9,6 +10,7 @@ const stamp = () => new Date().toISOString()
  * the client decides how it is framed — so these handlers only hand over the
  * props each page shows.
  */
+@Public()
 @Controller('features/layouts')
 export class LayoutsController {
   @Get('persistent/:tab')

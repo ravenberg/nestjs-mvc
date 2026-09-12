@@ -37,16 +37,17 @@ export default function History({ secret, visitedAt }: { secret: { iban: string;
             onClick={() => router.post('/features/navigation/history/logout')}
             className="rounded-lg bg-slate-800 px-3 py-1.5 font-medium text-white hover:bg-slate-900"
           >
-            Log out (clearHistory)
+            Simulate a logout (clearHistory)
           </button>
         </div>
 
         <p className="mt-4 text-xs text-slate-500">
           Try it: open DevTools → Application → Session Storage, note the history key; navigate away and back —
-          the page still restores, because the key is there. Click "Log out": the POST calls{' '}
+          the page still restores, because the key is there. Click the button: the POST calls{' '}
           <code className="rounded bg-slate-100 px-1">view.clearHistory().back()</code>, the next page object carries{' '}
           <code className="rounded bg-slate-100 px-1">clearHistory: true</code>, the key is rotated, and a Back to
-          an earlier encrypted page falls back to a fresh request instead of the stored copy.
+          an earlier encrypted page falls back to a fresh request instead of the stored copy. The real logout in the
+          sidebar does the same thing, and a full page load on top of it.
         </p>
       </section>
     </AppLayout>

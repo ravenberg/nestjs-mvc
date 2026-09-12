@@ -1,17 +1,18 @@
 import { Inject, Injectable, NestMiddleware } from '@nestjs/common'
 import { HEADER_VERSION } from '../protocol/constants'
 import { resolveVersion } from '../protocol/version'
+import { identityInVersion } from './auth'
 import { type FlashStore, mergeBags } from './flash'
 import {
   type AnyRequest,
   type AnyResponse,
-  absoluteUrl,
   endRaw,
   header,
   isInertia,
   isPrefetch,
   requestMethod,
   requestState,
+  requestUrl,
 } from './http'
 import { MVC_FLASH_STORE, MVC_MODULE_OPTIONS } from './tokens'
 import type { MvcModuleOptions } from './types'
@@ -46,10 +47,15 @@ export class MvcMiddleware implements NestMiddleware {
 
     if (inertia && method === 'GET') {
       const version = await resolveVersion(this.options.version)
-      if (version !== null && (header(req, HEADER_VERSION) ?? '') !== version) {
+      // Only the asset part counts here: a page's version also names the user it
+      // was rendered for, and that is checked after the guards (MvcInterceptor).
+      if (version !== null && identityInVersion(header(req, HEADER_VERSION), version) === undefined) {
         // v3 echoes the current version on the mismatch 409 so the client can
         // observe it. The flash bag is untouched, so it survives the full visit.
-        endRaw(res, 409, { 'X-Inertia-Location': absoluteUrl(req), 'X-Inertia-Version': version })
+        // The location is this request's own path: the client resolves it
+        // against the page it is on, which is the right origin by definition —
+        // no Host or X-Forwarded-Host to trust, behind any proxy.
+        endRaw(res, 409, { 'X-Inertia-Location': requestUrl(req), 'X-Inertia-Version': version })
         return
       }
     }
@@ -66,8 +72,11 @@ export class MvcMiddleware implements NestMiddleware {
     expressRes.redirect = (...args: unknown[]) => {
       const status = args.length === 2 ? (args[0] as number) : 302
       const url = (args.length === 2 ? args[1] : args[0]) as string
-      const pending = requestState(req).pending
-      if (pending.flash || pending.refresh) {
+      const state = requestState(req)
+      const pending = state.pending
+      // The exception filter redirects through this method too; it has already
+      // written the bag (with its errors), so writing it again would lose them.
+      if (!state.flashCarried && (pending.flash || pending.refresh)) {
         // `res.redirect` is synchronous, so only a synchronous store can carry the
         // bag here; both shipped stores are. Async stores work through ViewService.
         const incoming = this.flash.read(req)

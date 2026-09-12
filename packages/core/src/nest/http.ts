@@ -19,8 +19,10 @@ export interface AnyRequest {
   url?: string
   /** Express: the URL before any mount-path stripping. */
   originalUrl?: string
-  /** Express and Fastify expose the scheme; raw requests do not. */
+  /** Express and Fastify expose the scheme, honouring their own trust-proxy setting; raw requests do not. */
   protocol?: string
+  /** Express 5 and Fastify 5 expose the host (with port), honouring their own trust-proxy setting. */
+  host?: string
   /** Fastify wraps the Node request. */
   raw?: IncomingMessage
   socket?: IncomingMessage['socket']
@@ -34,8 +36,9 @@ export interface AnyResponse {
   statusCode?: number
   setHeader?: (name: string, value: string | string[]) => unknown
   getHeader?: (name: string) => unknown
-  /** Fastify's header setter. */
+  /** Fastify's header setter; for `set-cookie` it appends rather than replaces. */
   header?: (name: string, value: string | string[]) => unknown
+  removeHeader?: (name: string) => unknown
   end?: (body?: string) => unknown
 }
 
@@ -63,13 +66,60 @@ export const requestUrl = (req: AnyRequest): string => req.originalUrl ?? req.ur
 
 export const requestPath = (req: AnyRequest): string => requestUrl(req).split('?')[0]
 
-/** The full URL for `X-Inertia-Location`, trusting a reverse proxy's forwarded headers. */
-export function absoluteUrl(req: AnyRequest): string {
-  const forwardedProto = header(req, 'x-forwarded-proto')?.split(',')[0].trim()
-  const encrypted = (req.socket ?? rawRequest(req).socket) as { encrypted?: boolean } | undefined
-  const protocol = forwardedProto ?? req.protocol ?? (encrypted?.encrypted ? 'https' : 'http')
-  const host = header(req, 'x-forwarded-host') ?? header(req, 'host') ?? 'localhost'
-  return `${protocol}://${host}${requestUrl(req)}`
+/**
+ * This app's origin as the browser sees it (`https://app.example.com`), or
+ * `undefined` when the request does not say. `appUrl` (the module's `url`)
+ * wins. Otherwise the platform's `protocol` and `host`, which honour Express's
+ * `trust proxy` and Fastify's `trustProxy`: whether `X-Forwarded-*` may be
+ * believed is the platform's decision, so this never reads those headers
+ * itself. A raw request (middleware on Fastify) has only its socket and `Host`.
+ */
+export function requestOrigin(req: AnyRequest, appUrl?: string): string | undefined {
+  if (appUrl) return new URL(appUrl).origin
+  const socket = (req.socket ?? rawRequest(req).socket) as { encrypted?: boolean } | undefined
+  const protocol = req.protocol ?? (socket?.encrypted ? 'https' : 'http')
+  const host = req.host || header(req, 'host')
+  if (!host) return undefined
+  try {
+    return new URL(`${protocol}://${host}`).origin
+  } catch {
+    return undefined
+  }
+}
+
+/** The full URL of this request, on `requestOrigin()`. */
+export function absoluteUrl(req: AnyRequest, appUrl?: string): string {
+  return `${requestOrigin(req, appUrl) ?? 'http://localhost'}${requestUrl(req)}`
+}
+
+/**
+ * Whether redirecting to `url` keeps the visitor on this app: a path (`/x`,
+ * not `//x`), or an absolute http(s) URL on this app's origin. Everything
+ * else is refused — scheme-relative URLs, `https:evil.com`, `javascript:`,
+ * bare words, and anything with a backslash, whitespace or control character,
+ * which browsers are known to "repair" into another host.
+ */
+export function isSafeRedirect(url: string | undefined, req: AnyRequest, appUrl?: string): url is string {
+  if (!url || [...url].some(isUnsafeUrlChar)) return false
+  if (url.startsWith('/')) return !url.startsWith('//')
+  if (!/^https?:\/\//i.test(url)) return false
+  try {
+    return new URL(url).origin === requestOrigin(req, appUrl)
+  } catch {
+    return false
+  }
+}
+
+/** Whitespace, control characters and `\`: the characters browsers strip or turn into `/`. */
+const isUnsafeUrlChar = (char: string): boolean => {
+  const code = char.charCodeAt(0)
+  return code <= 0x20 || code === 0x7f || char === '\\'
+}
+
+/** Where `back()` goes: the `Referer`, when it is on this app; else `fallback`. */
+export function previousUrl(req: AnyRequest, fallback = '/', appUrl?: string): string {
+  const referer = header(req, 'referer')
+  return isSafeRedirect(referer, req, appUrl) ? referer : fallback
 }
 
 /** Per-request state, created by the middleware and found again by handlers on any platform. */
@@ -115,10 +165,15 @@ export function getHeader(res: AnyResponse, name: string): unknown {
   return res.getHeader?.(name) ?? res.raw?.getHeader(name)
 }
 
+/** Replaces a header, on every platform. */
 export function setHeader(res: AnyResponse, name: string, value: string | string[]): void {
   if (typeof res.setHeader === 'function') res.setHeader(name, value)
-  else if (typeof res.header === 'function') res.header(name, value)
-  else res.raw?.setHeader(name, value)
+  else if (typeof res.header === 'function') {
+    // Fastify's `header('set-cookie', …)` appends to what is there, so a second
+    // cookie written on the same reply would repeat the first. Replace instead.
+    res.removeHeader?.(name)
+    res.header(name, value)
+  } else res.raw?.setHeader(name, value)
 }
 
 /** Adds a value to the `Vary` header without dropping what is already there. */
