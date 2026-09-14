@@ -32,8 +32,8 @@ function Header() {
   return (
     <header
       className={clsx(
-        'sticky top-0 z-50 flex flex-none flex-wrap items-center justify-between bg-white px-4 py-5 shadow-md shadow-slate-900/5 transition duration-500 sm:px-6 lg:px-8 dark:shadow-none',
-        isScrolled ? 'dark:bg-slate-900/95 dark:backdrop-blur-sm dark:[@supports(backdrop-filter:blur(0))]:bg-slate-900/75' : 'dark:bg-transparent',
+        'sticky top-0 z-50 flex flex-none flex-wrap items-center justify-between border-b border-neutral-200/70 bg-[#fdfdfd] px-4 py-5 transition duration-500 sm:px-6 lg:px-8 dark:border-white/10',
+        isScrolled ? 'dark:bg-neutral-950/90 dark:backdrop-blur-sm dark:[@supports(backdrop-filter:blur(0))]:bg-neutral-950/70' : 'dark:bg-transparent',
       )}
     >
       <div className="mr-6 flex lg:hidden">
@@ -51,7 +51,7 @@ function Header() {
       <div className="relative flex basis-0 justify-end gap-6 sm:gap-8 md:grow">
         <ThemeSelector className="relative z-10" />
         <a href="https://github.com/ravenberg/nestjs-mvc" className="group" aria-label="GitHub">
-          <GitHubIcon className="h-6 w-6 fill-slate-400 group-hover:fill-slate-500 dark:group-hover:fill-slate-300" />
+          <GitHubIcon className="h-6 w-6 fill-neutral-400 group-hover:fill-neutral-500 dark:group-hover:fill-neutral-300" />
         </a>
       </div>
     </header>
@@ -68,11 +68,11 @@ export function Layout({ children }: { children: ReactNode }) {
       {isHomePage && <Hero />}
       <div className="relative mx-auto flex w-full max-w-8xl flex-auto justify-center sm:px-2 lg:px-8 xl:px-12">
         <div className="hidden lg:relative lg:block lg:flex-none">
-          <div className="absolute inset-y-0 right-0 w-[50vw] bg-slate-50 dark:hidden" />
-          <div className="absolute top-16 right-0 bottom-0 hidden h-12 w-px bg-linear-to-t from-slate-800 dark:block" />
-          <div className="absolute top-28 right-0 bottom-0 hidden w-px bg-slate-800 dark:block" />
-          <div className="sticky top-19 -ml-0.5 h-[calc(100vh-4.75rem)] w-64 overflow-x-hidden overflow-y-auto py-16 pr-8 pl-0.5 xl:w-72 xl:pr-16">
-            <Navigation />
+          <div className="sticky top-19 h-[calc(100vh-4.75rem)] w-64 overflow-x-hidden overflow-y-auto py-8 pr-8 xl:w-72 xl:pr-12">
+            {/* The sidebar as a panel, the way the NestJS docs show it. */}
+            <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50 px-6 py-8 dark:border-white/7 dark:bg-neutral-900">
+              <Navigation />
+            </div>
           </div>
         </div>
         {children}

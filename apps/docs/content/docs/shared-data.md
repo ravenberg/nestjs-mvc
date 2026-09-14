@@ -2,11 +2,11 @@
 title: Data on every page
 ---
 
-Some data belongs on every page: the app name, the logged in user, the number of unread messages. Share it once instead of returning it from every controller. {% .lead %}
+Some data belongs on every page, like the app name or the number of unread messages. You can share it once instead of returning it from every controller. {% .lead %}
 
 ## Share from a middleware
 
-A middleware runs for every request, so it is a good place for data that every page needs:
+Middleware runs on every request, which makes it a good place for data every page needs:
 
 ```ts
 // src/shared-data.middleware.ts
@@ -36,7 +36,7 @@ Every page now gets an `appName` prop.
 
 ## Read it anywhere
 
-Shared data is part of the page props, so any component can read it with `usePage()`. A layout is the usual place:
+Shared data ends up in the page props, so any component can read it with `usePage()`. Usually that's your layout:
 
 ```tsx
 import { usePage } from 'nestjs-mvc/react'
@@ -55,7 +55,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 ## Data that needs the database
 
-Pass a function instead of a value. It runs when the page renders, and only then:
+Pass a function instead of a value, and it only runs when a page actually renders:
 
 ```ts
 @Injectable()
@@ -69,11 +69,11 @@ export class SharedDataMiddleware implements NestMiddleware {
 }
 ```
 
-This also matters for the logged in user. Middleware runs before your guards, so `req.user` is not set yet when the middleware itself runs. A function runs later, after the guards.
+This matters for the logged in user as well. Middleware runs before your guards, so `req.user` isn't set yet at that point, but a function runs later, after the guards are done.
 
 ## The logged in user
 
-For the user you do not need a middleware. Tell nestjs-mvc which fields to share, and it adds `auth.user` to every page. See [Authentication](/docs/authentication).
+For the user you can skip the middleware. Tell nestjs-mvc which fields to share and it adds `auth.user` to every page. [Authentication](/docs/authentication) has the details.
 
 ```ts
 MvcModule.forRoot({
@@ -84,7 +84,7 @@ MvcModule.forRoot({
 
 ## Share from a single request
 
-Inside a handler, guard or interceptor, use `ViewService.share()`. It adds data for this request only:
+Inside a handler, guard or interceptor you can use `ViewService.share()`, which adds data for the current request only:
 
 ```ts
 @Get()

@@ -2,7 +2,7 @@
 title: Redirects
 ---
 
-After a form saves something, send the user to a page. `ViewService` has three ways to do that. {% .lead %}
+After a form saves something, you send the user to a page, and `ViewService` gives you three ways to do that. {% .lead %}
 
 ## Inject ViewService
 
@@ -27,7 +27,7 @@ async store(@Body() dto: CreateUserDto) {
 
 ## Back to where the user came from
 
-`back()` returns to the previous page. Handy when the same form appears in several places.
+`back()` goes to the previous page, which is handy when the same form shows up in several places.
 
 ```ts
 @Post(':id/like')
@@ -37,11 +37,11 @@ async like(@Param('id', ParseIntPipe) id: number) {
 }
 ```
 
-`back()` never sends the user to another website. If the previous page is not on your app, it goes to `/`. Pass another fallback if you like: `back('/posts')`.
+`back()` always stays on your site. If the previous page was somewhere else, the user goes to `/`, or to a fallback you pass, like `back('/posts')`.
 
 ## To another website
 
-A normal redirect stays inside your app. For an outside URL, like a payment page or a login provider, use `location()`. The browser then does a full page load:
+A normal redirect stays inside your app. For an outside URL, like a payment page or a login provider, use `location()` and the browser does a full page load:
 
 ```ts
 @Post('checkout')
@@ -53,10 +53,10 @@ async checkout() {
 
 ## Why redirect at all?
 
-After a `POST` you could return a page directly. Redirecting is better: a refresh does not submit the form again, and the page you land on shows fresh data from its own controller.
+You could return a page straight from a `POST`, but redirecting works better. Refreshing won't submit the form a second time, and the page you land on gets fresh data from its own controller.
 
 ## Good to know
 
-* The methods throw a special exception to stop the handler. Code after them does not run. Writing `return this.view.redirect(...)` makes that easy to read.
-* After a `PUT`, `PATCH` or `DELETE`, nestjs-mvc answers with status `303`, so the browser follows up with a `GET`. You do not have to think about it.
-* Chain a [flash message](/docs/flash-messages) in front: `this.view.flash('message', 'Saved.').back()`.
+* These methods stop the handler by throwing a special exception, so code after them won't run. Writing `return this.view.redirect(...)` makes that clear when you read it.
+* After a `PUT`, `PATCH` or `DELETE`, nestjs-mvc answers with status `303` so the browser follows up with a `GET`. That happens on its own.
+* You can put a [flash message](/docs/flash-messages) in front, like `this.view.flash('message', 'Saved.').back()`.

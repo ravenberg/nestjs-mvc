@@ -6,7 +6,7 @@ Load the next page of a list when the user scrolls to the bottom. {% .lead %}
 
 ## The controller
 
-Wrap the list in `scroll()`. The function returns one page of rows and tells nestjs-mvc which pages come before and after it.
+Wrap the list in `scroll()`. Your function returns one page of rows and tells nestjs-mvc which pages come before and after it.
 
 ```ts
 import { Controller, Get, Query } from '@nestjs/common'
@@ -36,7 +36,7 @@ export class PostsController {
 }
 ```
 
-Your rows go under `data`. `nextPage` is `null` on the last page, which tells the browser to stop.
+The rows go under `data`. On the last page `nextPage` is `null`, and that tells the browser to stop.
 
 ## The page
 
@@ -60,15 +60,15 @@ export default function Index({ posts }: Props) {
 }
 ```
 
-When the end of the list comes into view, the browser asks your controller for `?page=2` and adds those rows below the ones it has.
+As the end of the list comes into view, the browser asks your controller for `?page=2` and adds those rows under the ones it already has.
 
 ## Starting in the middle
 
-Open `/posts?page=5` and the list starts at page 5. Scrolling down loads page 6, and scrolling up loads page 4 in front.
+If you open `/posts?page=5`, the list starts at page 5. Scrolling down loads page 6, and scrolling up puts page 4 in front.
 
 ## Filters
 
-When a filter changes, the list must start over. Otherwise the new results are added to the old ones. Pass `reset`:
+When a filter changes, the list has to start over, or the new results get added to the old ones. Pass `reset` for that:
 
 ```tsx
 router.get('/posts', { tag }, { only: ['posts'], reset: ['posts'] })
@@ -76,7 +76,7 @@ router.get('/posts', { tag }, { only: ['posts'], reset: ['posts'] })
 
 ## Extra information
 
-Anything else you return next to `data` reaches the page unchanged. Use it for "Showing 20 of 340":
+Anything else you return next to `data` gets to the page as it is, which is handy for something like "Showing 20 of 340":
 
 ```ts
 return { data: rows, total, currentPage: current, previousPage, nextPage }

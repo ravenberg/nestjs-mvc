@@ -44,6 +44,32 @@
   --font-display--font-feature-settings: 'ss01';
 
   --container-8xl: 88rem;
+
+  /* NestJS red: #ea2845 is the brand colour on docs.nestjs.com, #f23551 its dark-mode twin. */
+  --color-nest-50: #fff1f3;
+  --color-nest-100: #ffe1e6;
+  --color-nest-200: #ffc7d0;
+  --color-nest-300: #ff9aab;
+  --color-nest-400: #f45f75;
+  --color-nest-500: #ea2845;
+  --color-nest-600: #d71e38;
+  --color-nest-700: #b4162f;
+  --color-nest-800: #96162d;
+  --color-nest-900: #80162c;
+  --color-nest-950: #470613;
+
+  /* Greys from docs.nestjs.com: warm and dark, without the blue of slate. */
+  --color-neutral-50: #f7f7f7;
+  --color-neutral-100: #f0efef;
+  --color-neutral-200: #e6e3e4;
+  --color-neutral-300: #cdc8c9;
+  --color-neutral-400: #aca8a9;
+  --color-neutral-500: #7d7778;
+  --color-neutral-600: #5c5657;
+  --color-neutral-700: #363032;
+  --color-neutral-800: #1e1a1b;
+  --color-neutral-900: #141112;
+  --color-neutral-950: #080606;
 }
 
 @layer base {
@@ -57,44 +83,57 @@
   }
 }
 
-/* Code blocks: Prism token colours from the template. */
+/* Code blocks: the token colours of docs.nestjs.com (src/scss/_hljs.scss). */
 pre[class*='language-'] {
-  color: var(--color-slate-50);
-}
-.token.tag,
-.token.class-name,
-.token.selector,
-.token.selector .class,
-.token.selector.class,
-.token.function {
-  color: var(--color-pink-400);
-}
-.token.attr-name,
-.token.keyword,
-.token.rule,
-.token.pseudo-class,
-.token.important {
-  color: var(--color-slate-300);
-}
-.token.module {
-  color: var(--color-pink-400);
-}
-.token.attr-value,
-.token.class,
-.token.string,
-.token.property {
-  color: var(--color-sky-300);
-}
-.token.punctuation,
-.token.attr-equals {
-  color: var(--color-slate-500);
-}
-.token.unit,
-.language-css .token.function {
-  color: var(--color-teal-200);
+  color: #f7f7f7;
 }
 .token.comment,
-.token.operator,
-.token.combinator {
-  color: var(--color-slate-400);
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #7a8186;
+}
+.token.punctuation {
+  opacity: 0.7;
+}
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ffc093;
+}
+.token.entity,
+.token.url,
+.language-css .token.string,
+.token.variable,
+.token.function,
+.token.operator {
+  color: #ffda98;
+}
+.token.atrule,
+.token.attr-value,
+.token.keyword,
+.token.important {
+  color: #93d7f1;
+}
+.token.regex {
+  color: #e90;
+}
+.token.deleted {
+  color: red;
+}
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+.token.italic {
+  font-style: italic;
 }

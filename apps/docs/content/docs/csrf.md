@@ -2,26 +2,26 @@
 title: CSRF protection
 ---
 
-CSRF protection is on from the start. You do not have to do anything. {% .lead %}
+CSRF protection is switched on from the start, so there's nothing you need to set up. {% .lead %}
 
 ## What it protects against
 
-When a user is logged in, their browser sends the login cookie with every request. A malicious website could use that to submit a form to your app in the user's name. This is called cross site request forgery, or CSRF.
+When someone is logged in, their browser sends the login cookie along with every request. A malicious website could abuse that to submit a form to your app in their name, and that's called cross site request forgery, or CSRF.
 
-nestjs-mvc blocks those requests. Every `POST`, `PUT`, `PATCH` and `DELETE` must come from your own pages.
+nestjs-mvc blocks those requests by making sure every `POST`, `PUT`, `PATCH` and `DELETE` comes from your own pages.
 
 ## How it works
 
-Two checks, both automatic:
+It does two checks, and both happen on their own:
 
-1. **Where does the request come from?** Browsers tell the server which site sent a request. Requests from another site are refused with `403`.
-2. **Does it carry the token?** Every page gets a token in a cookie. The browser code of nestjs-mvc sends it back with every request. A request without a valid token is refused with `419`.
+1. **Where does the request come from?** Browsers tell the server which site sent a request, and anything from another site gets a `403`.
+2. **Does it carry the token?** Every page gets a token in a cookie, and nestjs-mvc's browser code sends it back with each request. Without a valid token the request gets a `419`.
 
-Forms you build with `useForm`, `Link` or `router` pass both checks without any code.
+Anything you send with `useForm`, `Link` or `router` passes both checks without extra code.
 
 ## Webhooks and APIs
 
-Some routes are not called by your pages. A payment provider posts to a webhook, a mobile app calls an API with a token. Those requests have no CSRF token. Turn the check off for them with `@SkipCsrf()`:
+Some routes get called from outside your pages, like a webhook from a payment provider or an API that a mobile app calls with its own token. Those requests don't have a CSRF token, so turn the check off for them with `@SkipCsrf()`:
 
 ```ts
 import { SkipCsrf } from 'nestjs-mvc'
@@ -36,19 +36,19 @@ export class WebhooksController {
 }
 ```
 
-Put it on a controller for all its routes, or on a single handler.
+You can put it on a whole controller or on a single handler.
 
 ## When a page expires
 
-A token can become invalid, for example after you deploy with a new key. nestjs-mvc then sends the user back to the form with "This page has expired. Please try again." What they typed stays in the form, and the second try works.
+A token can stop being valid, for example after you deploy with a new key. When that happens, nestjs-mvc sends the user back to the form with the message "This page has expired. Please try again." What they typed is still in the form, and trying again works.
 
 ## Plain HTML forms
 
-A plain `<form method="post">` does not send the token, so it gets `419`. Use `useForm` or `Form` from `nestjs-mvc/react` instead.
+A plain `<form method="post">` doesn't send the token, so it gets a `419`. Use `useForm` or `Form` from `nestjs-mvc/react` instead.
 
 ## In tests
 
-The check is off while tests run (`NODE_ENV=test`), so your supertest tests do not need tokens. To test the protection itself, turn it on:
+The check is turned off while tests run (`NODE_ENV=test`), so your supertest tests don't need tokens. If you want to test the protection itself, turn it on:
 
 ```ts
 MvcModule.forRoot({ csrf: true })

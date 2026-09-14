@@ -26,6 +26,6 @@ export function template(page: PageObject, ctx: TemplateContext): string {
 ${ctx.assets()}
 ${ctx.head()}
 </head>
-<body class="flex min-h-full bg-white dark:bg-slate-900">${ctx.body()}</body>
+<body class="flex min-h-full bg-[#fdfdfd] dark:bg-neutral-950">${ctx.body()}</body>
 </html>`
 }

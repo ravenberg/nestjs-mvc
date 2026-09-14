@@ -14,12 +14,12 @@ function ArrowIcon(props: ComponentPropsWithoutRef<'svg'>) {
 function PageLink({ title, href, dir = 'next', className }: NavLink & { dir?: 'previous' | 'next'; className?: string }) {
   return (
     <div className={className}>
-      <dt className="font-display text-sm font-medium text-slate-900 dark:text-white">{dir === 'next' ? 'Next' : 'Previous'}</dt>
+      <dt className="font-display text-sm font-medium text-neutral-900 dark:text-white">{dir === 'next' ? 'Next' : 'Previous'}</dt>
       <dd className="mt-1">
         <Link
           href={href}
           className={clsx(
-            'flex items-center gap-x-1 text-base font-semibold text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300',
+            'flex items-center gap-x-1 text-base font-semibold text-neutral-500 hover:text-neutral-600 dark:text-neutral-400 dark:hover:text-neutral-300',
             dir === 'previous' && 'flex-row-reverse',
           )}
         >
@@ -35,7 +35,7 @@ export function PrevNextLinks({ previous, next }: { previous: NavLink | null; ne
   if (!previous && !next) return null
 
   return (
-    <dl className="mt-12 flex border-t border-slate-200 pt-6 dark:border-slate-800">
+    <dl className="mt-12 flex border-t border-neutral-200 pt-6 dark:border-neutral-800">
       {previous && <PageLink dir="previous" {...previous} />}
       {next && <PageLink className="ml-auto text-right" {...next} />}
     </dl>

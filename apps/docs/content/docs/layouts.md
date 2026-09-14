@@ -2,7 +2,7 @@
 title: Layouts and titles
 ---
 
-Most pages share a header and a menu. Put those in a layout, once. {% .lead %}
+Most pages share a header and a menu, so you put those in a layout once. {% .lead %}
 
 ## A layout component
 
@@ -42,11 +42,11 @@ export default function Index() {
 Index.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>
 ```
 
-The layout now stays on screen while you move between pages. It is not rebuilt on every visit, so its state survives: an open menu stays open, a playing video keeps playing.
+The layout now stays on screen while you move between pages. Because it isn't rebuilt on every visit, it keeps its state, so an open menu stays open and a video keeps playing.
 
 ## Nested layouts
 
-Return more than one layout, from outside to inside:
+You can wrap a page in more than one layout, from the outside in:
 
 ```tsx
 Settings.layout = (page: ReactNode) => (
@@ -73,7 +73,7 @@ export default function Index() {
 }
 ```
 
-`Head` also takes other tags:
+You can put other tags in `Head` too:
 
 ```tsx
 <Head>
@@ -84,7 +84,7 @@ export default function Index() {
 
 ## The HTML around your app
 
-nestjs-mvc renders a simple HTML page for you. To change it, for example to add a font or a favicon, pass a `template`:
+nestjs-mvc renders a basic HTML page around your app. If you want to change it, say to add a font or a favicon, pass a `template`:
 
 ```ts
 // src/template.ts
@@ -109,4 +109,4 @@ export function template(page: PageObject, ctx: TemplateContext): string {
 MvcModule.forRoot({ vite: {}, template })
 ```
 
-Keep the three calls: `ctx.assets()` loads your code and styles, `ctx.head()` adds what `Head` renders on the server, and `ctx.body()` is your app.
+Make sure you keep the three calls. `ctx.assets()` loads your code and styles, `ctx.head()` adds what `Head` renders on the server, and `ctx.body()` is your app.

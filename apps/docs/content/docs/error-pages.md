@@ -2,7 +2,7 @@
 title: Error pages
 ---
 
-When a controller throws `NotFoundException`, show your own page instead of a JSON error. {% .lead %}
+When a controller throws a `NotFoundException`, you can show your own page instead of a JSON error. {% .lead %}
 
 ## An error page
 
@@ -33,11 +33,11 @@ export default function Error({ status }: { status: number }) {
 }
 ```
 
-Now `throw new NotFoundException()` anywhere shows this page, with status 404. Errors you do not return a page for keep NestJS's default response.
+Now `throw new NotFoundException()` anywhere shows this page with status 404. Any error you don't return a page for gets NestJS's default response.
 
 ## Keep the stack trace while developing
 
-In development you usually want the real error. Return nothing then:
+While developing you usually want to see the real error, so return nothing in that case:
 
 ```ts
 errorPages: ({ status, isDevelopment }) => {
@@ -50,7 +50,7 @@ errorPages: ({ status, isDevelopment }) => {
 
 ## Show your layout and user
 
-An error page does not get [shared data](/docs/shared-data) unless you ask for it. Add `shared: true` when your layout needs it:
+Error pages leave out [shared data](/docs/shared-data) unless you ask for it. If your layout needs it, add `shared: true`:
 
 ```ts
 return { component: 'Error', props: { status }, shared: true }
@@ -58,7 +58,7 @@ return { component: 'Error', props: { status }, shared: true }
 
 ## Send the user back instead
 
-Some errors are not a dead end. For "too many requests" it is nicer to go back to the form with a message:
+For some errors it's nicer to send people back. With "too many requests", for example, you can return them to the form with a message:
 
 ```ts
 errorPages: ({ status }) => {
@@ -76,4 +76,4 @@ return { redirect: 'back', errors: { email: 'Too many attempts. Try again in a m
 
 ## An expired page
 
-If a page is open for a long time, a form on it can expire. nestjs-mvc handles that for you: the user goes back to the form with "This page has expired. Please try again." and what they typed is kept. See [CSRF protection](/docs/csrf).
+When a page has been open for a long time, a form on it can expire. nestjs-mvc takes care of that. The user goes back to the form with "This page has expired. Please try again." and whatever they typed is still there. [CSRF protection](/docs/csrf) explains why it happens.

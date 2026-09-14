@@ -2,11 +2,11 @@
 title: Private history
 ---
 
-The browser keeps the data of pages you visited, so the back button is instant. For private pages you can make that data unreadable after logout. {% .lead %}
+The browser keeps the data of pages you've visited so the back button feels instant. For private pages you can make that data unreadable after logout. {% .lead %}
 
 ## The problem
 
-Someone checks their bank balance and logs out on a shared computer. The next person presses back. Without protection, the browser shows the balance page from its history.
+Say someone checks their bank balance on a shared computer and logs out. If the next person presses back, the browser can show the balance page straight from its history.
 
 ## Encrypt the history
 
@@ -26,9 +26,9 @@ export class AccountController {
 }
 ```
 
-The browser now encrypts what it stores for these pages. The key lives only for the browser session.
+The browser now encrypts what it stores for these pages, with a key that only lasts for the browser session.
 
-For all pages at once:
+To do this for every page at once:
 
 ```ts
 MvcModule.forRoot({ vite: {}, history: { encrypt: true } })
@@ -38,7 +38,7 @@ A single page can opt out with `@EncryptHistory(false)`.
 
 ## Clear it on logout
 
-Encryption only helps when the key is thrown away. Do that on logout:
+Encryption only helps once the key is thrown away, so do that when the user logs out:
 
 ```ts
 @Post('logout')
@@ -47,6 +47,6 @@ logout() {
 }
 ```
 
-If your [authentication](/docs/authentication) guard puts the user on `req.user`, you get this for free: when the logged in user changes, nestjs-mvc clears the history by itself.
+If your [authentication](/docs/authentication) guard puts the user on `req.user`, nestjs-mvc does this for you whenever the logged in user changes.
 
-After that, the back button cannot show the old pages from memory. It asks the server again, and the server decides what the visitor may see.
+After that, pressing back has to ask the server again, and your server decides what the visitor gets to see.

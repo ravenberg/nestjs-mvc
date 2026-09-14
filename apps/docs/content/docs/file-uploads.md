@@ -2,11 +2,11 @@
 title: File uploads
 ---
 
-Uploading a file is a normal form with a file in it. NestJS receives it the way it always does. {% .lead %}
+An upload is a normal form that happens to have a file in it, and NestJS receives it the way it always does. {% .lead %}
 
 ## The page
 
-Put a `File` in `useForm`. When a file is present, the form is sent as `multipart/form-data` by itself.
+Put a `File` in `useForm`. As soon as there's a file in the data, the form is sent as `multipart/form-data`.
 
 ```tsx
 import { useForm } from 'nestjs-mvc/react'
@@ -32,11 +32,11 @@ export default function Avatar() {
 }
 ```
 
-`form.progress` tells you how much is uploaded, so a large file shows a progress bar.
+`form.progress` tells you how much has been uploaded, so you can show a progress bar for large files.
 
 ## The controller
 
-Use NestJS's `FileInterceptor`, exactly as in the NestJS docs:
+Use NestJS's `FileInterceptor`, the same way the NestJS docs do:
 
 ```ts
 import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
@@ -68,8 +68,8 @@ export class ProfileController {
 
 For the `Express.Multer.File` type, install `@types/multer` as a dev dependency.
 
-`FileInterceptor` only works on Express. On Fastify, see [Using Fastify](/docs/fastify#file-uploads).
+`FileInterceptor` only works on Express. If you're on Fastify, see [Using Fastify](/docs/fastify#file-uploads).
 
 ## Why ValidationException
 
-`ValidationException` puts the message on the `avatar` field, so the form shows it next to the input. NestJS's own file pipes throw a general error that has no field, and that would not appear in your form.
+`ValidationException` puts the message on the `avatar` field, so the form shows it right next to the input. NestJS's own file pipes throw a general error without a field, so it wouldn't show up in your form.

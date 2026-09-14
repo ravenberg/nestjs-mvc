@@ -2,7 +2,7 @@
 title: Server rendering
 ---
 
-By default pages render in the browser. For pages that search engines must read, like a landing page or a blog, render them on the server with one decorator. {% .lead %}
+Pages normally render in the browser. For pages search engines need to read, like a landing page or a blog, you can render them on the server with one decorator. {% .lead %}
 
 ## Turn it on
 
@@ -22,7 +22,7 @@ export class HomeController {
 }
 ```
 
-The first response now contains the finished HTML of your page. React takes over in the browser as usual.
+The first response now has the finished HTML of your page in it, and React takes over in the browser as usual.
 
 ## A whole controller
 
@@ -43,22 +43,22 @@ export class BlogController {
 }
 ```
 
-## Nothing to configure
+## Setup
 
-There is no separate server to run and no config file. In development your pages render inside the Nest app. `vite build` also builds what the server needs for production.
+It works without a separate server or a config file. In development your pages render inside the Nest app, and `vite build` builds what the server needs for production too.
 
 ## When to use it
 
-Only where it helps:
+Use it where it actually helps:
 
-* **Yes:** public pages that need to show up in search results or in link previews.
-* **No:** pages behind a login. Search engines cannot see them, and rendering them in the browser is cheaper.
+* **Yes:** public pages that should show up in search results or link previews.
+* **No:** pages behind a login. Search engines can't see those anyway, and rendering them in the browser costs less.
 
-Server rendering only affects the first page load. Moving between pages afterwards works the same with or without it.
+Server rendering only changes the first page load. Moving between pages after that works the same either way.
 
 ## If rendering fails
 
-A page that fails to render on the server is not lost. nestjs-mvc logs the error and sends the page to render in the browser instead.
+If a page fails to render on the server, nestjs-mvc logs the error and lets the browser render the page instead.
 
 ## Page titles
 
@@ -66,14 +66,12 @@ Titles and meta tags from [`Head`](/docs/layouts) are rendered on the server too
 
 ## Decide per request
 
-A guard or handler can override the decorator for one request:
+A guard or handler can switch it off for one request, for example to skip server rendering for logged in users on a public page:
 
 ```ts
 this.view.disableSsr()
 ```
 
-For example to skip server rendering for logged in users on a public page.
-
-{% callout title="Check the source, not the inspector" %}
-To see if a page was rendered on the server, use View Source in your browser. The element inspector shows the page after React has run, so it always looks rendered.
+{% callout title="How to check it" %}
+To see whether a page was rendered on the server, use View Source in your browser. The element inspector shows the page after React has run, so it'll always look rendered there.
 {% /callout %}

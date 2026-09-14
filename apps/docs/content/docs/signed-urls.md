@@ -2,7 +2,7 @@
 title: Signed links
 ---
 
-Some links must work without a login: an invite, an unsubscribe link, a password reset. A signed link proves it came from your app. {% .lead %}
+Some links have to work without a login, like an invite or a password reset. A signed link proves that it came from your app. {% .lead %}
 
 ## Make a link
 
@@ -21,9 +21,9 @@ export class InvitationsService {
 }
 ```
 
-The result looks like `/invitations/42?expires=1790000000&signature=...`. `expiresIn` is in seconds. Leave it out and the link never expires.
+You get something like `/invitations/42?expires=1790000000&signature=...`. `expiresIn` is in seconds, and if you leave it out the link never expires.
 
-For a link in an email you need the full address. Set your app's `url` and `sign()` returns it:
+A link in an email needs the full address. Set your app's `url` and `sign()` gives you that:
 
 ```ts
 MvcModule.forRoot({ vite: {}, url: 'https://app.example.com' })
@@ -47,11 +47,11 @@ export class InvitationsController {
 }
 ```
 
-A link that was changed or has expired gets a `403`. Your handler never runs.
+If someone changed the link or it has expired, they get a `403` and your handler never runs.
 
 ## Links that work once
 
-A password reset link should stop working after it was used. Bind it to something that changes when it is used, like the current password hash:
+A password reset link should stop working once it's been used. You do that by binding it to something that changes when it's used, like the current password hash:
 
 ```ts
 const link = this.links.sign(`/reset-password/${user.id}`, {
@@ -60,7 +60,7 @@ const link = this.links.sign(`/reset-password/${user.id}`, {
 })
 ```
 
-The bound value is not in the link. Check it in the handler, because only the handler knows the current value:
+The bound value isn't part of the link. You check it in the handler, since that's where you know the current value:
 
 ```ts
 @Get('reset-password/:id')
@@ -76,7 +76,7 @@ async resetForm(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
 }
 ```
 
-Once the password changes, the old link no longer matches. No table of tokens to store or clean up.
+As soon as the password changes, the old link stops matching, and you don't need a table of tokens to store and clean up.
 
 ## Why did it fail?
 
@@ -86,8 +86,8 @@ Once the password changes, the old link no longer matches. No table of tokens to
 const result = this.links.check(req)   // 'valid', 'expired' or 'invalid'
 ```
 
-Use it to show "this link has expired" instead of a general error.
+That lets you show "this link has expired" instead of a general error.
 
-{% callout title="Signed, not secret" type="warning" %}
-Anyone with the link can read it and use it. The signature only stops people from changing it. Keep `expiresIn` short for links that give access to something.
+{% callout title="Anyone with the link can use it" type="warning" %}
+The signature only stops people from changing a link. Anyone who has it can still read it and use it, so keep `expiresIn` short for links that give access to something.
 {% /callout %}

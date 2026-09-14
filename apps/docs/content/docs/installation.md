@@ -2,22 +2,22 @@
 title: Installation
 ---
 
-Add nestjs-mvc to a NestJS project. You need NestJS 12, React 19 and Node 20.19 or newer. {% .lead %}
+Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 and Node 20.19 or newer. {% .lead %}
 
 ## Install the packages
 
-In an existing NestJS project:
+Run this in your NestJS project:
 
 ```sh
 npm install nestjs-mvc @inertiajs/react react react-dom
 npm install -D vite @vitejs/plugin-react @types/react @types/react-dom
 ```
 
-`@inertiajs/react` is the browser side of nestjs-mvc. You install it, but you never import it yourself. Everything you need comes from `nestjs-mvc/react`.
+`@inertiajs/react` is what runs nestjs-mvc in the browser. It needs to be installed, but you'll import everything from `nestjs-mvc/react`, so you won't use it directly.
 
 ## Configure Vite
 
-Vite builds your React pages. Create `vite.config.ts` in the project root:
+Vite builds your React pages. Create a `vite.config.ts` in the root of your project:
 
 ```ts
 // vite.config.ts
@@ -30,7 +30,7 @@ export default defineConfig({
 })
 ```
 
-That is all. You do not write an entry file. The plugin finds your pages in `frontend/pages` and uses `frontend/app.css` if it exists.
+You don't need an entry file. The plugin looks for your pages in `frontend/pages`, and if there's a `frontend/app.css` it loads that too.
 
 ## Register the module
 
@@ -47,11 +47,11 @@ import { MvcModule } from 'nestjs-mvc'
 export class AppModule {}
 ```
 
-`vite: {}` starts Vite inside your Nest app while you develop, and serves the built files in production.
+With `vite: {}`, Vite runs inside your Nest app while you're developing. In production it serves the files you built instead.
 
 ## Validate requests
 
-Add a validation pipe in `main.ts`. The exception factory sends validation errors back to your forms. You will use this on the [forms page](/docs/forms).
+Add a validation pipe in `main.ts`. The exception factory is what sends validation errors back to your forms, which you'll see on the [forms page](/docs/forms).
 
 ```ts
 // src/main.ts
@@ -68,7 +68,7 @@ async function bootstrap() {
 bootstrap()
 ```
 
-This uses `class-validator`. Install it if you have not yet:
+This uses `class-validator`, so install it if you haven't already:
 
 ```sh
 npm install class-validator class-transformer
@@ -76,7 +76,7 @@ npm install class-validator class-transformer
 
 ## TypeScript
 
-Your pages are `.tsx` files. Tell TypeScript about JSX, and keep them out of the server build:
+Your pages are `.tsx` files. TypeScript needs to know about JSX, and the pages should stay out of your server build:
 
 ```json
 // tsconfig.json
@@ -101,8 +101,8 @@ Your pages are `.tsx` files. Tell TypeScript about JSX, and keep them out of the
 npm run start:dev
 ```
 
-Nothing to open yet. On the next page you build your first page.
+There's nothing to look at yet. You'll build your first page next.
 
 {% callout title="One process" %}
-You do not run Vite in a second terminal. It runs inside your Nest app, on the same port.
+Vite runs inside your Nest app on the same port, so you won't need a second terminal for it.
 {% /callout %}

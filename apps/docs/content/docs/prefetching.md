@@ -14,7 +14,7 @@ Add `prefetch` to a link:
 </Link>
 ```
 
-When the mouse rests on the link, the browser fetches the page data in the background. The click then shows the page without waiting.
+When the mouse rests on the link, the browser fetches the page data in the background, so the page is already there when they click.
 
 ## Other moments
 
@@ -23,27 +23,27 @@ When the mouse rests on the link, the browser fetches the page data in the backg
 <Link href="/users" prefetch="click">Users</Link>   {/* on mouse down, just before the click */}
 ```
 
-Use `mount` for the one page a user almost always opens next. Do not use it on long lists of links: every link would fetch a page.
+`mount` is good for the one page people almost always open next. Keep it off long lists of links, though, because every link would fetch its page.
 
 ## How long it stays fresh
 
-A prefetched page is kept for 30 seconds by default. Change it with `cacheFor`:
+A prefetched page is kept for 30 seconds, and you can change that with `cacheFor`:
 
 ```tsx
 <Link href="/users" prefetch cacheFor="1m">Users</Link>
 ```
 
-Show the cached page right away and fetch a fresh copy behind the scenes:
+You can also show the cached page right away and fetch a fresh copy in the background:
 
 ```tsx
 <Link href="/users" prefetch cacheFor={['30s', '5m']}>Users</Link>
 ```
 
-For 30 seconds the cached page is used as is. Up to 5 minutes it is shown and refreshed in the background.
+For the first 30 seconds the cached page is used as it is. After that, up to 5 minutes, it's still shown but refreshed in the background.
 
 ## Throw away old copies
 
-After a change, cached pages can be out of date. Tag them, and clear by tag:
+After a change, cached pages can be out of date. If you tag them, you can clear them by tag:
 
 ```tsx
 <Link href="/products" prefetch cacheTags="products">Products</Link>
@@ -61,8 +61,8 @@ form.post('/products', {
 
 ## The server
 
-Nothing to change. A prefetch is a normal `GET` to your controller.
+Your server stays the same, because a prefetch is a normal `GET` to your controller.
 
-{% callout title="GET must not change anything" type="warning" %}
-A prefetch calls your `GET` handlers without a click. A `GET` that marks a message as read or counts a view would do that on hover. Put changes behind `POST`.
+{% callout title="Keep GET free of changes" type="warning" %}
+A prefetch calls your `GET` handlers before anyone clicks. So a `GET` that marks a message as read or counts a view would do that on hover. Put changes like that behind a `POST`.
 {% /callout %}

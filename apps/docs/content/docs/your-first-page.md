@@ -2,11 +2,11 @@
 title: Your first page
 ---
 
-A page is two things: a controller method that returns data, and a React component that shows it. {% .lead %}
+A page is made of a controller method that returns data and a React component that shows it. {% .lead %}
 
 ## The controller
 
-Put `@View()` on a handler and name the page it renders. Return the data as a plain object.
+Put `@View()` on a handler with the name of the page it should render, and return your data as a plain object.
 
 ```ts
 // src/app.controller.ts
@@ -25,7 +25,7 @@ export class AppController {
 
 ## The page
 
-The name `Home` points to `frontend/pages/Home.tsx`. The object you returned arrives as props.
+The name `Home` points to `frontend/pages/Home.tsx`, and the object you returned comes in as props.
 
 ```tsx
 // frontend/pages/Home.tsx
@@ -34,11 +34,11 @@ export default function Home({ name }: { name: string }) {
 }
 ```
 
-Open `http://localhost:3000`. You see "Hello, Ada".
+Open `http://localhost:3000` and you'll see "Hello, Ada".
 
 ## Folders
 
-Page names can have folders. `@View('Users/Show')` renders `frontend/pages/Users/Show.tsx`. A common pattern is one folder per controller:
+Page names can include folders, so `@View('Users/Show')` renders `frontend/pages/Users/Show.tsx`. Most apps end up with a folder per controller:
 
 ```text
 frontend/pages/
@@ -50,7 +50,7 @@ frontend/pages/
 
 ## Using services
 
-The controller is a normal NestJS controller. Inject services, read route params, use pipes.
+It's still a normal NestJS controller, so you can inject services, read route params and use pipes like you always do.
 
 ```ts
 @Controller('users')
@@ -67,11 +67,11 @@ export class UsersController {
 ```
 
 {% callout title="Only return what the page needs" type="warning" %}
-Everything you return ends up in the browser. Do not return a whole database entity with a password hash in it. Pick the fields you want to show.
+Everything you return ends up in the browser. So pick the fields you want to show, rather than returning a whole database entity that might have a password hash in it.
 {% /callout %}
 
 ## What happens
 
-On the first visit, the server sends a full HTML page with your data inside. React takes over in the browser.
+On the first visit the server sends a full HTML page with your data in it, and React takes over from there.
 
-After that, clicking a link does not load a new HTML page. The browser asks the same controller for the data only, and swaps the page. You write nothing extra for this. The next page shows how links work.
+When someone clicks a link after that, the browser asks the same controller for just the data and swaps the page in place. You get that without writing anything extra, and the next page shows how links work.

@@ -2,7 +2,7 @@ import type { ComponentPropsWithoutRef } from 'react'
 
 function LogomarkPaths() {
   return (
-    <g fill="none" stroke="#38BDF8" strokeLinejoin="round" strokeWidth={3}>
+    <g fill="none" stroke="#ea2845" strokeLinejoin="round" strokeWidth={3}>
       <path d="M10.308 5L18 17.5 10.308 30 2.615 17.5 10.308 5z" />
       <path d="M18 17.5L10.308 5h15.144l7.933 12.5M18 17.5h15.385L25.452 30H10.308L18 17.5z" />
     </g>
@@ -21,7 +21,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={className}>
       <Logomark className="h-9 w-9" />
-      <span className="font-display text-lg text-slate-700 dark:text-sky-100">nestjs-mvc</span>
+      <span className="font-display text-lg text-neutral-900 dark:text-white">nestjs-mvc</span>
     </span>
   )
 }

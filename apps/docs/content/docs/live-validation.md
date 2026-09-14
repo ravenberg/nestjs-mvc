@@ -2,7 +2,7 @@
 title: Live validation
 ---
 
-Show errors while the user fills in the form, not only after they submit. Your server rules stay the only rules. {% .lead %}
+You can show errors while the user is still filling in the form, instead of waiting until they submit. The rules still live on your server. {% .lead %}
 
 ## Turn it on
 
@@ -31,7 +31,7 @@ export default function Register() {
 
 ## The server
 
-Nothing changes. It is the same `POST /users` with the same DTO:
+The server stays the same, with the same `POST /users` and the same DTO:
 
 ```ts
 @Post()
@@ -41,13 +41,13 @@ async store(@Body() dto: CreateUserDto) {
 }
 ```
 
-When the user leaves the email field, the browser sends the form to that route and asks: "only validate, do not save". nestjs-mvc runs your validation pipes and stops. Your handler does not run, so nothing is saved.
+When the user leaves the email field, the browser sends the form to that route and asks it to only validate. nestjs-mvc runs your validation pipes and stops there, so your handler never runs and nothing gets saved.
 
 ## Rules that need the database
 
-Only your pipes run during live validation, not your handler. A check like "this email is taken" inside the handler is therefore only checked on submit.
+Live validation only runs your pipes, so a check like "this email is taken" in your handler only happens when the form is submitted.
 
-To check it live, move it into validation. With class-validator that is a custom async constraint. With Zod it is an async `refine`:
+To check it live, move it into your validation. With class-validator that means a custom async constraint, and with Zod an async `refine`:
 
 ```ts
 const UserSchema = z.object({
@@ -56,5 +56,5 @@ const UserSchema = z.object({
 ```
 
 {% callout title="Pipes run on every check" type="warning" %}
-Every live check runs your pipes. A pipe that writes to the database or sends a mail would do that on every blur. Keep pipes free of side effects.
+Every live check runs your pipes, so a pipe that writes to the database or sends an email would do that every time a field loses focus. Keep your pipes free of side effects.
 {% /callout %}

@@ -2,7 +2,7 @@
 title: Using Fastify
 ---
 
-nestjs-mvc works the same on Fastify as on Express, including the development server and hot reload. This page lists the few lines to change in the examples from these docs. {% .lead %}
+nestjs-mvc works the same on Fastify as it does on Express, development server and hot reload included. This page covers the few lines you'll need to change in the examples from these docs. {% .lead %}
 
 ## Switch to Fastify
 
@@ -23,11 +23,11 @@ async function bootstrap() {
 bootstrap()
 ```
 
-Your pages, controllers, middleware and guards stay as they are.
+Your pages, controllers, middleware and guards can stay the way they are.
 
 ## Cookies
 
-The [Authentication](/docs/authentication) example sets the login cookie with `res.cookie()`. That method only exists on Express. Use the helpers from `nestjs-mvc`, which work on both:
+The [Authentication](/docs/authentication) example sets the login cookie with `res.cookie()`, but that method only exists on Express. The helpers from `nestjs-mvc` work on both:
 
 ```ts
 import { clearCookie, writeCookie, type AnyResponse } from 'nestjs-mvc'
@@ -46,15 +46,15 @@ logout(@Res({ passthrough: true }) res: AnyResponse) {
 }
 ```
 
-Two differences with `res.cookie()`: `maxAge` is in seconds, and `sameSite` is written `'Lax'`.
+There are two differences from `res.cookie()`. `maxAge` is in seconds, and you write `sameSite` as `'Lax'`.
 
 ## Redirects
 
-Always redirect with `ViewService` (`redirect`, `back`, `location`). On Fastify, a plain `reply.redirect()` loses your [flash messages](/docs/flash-messages) and does not switch to status `303` after a `PUT`, `PATCH` or `DELETE`.
+Always redirect with `ViewService` (`redirect`, `back` or `location`). On Fastify a plain `reply.redirect()` loses your [flash messages](/docs/flash-messages), and it won't switch to status `303` after a `PUT`, `PATCH` or `DELETE`.
 
 ## File uploads
 
-The [File uploads](/docs/file-uploads) example uses `FileInterceptor`, which NestJS only supports on Express. On Fastify, install `@fastify/multipart`:
+The [File uploads](/docs/file-uploads) example uses `FileInterceptor`, which NestJS only supports on Express. On Fastify you install `@fastify/multipart` instead:
 
 ```sh
 npm install @fastify/multipart
@@ -105,11 +105,11 @@ export class ProfileController {
 }
 ```
 
-`req.parts()` gives you every file and text field of the form. A file over the limit throws an error with the code `FST_REQ_FILE_TOO_LARGE`. Turn it into a `PayloadTooLargeException` as above, or NestJS answers with a 500. The page code stays the same, and `ValidationException` still puts the error on the field.
+`req.parts()` gives you every file and text field in the form. When a file is over the limit, it throws an error with the code `FST_REQ_FILE_TOO_LARGE`. Turn that into a `PayloadTooLargeException` like above, because otherwise NestJS answers with a 500. Your page code stays the same, and `ValidationException` still puts the error on the field.
 
 ## Serving the built files
 
-In production, serve `dist/client` with `@fastify/static`:
+In production you serve `dist/client` with `@fastify/static`:
 
 ```sh
 npm install @fastify/static
@@ -130,13 +130,13 @@ async function bootstrap() {
 }
 ```
 
-{% callout title="Not app.useStaticAssets()" type="warning" %}
-The NestJS docs use `app.useStaticAssets()` for this. On Fastify with NestJS 12 that call does not wait for the plugin, and `app.listen()` never finishes: the app looks started but does not answer. Register `@fastify/static` yourself and `await` it, as above.
+{% callout title="Skip app.useStaticAssets()" type="warning" %}
+The NestJS docs use `app.useStaticAssets()` for this. On Fastify with NestJS 12 that call doesn't wait for the plugin, so `app.listen()` never finishes and the app looks like it started but never answers. Register `@fastify/static` yourself and `await` it, like above.
 {% /callout %}
 
 ## Behind a proxy
 
-Trust the proxy on the adapter:
+Tell the adapter to trust the proxy:
 
 ```ts
 new FastifyAdapter({ trustProxy: true })

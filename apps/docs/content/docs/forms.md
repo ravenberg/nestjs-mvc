@@ -2,11 +2,11 @@
 title: Forms and validation
 ---
 
-A form sends data to a controller. If it is valid, you save it and redirect. If not, the errors show up next to the fields. {% .lead %}
+A form sends data to a controller. When the data is valid you save it and redirect, and when it isn't, the errors show up next to the fields. {% .lead %}
 
 ## The controller
 
-Validate with a DTO, as you would in any NestJS app. Then save and redirect.
+Validate with a DTO like you would in any NestJS app, then save and redirect.
 
 ```ts
 // src/users/create-user.dto.ts
@@ -48,11 +48,11 @@ export class UsersController {
 }
 ```
 
-Notice what is missing: there is no code for the error case. When validation fails, nestjs-mvc sends the user back to the form with the errors. This works because of the `validationExceptionFactory` you added during [installation](/docs/installation).
+You'll notice there's no code for when validation fails. nestjs-mvc sends the user back to the form with the errors, thanks to the `validationExceptionFactory` you added during [installation](/docs/installation).
 
 ## The page
 
-`useForm` keeps the form data, sends it, and gives you the errors.
+`useForm` holds the form data, sends it and gives you the errors back.
 
 ```tsx
 // frontend/pages/Users/Create.tsx
@@ -81,13 +81,13 @@ export default function Create() {
 ```
 
 * `form.data` holds the values.
-* `form.post(url)` sends them. There is also `form.put`, `form.patch` and `form.delete`.
+* `form.post(url)` sends them, and there's also `form.put`, `form.patch` and `form.delete`.
 * `form.errors` holds one message per field.
 * `form.processing` is `true` while the request runs.
 
-## Errors that are not about the format
+## Checks in your handler
 
-Some rules need the database, like "this email is already taken". Throw a `ValidationException` from your handler or service. It works exactly like a failed DTO:
+Some rules need the database, like "this email is already taken". For those, throw a `ValidationException` from your handler or service, and the user gets the error the same way as with a failed DTO:
 
 ```ts
 import { ValidationException } from 'nestjs-mvc'
@@ -104,7 +104,7 @@ async store(@Body() dto: CreateUserDto) {
 
 ## After a success
 
-Reset the form, or show a message with a [flash message](/docs/flash-messages):
+When saving works, you might want to reset the form. You can also show a [flash message](/docs/flash-messages).
 
 ```tsx
 form.post('/users', {
@@ -114,7 +114,7 @@ form.post('/users', {
 
 ## Editing
 
-For an edit form, fill `useForm` with the current values and send a `PUT`:
+For an edit form, start `useForm` with the current values and send a `PUT`:
 
 ```tsx
 export default function Edit({ user }: { user: { id: number; name: string; email: string } }) {
@@ -137,5 +137,5 @@ async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) 
 ```
 
 {% callout title="Prefer Zod?" %}
-Any Standard Schema library works too (Zod, Valibot, ArkType). Use `@Body({ schema: UserSchema })` with NestJS's `StandardSchemaValidationPipe` and `standardSchemaExceptionFactory` from `nestjs-mvc`. The errors reach your form the same way.
+Any Standard Schema library works too, like Zod, Valibot or ArkType. Use `@Body({ schema: UserSchema })` with NestJS's `StandardSchemaValidationPipe` and `standardSchemaExceptionFactory` from `nestjs-mvc`, and the errors end up in your form the same way.
 {% /callout %}

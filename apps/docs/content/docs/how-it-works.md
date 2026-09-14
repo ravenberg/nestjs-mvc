@@ -2,11 +2,11 @@
 title: How it works
 ---
 
-You can use nestjs-mvc without reading this page. It is here for when you are curious, or when you debug something in the network tab. {% .lead %}
+You can use nestjs-mvc without ever reading this page. It's for when you're curious, or when you're debugging something in the network tab. {% .lead %}
 
 ## The first visit
 
-The browser asks for `/users`. Your controller returns `{ users: [...] }`. nestjs-mvc sends back a full HTML page with three things in it:
+The browser asks for `/users` and your controller returns `{ users: [...] }`. nestjs-mvc then sends back a full HTML page that has:
 
 * your scripts and styles,
 * the page name and the props, as JSON in a `<script>` tag,
@@ -16,9 +16,9 @@ React reads the JSON, finds `frontend/pages/Users/Index.tsx` and renders it.
 
 ## Every visit after that
 
-A click on a `Link` does not load a new HTML page. The browser asks for `/users/1` with an extra header that says "I only need the data".
+When someone clicks a `Link`, the browser asks for `/users/1` with an extra header that says it only needs the data.
 
-The same controller runs. nestjs-mvc answers with just the JSON:
+The same controller runs, and nestjs-mvc answers with only the JSON:
 
 ```json
 {
@@ -29,26 +29,26 @@ The same controller runs. nestjs-mvc answers with just the JSON:
 }
 ```
 
-The browser swaps the page and updates the URL. Your layout stays where it is.
+The browser swaps the page and updates the URL, and your layout stays where it is.
 
 ## Forms
 
-A form sends a normal `POST`. Your controller saves and redirects. The browser follows the redirect as a visit and renders the page it lands on.
+A form sends a normal `POST`, and your controller saves and redirects. The browser follows the redirect like any other visit and renders the page it lands on.
 
-When validation fails, nestjs-mvc redirects back to the form and puts the errors in a signed cookie. The next render reads that cookie and adds the errors to the props. That is how `form.errors` gets filled without any code in your controller.
+When validation fails, nestjs-mvc redirects back to the form and puts the errors in a signed cookie. The next render reads that cookie and adds the errors to the props, which is how `form.errors` fills up without any code in your controller.
 
 ## Loading less
 
-On a reload with `only: ['stats']`, the browser tells the server which props it wants. nestjs-mvc skips the other props without calling their functions. `defer()`, `optional()`, `once()` and `merge()` all build on this.
+On a reload with `only: ['stats']`, the browser tells the server which props it wants, and nestjs-mvc skips the others without calling their functions. `defer()`, `optional()`, `once()` and `merge()` are all built on that.
 
 ## After a deploy
 
-Every page carries a `version`. When a tab with an old version asks for data, nestjs-mvc answers "reload" and the browser does a full page load to get the new code.
+Every page carries a `version`. When a tab that's still on an old version asks for data, nestjs-mvc tells it to reload, and the browser does a full page load to get the new code.
 
-## Nothing is kept on the server
+## State stays out of the server
 
-NestJS serves all users from one process. So nestjs-mvc keeps no state between requests: flash messages and errors travel in signed cookies, cached data lives in the browser. There is no session to set up, and no way for one user's data to leak to another.
+NestJS serves all your users from one process, so nestjs-mvc doesn't keep anything between requests. Flash messages and errors travel in signed cookies, and cached data lives in the browser. That way you have no session to set up, and one user's data can't leak to another.
 
 ## The protocol
 
-The browser and the server talk using a small open protocol called [Inertia](https://inertiajs.com). nestjs-mvc implements the server side of it for NestJS, and ships the React side as `nestjs-mvc/react`. You do not need to learn Inertia to use nestjs-mvc: everything is explained in these docs.
+The browser and the server talk through a small open protocol called [Inertia](https://inertiajs.com). nestjs-mvc implements the server side of it for NestJS and ships the React side as `nestjs-mvc/react`. Everything you need is in these docs, so you won't have to learn Inertia itself.

@@ -2,7 +2,7 @@
 title: Flash messages
 ---
 
-A flash message is a short message for the next page, like "Saved." It shows once and then it is gone. {% .lead %}
+A flash message is a short message for the next page, like "Saved." It shows up once and then disappears. {% .lead %}
 
 ## Send one
 
@@ -35,15 +35,15 @@ export default function Index() {
 }
 ```
 
-Refresh the page and the message is gone. That is the point.
+If you refresh the page, the message is gone, which is exactly what you want.
 
 ## Put it in your layout
 
-You want messages on every page, so show them once in your [layout](/docs/layouts) instead of in each page.
+You'll usually want messages on every page, so it's easier to show them once in your [layout](/docs/layouts) than in each page.
 
 ## More than one value
 
-The key is up to you. Send several, or send an object:
+You pick the key, and you can send several messages or even an object:
 
 ```ts
 this.view
@@ -53,8 +53,8 @@ this.view
 
 ## Where is it stored?
 
-In a signed cookie in the user's browser, for a few minutes. Your server keeps nothing between requests. That matters in NestJS, because one process serves all users.
+It's kept for a few minutes in a signed cookie in the user's browser, so your server doesn't have to remember anything between requests. That matters in NestJS, because one process serves all your users.
 
 {% callout title="Show it as text" %}
-Render flash messages as text, not as HTML. React does that for you unless you use `dangerouslySetInnerHTML`.
+Render flash messages as plain text. React already does that, as long as you don't use `dangerouslySetInnerHTML`.
 {% /callout %}

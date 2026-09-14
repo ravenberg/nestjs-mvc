@@ -14,11 +14,11 @@ export default function Home() {
 }
 ```
 
-`Link` renders a normal `<a>` tag. When clicked, it fetches the data for `/users` from your controller and swaps the page. The browser URL and the back button work as expected.
+`Link` renders a regular `<a>` tag. When someone clicks it, it gets the data for `/users` from your controller and swaps the page. The URL and the back button keep working like you'd expect.
 
 ## Links that change something
 
-A link can send a `POST`, `PUT`, `PATCH` or `DELETE`. Render it as a button, because that is what it is:
+A link can also send a `POST`, `PUT`, `PATCH` or `DELETE`. Since it's really a button at that point, render it as one:
 
 ```tsx
 <Link href="/logout" method="post" as="button">
@@ -30,7 +30,7 @@ A link can send a `POST`, `PUT`, `PATCH` or `DELETE`. Render it as a button, bec
 </Link>
 ```
 
-On the server this is an ordinary route:
+On the server it's a regular route:
 
 ```ts
 @Delete(':id')
@@ -40,11 +40,11 @@ async remove(@Param('id', ParseIntPipe) id: number) {
 }
 ```
 
-After a change, redirect to a page. The [redirects page](/docs/redirects) explains why.
+After you change something, redirect to a page. The [redirects page](/docs/redirects) explains why.
 
 ## Navigating from code
 
-Sometimes you navigate from a click handler or a search box. Use `router`:
+Sometimes you want to navigate from a click handler or a search box. That's what `router` is for:
 
 ```tsx
 import { router } from 'nestjs-mvc/react'
@@ -59,13 +59,13 @@ function Search() {
 }
 ```
 
-`router.get('/users', { search })` visits `/users?search=...`. Your controller reads it with `@Query('search')`.
+`router.get('/users', { search })` visits `/users?search=...`, and your controller reads the value with `@Query('search')`.
 
-`preserveState: true` keeps what the user typed in the input while the page updates.
+With `preserveState: true`, whatever the user typed stays in the input while the page updates.
 
 ## Keep the scroll position
 
-By default the page scrolls to the top after a visit. To stay where you are:
+After a visit the page scrolls back to the top. If you'd rather stay where you are, add `preserveScroll`:
 
 ```tsx
 <Link href="/users?page=2" preserveScroll>
@@ -75,7 +75,7 @@ By default the page scrolls to the top after a visit. To stay where you are:
 
 ## The current URL
 
-Read the current URL with `usePage`. Useful to highlight the active menu item:
+`usePage` gives you the current URL, which is useful for highlighting the active menu item:
 
 ```tsx
 import { Link, usePage } from 'nestjs-mvc/react'

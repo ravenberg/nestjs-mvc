@@ -2,7 +2,7 @@
 title: Data the browser keeps
 ---
 
-Some data rarely changes: a list of countries, the user's permissions. Send it once and let the browser keep it. {% .lead %}
+Some data hardly ever changes, like a list of countries. You can send it once and let the browser hold on to it. {% .lead %}
 
 ## Send it once
 
@@ -20,23 +20,23 @@ create() {
 }
 ```
 
-The first visit sends the countries. On later visits the browser tells the server it already has them. The server skips the query and the browser fills in its copy. Your page does not notice the difference.
+The first visit sends the countries. On later visits the browser lets the server know it already has them, so the server skips the query and the browser uses its own copy. Your page works the same either way.
 
 ## Expire it
 
-By default the browser keeps the data until a full page reload. Set `until` to expire it sooner, in **seconds**:
+The browser keeps the data until the next full page reload. To expire it sooner, set `until` in **seconds**:
 
 ```ts
 countries: once(() => this.countries.findAll(), { until: 3600 })
 ```
 
-{% callout title="Seconds, not milliseconds" type="warning" %}
-`until: 300` means five minutes. Writing milliseconds by mistake keeps the data for a very long time.
+{% callout title="It's in seconds" type="warning" %}
+`until: 300` means five minutes. If you write milliseconds by mistake, the data sticks around for a very long time.
 {% /callout %}
 
 ## Refresh it after a change
 
-When a user adds a country, their copy is out of date. Tell nestjs-mvc to send a fresh copy on the next page:
+When a user adds a country, their copy is out of date. You can tell nestjs-mvc to send a fresh copy with the next page:
 
 ```ts
 @Post('countries')
@@ -48,16 +48,16 @@ async addCountry(@Body() dto: CreateCountryDto) {
 
 ## Share one copy between pages
 
-Pages that return the same data can use one key. Then a visit to one page fills the copy for the other:
+Pages that return the same data can use the same key, so visiting one page fills the copy for the other:
 
 ```ts
 countries: once(() => this.countries.findAll(), { as: 'countries' })
 ```
 
-Both pages must return the same shape under that key.
+Just make sure both pages return the same shape under that key.
 
 ## Where the copy lives
 
-In the browser, never on the server. The server remembers nothing, so there is no cache to clear and no way for one user's data to reach another.
+The copy lives in the browser. Since the server doesn't remember anything, you won't have a cache to clear, and one user's data can't reach someone else.
 
-This also means a change by one user does not reach other users right away. They get it when their copy expires. For data that must always be current, do not use `once()`.
+It also means other users won't see a change right away. They get it when their copy expires, so don't use `once()` for data that always has to be current.

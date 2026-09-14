@@ -2,19 +2,19 @@
 title: Authentication
 ---
 
-Log users in the NestJS way, with a guard. nestjs-mvc does not replace it. It makes your guard work well with pages. {% .lead %}
+You log users in the NestJS way, with a guard, and nestjs-mvc helps that guard work well with pages. {% .lead %}
 
 ## What nestjs-mvc adds
 
-You write the login. nestjs-mvc takes care of what pages need around it:
+You write the login yourself, and nestjs-mvc handles what pages need around it:
 
-* A guest who opens a protected page goes to `/login`, and back to that page after logging in.
+* A guest who opens a protected page is sent to `/login`, and back to that page after logging in.
 * The logged in user is available on every page.
-* When someone logs out, or another user logs in, nothing from the previous user stays in the browser.
+* When someone logs out or another user logs in, the browser forgets everything from the previous user.
 
 ## A guard
 
-This is the guard from the NestJS docs, with one change: the token lives in a cookie instead of a header. Browsers send cookies by themselves, and JavaScript cannot read an `HttpOnly` cookie.
+This is the guard from the NestJS docs with one change. The token lives in a cookie instead of a header, because browsers send cookies on their own and JavaScript can't read an `HttpOnly` cookie.
 
 ```ts
 // src/auth/auth.guard.ts
@@ -60,7 +60,7 @@ providers: [{ provide: APP_GUARD, useClass: AuthGuard }]
 ```
 
 {% callout title="Find the user on every request" %}
-The guard looks up the user on public routes too, and only refuses on protected ones. Your layout shows the logged in user on every page, including public pages, so it always needs to know.
+The guard looks up the user on public routes as well and only refuses access on protected ones. Your layout shows the logged in user on every page, public ones included, so it always needs to know who that is.
 {% /callout %}
 
 ## Log in
@@ -100,11 +100,11 @@ export class AuthController {
 }
 ```
 
-`intended('/dashboard')` sends the user to the page they tried to open before they had to log in. If there is none, it goes to `/dashboard`.
+`intended('/dashboard')` sends the user to the page they were trying to open before they had to log in, or to `/dashboard` if there wasn't one.
 
 ## The protected page
 
-Nothing special. The guard protects it, because it has no `@Public()`:
+A protected page looks like any other page. The guard protects it because it doesn't have `@Public()`:
 
 ```ts
 @Controller('dashboard')
@@ -117,11 +117,11 @@ export class DashboardController {
 }
 ```
 
-A guest who opens `/dashboard` lands on `/login`. A request that asks for JSON still gets the normal `401`.
+A guest who opens `/dashboard` ends up on `/login`, while a request that asks for JSON still gets the usual `401`.
 
 ## Show the user on every page
 
-Tell nestjs-mvc which fields of the user the pages may see:
+Tell nestjs-mvc which fields of the user your pages are allowed to see:
 
 ```ts
 MvcModule.forRoot({
@@ -152,12 +152,12 @@ function UserMenu() {
 `auth.user` is `null` for a guest.
 
 {% callout title="Pick the fields" type="warning" %}
-Only what `share` returns reaches the browser. Never return the whole user: it may contain a password hash.
+Only what `share` returns reaches the browser. Never return the whole user, because it might contain a password hash.
 {% /callout %}
 
 ## Using Passport
 
-Passport works too. `AuthGuard('jwt')` from `@nestjs/passport` puts the user on `req.user` and throws `UnauthorizedException`, which is all nestjs-mvc needs.
+Passport works too. `AuthGuard('jwt')` from `@nestjs/passport` puts the user on `req.user` and throws an `UnauthorizedException`, and that's all nestjs-mvc needs.
 
 ## Options
 

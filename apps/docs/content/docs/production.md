@@ -2,7 +2,7 @@
 title: Going to production
 ---
 
-A checklist for putting your app online. {% .lead %}
+Here's a checklist for putting your app online. {% .lead %}
 
 ## 1. Build the frontend
 
@@ -10,7 +10,7 @@ A checklist for putting your app online. {% .lead %}
 npx vite build
 ```
 
-This writes your pages to `dist/client`, and to `dist/ssr` for [server rendering](/docs/server-rendering). Build your Nest app as usual.
+That writes your pages to `dist/client`, plus `dist/ssr` for [server rendering](/docs/server-rendering). You build your Nest app the way you normally would.
 
 ## 2. Serve the built files
 
@@ -33,7 +33,7 @@ async function bootstrap() {
 bootstrap()
 ```
 
-On Fastify this works differently; see [Using Fastify](/docs/fastify#serving-the-built-files).
+On Fastify this works a bit differently, so have a look at [Using Fastify](/docs/fastify#serving-the-built-files).
 
 ## 3. Set NODE_ENV and APP_KEY
 
@@ -42,7 +42,7 @@ NODE_ENV=production
 APP_KEY=your-secret-key
 ```
 
-nestjs-mvc signs cookies and links with `APP_KEY`. In production the app does not start without it. Generate one:
+nestjs-mvc signs cookies and links with `APP_KEY`, and in production the app won't start without it. You can generate one like this:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"
@@ -50,11 +50,11 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'
 
 Keep it secret, and give every server running the app the same key.
 
-To change the key, put the new one in `APP_KEY` and the old one in `APP_PREVIOUS_KEYS`. Remove the old one after a few days.
+When you want to change the key, put the new one in `APP_KEY` and the old one in `APP_PREVIOUS_KEYS`, and remove the old one after a few days.
 
 ## 4. Reload open tabs after a deploy
 
-Users with your app open still run the old code after you deploy. Give each build a version, and nestjs-mvc tells those tabs to reload on their next click:
+People who have your app open are still running the old code after you deploy. If you give each build a version, nestjs-mvc tells those tabs to reload on their next click:
 
 ```ts
 MvcModule.forRoot({
@@ -67,13 +67,13 @@ Any value that changes with every deploy works.
 
 ## 5. Behind a proxy
 
-Most hosts put a proxy in front of your app. Tell Express to trust it, so your app knows its real address. In `bootstrap()`:
+Most hosts put a proxy in front of your app. Tell Express to trust it in `bootstrap()`, so your app knows its real address:
 
 ```ts
 app.set('trust proxy', 1)
 ```
 
-Or set your public address directly:
+You can also set your public address directly:
 
 ```ts
 MvcModule.forRoot({ vite: {}, url: 'https://app.example.com' })
@@ -81,4 +81,4 @@ MvcModule.forRoot({ vite: {}, url: 'https://app.example.com' })
 
 ## 6. One process is enough
 
-There is no separate frontend server to deploy. Your Nest app serves the pages, the data and the built files, and renders on the server when a route asks for it.
+Your Nest app serves the pages, the data and the built files, and renders on the server when a route asks for it. That's the only thing you deploy.
