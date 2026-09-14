@@ -33,6 +33,8 @@ async function bootstrap() {
 bootstrap()
 ```
 
+On Fastify this works differently; see [Using Fastify](/docs/fastify#serving-the-built-files).
+
 ## 3. Set NODE_ENV and APP_KEY
 
 ```sh

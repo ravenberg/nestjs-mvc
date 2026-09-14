@@ -12,6 +12,7 @@ import {
   type NestModule,
   Post,
   Put,
+  Res,
   SetMetadata,
   UnauthorizedException,
   UseGuards,
@@ -33,8 +34,11 @@ import {
   MvcModule,
   View,
   ViewService,
+  clearCookie,
   requestState,
+  writeCookie,
   type AnyRequest,
+  type AnyResponse,
   type MvcModuleOptions,
 } from '../src/index'
 
@@ -89,8 +93,16 @@ class AppController {
   }
 
   @Post('login') @Public()
-  login() {
+  login(@Res({ passthrough: true }) res: AnyResponse) {
+    // What a login handler does on either platform: set its own cookie, then redirect.
+    writeCookie(res, 'access_token', 'signed-token', { httpOnly: true, sameSite: 'Lax' })
     return this.view.intended('/dashboard')
+  }
+
+  @Post('logout') @Public()
+  logout(@Res({ passthrough: true }) res: AnyResponse) {
+    clearCookie(res, 'access_token')
+    return this.view.redirect('/login')
   }
 
   @Get('dashboard') @View('Dashboard')
@@ -270,6 +282,18 @@ describe.each<Platform>(['express', 'fastify'])('auth-aware (%s)', (platform) =>
       const test = visit(server().post('/login'))
       return cookie === undefined ? test : test.set('Cookie', `${INTENDED_COOKIE}=${encodeURIComponent(cookie)}`)
     }
+
+    it('keeps the cookie the handler set, on the redirect it answers with', async () => {
+      app = await boot(platform)
+      const res = await login(keys.sign('intended', '/dashboard'))
+      expect(res.headers.location).toBe('/dashboard')
+      expect(cookieLine(res, 'access_token')).toMatch(/^access_token=signed-token; Path=\/; HttpOnly; SameSite=Lax$/)
+      expect(cookieLine(res, INTENDED_COOKIE)).toMatch(/Max-Age=0/) // and both cookies travel together
+
+      const out = await visit(server().post('/logout'))
+      expect(out.headers.location).toBe('/login')
+      expect(cookieLine(out, 'access_token')).toMatch(/^access_token=; Path=\/; Max-Age=0/)
+    })
 
     it('goes where the visitor was going, and forgets it', async () => {
       app = await boot(platform)

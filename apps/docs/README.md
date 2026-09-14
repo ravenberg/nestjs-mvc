@@ -7,6 +7,7 @@ ported to `nestjs-mvc/react`.
 
 ```sh
 pnpm dev          # http://localhost:3001
+pnpm dev:fastify  # the same app on Fastify (dev server, SSR and HMR included)
 pnpm build        # dist/client + dist/ssr
 pnpm start:prod
 ```
