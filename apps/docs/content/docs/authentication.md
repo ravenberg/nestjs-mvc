@@ -169,4 +169,4 @@ auth: {
 }
 ```
 
-The [kitchen sink](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/kitchen-sink/src/auth) has a complete example with registration, password hashing, a password reset and login throttling.
+The [kitchen sink](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/kitchen-sink/shared/server/auth) has a complete example with registration, password hashing, a password reset and login throttling.

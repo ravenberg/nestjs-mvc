@@ -1,0 +1,38 @@
+{
+  "name": "kitchen-sink",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The shared kitchen sink: server code, React pages and e2e specs for every kitchen-sink-<framework>-<platform> app",
+  "exports": {
+    "./server": "./server/index.ts",
+    "./e2e/config": "./e2e/config.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@inertiajs/react": "^3.7.0",
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/jwt": "^12.0.1",
+    "@nestjs/throttler": "^6.5.0",
+    "@nestjs/typeorm": "^12.0.1",
+    "better-sqlite3": "^12.11.1",
+    "lucide-react": "^1.41.0",
+    "nestjs-mvc": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "typeorm": "^1.1.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^8.2.2"
+  }
+}

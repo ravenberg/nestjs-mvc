@@ -63,6 +63,9 @@
     "@inertiajs/react": {
       "optional": true
     },
+    "@nestjs/platform-express": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },

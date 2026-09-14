@@ -54,7 +54,58 @@ Always redirect with `ViewService` (`redirect`, `back`, `location`). On Fastify,
 
 ## File uploads
 
-The [File uploads](/docs/file-uploads) example uses `FileInterceptor`, which NestJS only supports on Express. On Fastify, receive files with [`@fastify/multipart`](https://www.npmjs.com/package/@fastify/multipart). The page code stays the same, and throwing a `ValidationException` still puts the error on the field.
+The [File uploads](/docs/file-uploads) example uses `FileInterceptor`, which NestJS only supports on Express. On Fastify, install `@fastify/multipart`:
+
+```sh
+npm install @fastify/multipart
+```
+
+Register it in `bootstrap()`, with the largest file you accept:
+
+```ts
+import fastifyMultipart from '@fastify/multipart'
+
+await app.register(fastifyMultipart, { limits: { fileSize: 2 * 1024 * 1024 } })
+```
+
+Then read the form in the handler with `req.parts()`:
+
+```ts
+import type { Multipart } from '@fastify/multipart'
+import { Controller, PayloadTooLargeException, Post, Req } from '@nestjs/common'
+import { ValidationException, ViewService } from 'nestjs-mvc'
+
+@Controller('profile')
+export class ProfileController {
+  constructor(
+    private readonly avatars: AvatarService,
+    private readonly view: ViewService,
+  ) {}
+
+  @Post('avatar')
+  async upload(@Req() req: { parts(): AsyncIterableIterator<Multipart> }) {
+    let avatar: Buffer | undefined
+
+    try {
+      for await (const part of req.parts()) {
+        if (part.type === 'file') avatar = await part.toBuffer()
+      }
+    } catch (error) {
+      if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') throw new PayloadTooLargeException()
+      throw error
+    }
+
+    if (!avatar) {
+      throw new ValidationException({ avatar: 'Pick a file first.' })
+    }
+
+    await this.avatars.save(avatar)
+    return this.view.flash('message', 'Avatar updated.').back()
+  }
+}
+```
+
+`req.parts()` gives you every file and text field of the form. A file over the limit throws an error with the code `FST_REQ_FILE_TOO_LARGE`. Turn it into a `PayloadTooLargeException` as above, or NestJS answers with a 500. The page code stays the same, and `ValidationException` still puts the error on the field.
 
 ## Serving the built files
 

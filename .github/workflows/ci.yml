@@ -36,8 +36,13 @@ jobs:
         run: node --input-type=commonjs -e "const m=require('./packages/core/dist/index.js');if(!m.MvcModule)throw new Error('missing export');console.log('require(esm) OK:',Object.keys(m).length,'exports')"
 
   e2e:
-    name: Kitchen sink (Playwright)
+    name: Kitchen sink ${{ matrix.app }} (Playwright)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One app per frontend framework and HTTP platform, all running the same specs.
+        app: [kitchen-sink-react-express, kitchen-sink-react-fastify]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -48,14 +53,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The kitchen sink imports nestjs-mvc from its build output.
       - run: pnpm build
-      - run: pnpm --filter kitchen-sink exec playwright install --with-deps chromium
+      - run: pnpm --filter ${{ matrix.app }} exec playwright install --with-deps chromium
       # playwright.config.ts starts the dev server itself; CI=1 selects one worker and a retry.
-      - run: pnpm test:e2e
+      - run: pnpm --filter ${{ matrix.app }} test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.app }}
           path: |
-            apps/kitchen-sink/playwright-report
-            apps/kitchen-sink/test-results
+            apps/kitchen-sink/*/playwright-report
+            apps/kitchen-sink/*/test-results
           retention-days: 7

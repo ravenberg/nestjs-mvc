@@ -68,6 +68,8 @@ export class ProfileController {
 
 For the `Express.Multer.File` type, install `@types/multer` as a dev dependency.
 
+`FileInterceptor` only works on Express. On Fastify, see [Using Fastify](/docs/fastify#file-uploads).
+
 ## Why ValidationException
 
 `ValidationException` puts the message on the `avatar` field, so the form shows it next to the input. NestJS's own file pipes throw a general error that has no field, and that would not appear in your form.

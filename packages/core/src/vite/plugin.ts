@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { basename, extname, join, resolve } from 'node:path'
+import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { Plugin, UserConfig } from 'vite'
 import { NONCE_PLACEHOLDER } from '../protocol/constants'
 import { type Framework, type Preset, presets } from './presets'
@@ -25,8 +25,14 @@ export interface NestjsMvcPluginApi {
   client: string
   /** Virtual id of the generated SSR entry. */
   ssr: string
-  /** Stylesheets to link, relative to the Vite root. */
+  /** Stylesheets to link, relative to the Vite root (the build's inputs). */
   css: string[]
+  /**
+   * The same stylesheets as the dev server serves them: root-relative, or
+   * through `/@fs/` for a file outside the root, such as a shared package in
+   * a monorepo (`/../x.css` would resolve to `/x.css` in the browser).
+   */
+  hrefs: string[]
 }
 
 export const PLUGIN_NAME = 'nestjs-mvc'
@@ -58,7 +64,7 @@ const RESOLVED = '\0'
  */
 export function nestjsMvc(options: NestjsMvcPluginOptions = {}): Plugin {
   const pagesDir = (options.pages ?? 'frontend/pages').replace(/^\/|\/$/g, '')
-  const api: NestjsMvcPluginApi = { client: CLIENT_ENTRY, ssr: SSR_ENTRY, css: [] }
+  const api: NestjsMvcPluginApi = { client: CLIENT_ENTRY, ssr: SSR_ENTRY, css: [], hrefs: [] }
   let preset: Preset | undefined
 
   return {
@@ -68,6 +74,7 @@ export function nestjsMvc(options: NestjsMvcPluginOptions = {}): Plugin {
     config(user, { command }) {
       const root = resolve(user.root ?? process.cwd())
       api.css = stylesheets(options.css, root)
+      api.hrefs = api.css.map((file) => devHref(root, file))
       const framework = detectFramework(root, options.framework)
       requireAdapter(root, framework)
       preset = presets[framework]
@@ -147,6 +154,15 @@ function stylesheets(css: NestjsMvcPluginOptions['css'], root: string): string[]
   if (css === false) return []
   if (css === undefined) return existsSync(join(root, 'frontend/app.css')) ? ['frontend/app.css'] : []
   return (Array.isArray(css) ? css : [css]).map((file) => file.replace(/^\//, ''))
+}
+
+/** Where the dev server serves a file: root-relative, or through `/@fs/` when it lives outside the root. */
+function devHref(root: string, file: string): string {
+  const absolute = resolve(root, file)
+  const inside = relative(root, absolute)
+  const posix = (path: string) => path.split(sep).join('/')
+  if (inside.startsWith('..') || isAbsolute(inside)) return `/@fs/${posix(absolute).replace(/^\//, '')}`
+  return `/${posix(inside)}`
 }
 
 /** The app names its UI framework in `package.json`; the matching Inertia adapter is an optional peer of nestjs-mvc. */

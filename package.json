@@ -9,9 +9,10 @@
   "scripts": {
     "build": "pnpm -r --filter './packages/*' build",
     "test": "pnpm -r --filter './packages/*' test",
-    "dev": "pnpm --filter kitchen-sink dev",
-    "lint": "oxlint packages/core/src apps/kitchen-sink/src apps/kitchen-sink/frontend apps/kitchen-sink/e2e apps/docs/src apps/docs/frontend apps/slides/src apps/slides/frontend",
-    "test:e2e": "pnpm --filter kitchen-sink test:e2e",
+    "dev": "pnpm --filter kitchen-sink-react-express dev",
+    "dev:fastify": "pnpm --filter kitchen-sink-react-fastify dev",
+    "lint": "oxlint packages/core/src apps/kitchen-sink/shared/server apps/kitchen-sink/shared/react apps/kitchen-sink/shared/e2e apps/kitchen-sink/react-express/src apps/kitchen-sink/react-fastify/src apps/docs/src apps/docs/frontend apps/slides/src apps/slides/frontend",
+    "test:e2e": "pnpm --filter kitchen-sink-react-express test:e2e && pnpm --filter kitchen-sink-react-fastify test:e2e",
     "typecheck": "pnpm -r typecheck",
     "dev:docs": "pnpm --filter docs dev",
     "dev:slides": "pnpm --filter slides dev"

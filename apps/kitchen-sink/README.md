@@ -5,10 +5,33 @@ while the adapter in [`packages/core`](../../packages/core) is developed: a
 mini-CRM plus one page per protocol feature, and the Playwright regression suite
 that runs against it. It is a test bed, not the documentation.
 
+## Permutations
+
+`shared/` holds what every app has in common and does not run on its own. One
+app per frontend framework and HTTP platform does, and all of them run the same
+e2e suite:
+
+| App | Port | From the repo root |
+|---|---|---|
+| [`kitchen-sink-react-express`](react-express) | 3000 | `pnpm dev` |
+| [`kitchen-sink-react-fastify`](react-fastify) | 3002 | `pnpm dev:fastify` |
+
+- `shared/server/`: every controller, auth, the database and the `MvcModule`
+  configuration, as `KitchenSinkModule.forRoot({ root, platform })`.
+- `shared/react/`: pages, layouts and `app.css`. Another framework gets a sibling
+  directory with the same page names and reuses `shared/server/` and `shared/e2e/`.
+- `shared/e2e/`: the Playwright specs, plus `config.ts` that each app's
+  `playwright.config.ts` calls with its port and platform.
+- **In each app:** `main.ts` (adapter, plugins, static files), `vite.config.ts`,
+  and the one handler that cannot be shared, the file upload POST.
+
+Server code that turns out to differ per platform goes into the apps, never
+behind an `if (platform)` in `shared/server/`, so every difference stays visible.
+
 ## Stack
 
-- **Server**: NestJS (`src/`) on `http://localhost:3000`
-- **Client**: React 19 + Vite + Tailwind v4 (`frontend/`), served by Nest itself — no second port
+- **Server**: NestJS (`shared/server/`), on Express (`:3000`) or Fastify (`:3002`) depending on the app
+- **Client**: React 19 + Vite + Tailwind v4 (`shared/react/`), served by Nest itself — no second port
 - **Data**: TypeORM + SQLite, seeded on first boot
 - **Adapter**: `nestjs-mvc` (workspace package, linked via pnpm)
 
@@ -19,7 +42,8 @@ From the repo root:
 ```sh
 pnpm install
 pnpm build   # builds packages/core → dist/index.js, required before first run
-pnpm dev
+pnpm dev           # React on Express
+pnpm dev:fastify   # React on Fastify, http://localhost:3002
 ```
 
 Open **http://localhost:3000**.
@@ -36,7 +60,7 @@ Open **http://localhost:3000**.
 
 `pnpm dev` runs a single command: `tsx watch src/main.ts`. There is no
 `concurrently`, no separate `vite` command and no `localhost:5173`. The
-`vite` option on `MvcModule.forRoot()` (see [`src/app.module.ts`](src/app.module.ts))
+`vite` option on `MvcModule.forRoot()` (see [`shared/server/kitchen-sink.module.ts`](shared/server/kitchen-sink.module.ts))
 boots Vite in *middleware mode* inside the Nest process:
 
 | | Dev | Production |
@@ -44,20 +68,20 @@ boots Vite in *middleware mode* inside the Nest process:
 | Processes | 1 | 1 |
 | Ports | 1 (`:3000`, HMR websocket included) | 1 (`:3000`) |
 | Client assets | Vite dev server, in-process, with HMR | Prebuilt `dist/client`, served by Nest under `/build/` |
-| Tags | `<link>` to `/frontend/app.css` + `/@id/virtual:nestjs-mvc/client` + injected HMR client | `/build/assets/app-<hash>.css` + `/build/assets/client-<hash>.js` from the Vite manifest |
+| Tags | `<link>` to `/@fs/…/apps/kitchen-sink/shared/react/app.css` (outside the app's Vite root) + `/@id/virtual:nestjs-mvc/client` + injected HMR client | `/build/assets/app-<hash>.css` + `/build/assets/client-<hash>.js` from the Vite manifest |
 
 There is no `main.tsx` and no `ssr.tsx`: `nestjsMvc()` in
-[`vite.config.ts`](vite.config.ts) generates both entries from `frontend/pages/`
-and links `frontend/app.css` as a real stylesheet in both modes.
+each app's `vite.config.ts` generates both entries from `shared/react/pages/`
+and links `shared/react/app.css` as a real stylesheet in both modes.
 
-`ctx.assets()` in [`src/template.ts`](src/template.ts) emits the right tags for
+`ctx.assets()` in [`shared/server/template.ts`](shared/server/template.ts) emits the right tags for
 whichever mode is active, so the template has no `NODE_ENV` branching. Vite is a
 build-time dependency only — it is never loaded in production.
 
 Reload behaviour while developing:
 
-- Editing **`frontend/`** → Vite HMR, no server restart, React state preserved.
-- Editing **`src/`** or **`packages/core/src`** → `tsx watch` restarts Nest
+- Editing **`shared/react/`** → Vite HMR, no server restart, React state preserved.
+- Editing **`shared/server/`**, an app's **`src/`** or **`packages/core/src`** → `tsx watch` restarts Nest
   (which tears down and recreates the in-process Vite server, ~0.5s).
 
 ## What to test
@@ -104,27 +128,27 @@ without a link are on the roadmap and render muted.
 | HTTP Exceptions | `/features/errors/http` | **Error pages**: each link throws; `errorPages` renders `Errors/Show` with the error's status for 403, 404, 500 and 503 (Inertia visit *and* first load), while 419 and 429 fall through to Nest's JSON and the client's error dialog. Unknown contact ids on `/contacts/:id` get the same page |
 | useForm | `/features/forms/use-form` | **useForm**: `data`, `errors`, `processing`, `transform`, `reset`, `clearErrors`, and the status flags; the handler is a Zod schema plus `back()`. A second form posts with `errorBag: 'password'` to a handler that flattens with `messages: 'all'`, so one field arrives with four messages |
 | Form Component | `/features/forms/form-component` | **`<Form>`**: uncontrolled inputs with `name`s, render props for `errors`/`processing`/`wasSuccessful`, `resetOnSuccess`; same handler shape |
-| File Uploads | `/features/forms/file-uploads` | **Multipart**: a `File` in the form data; Nest's `FileInterceptor('avatar')` + `@UploadedFile()`, text fields in `@Body()`, a progress bar, validation through the same errors flow |
+| File Uploads | `/features/forms/file-uploads` | **Multipart**: a `File` in the form data; on Express Nest's `FileInterceptor('avatar')` + `@UploadedFile()`, on Fastify `@fastify/multipart`'s `req.parts()`; a progress bar, validation through the same errors flow, and a 413 over 2 MB on both |
 | Precognition | `/features/forms/precognition` | **Live validation with a database rule**: "email already registered" is an async Zod `refine`, so precognition reports it on blur without running the handler |
 | Optimistic Updates | `/features/forms/optimistic-updates` | **Optimistic**: `form.optimistic()` and `router.patch({ optimistic })` show the change at once; the server sleeps 1.2 s; typing `fail` rolls the copy back with an error |
 | Dotted Keys | `/features/forms/dotted-keys` | **Standard Schema + Precognition**: a nested form validated by a Zod schema through `@Body({ schema })`; errors arrive as `user.email`, `address.postcode`, `tags.0`. Leaving a field validates it live against the same endpoint (`Precognition: true`, handler never runs). No DTO class, no `emitDecoratorMetadata` |
 | Validation | `/features/forms/validation` | **Validation errors**: submit under 3 characters → `ValidationException` → redirect back with `errors.message` inline. Also the demo's only **`@Ssr()`** route; `/features/forms/validation-csr` is the same page without it |
 
-The database is SQLite (`kitchen-sink.sqlite`), seeded on first boot with 4 users, 15
+The database is SQLite (`kitchen-sink.sqlite`, one per app), seeded on first boot with 4 users, 15
 organizations, 100 contacts and notes on 40 of them, spread over the last 30 days.
 Delete the file to reseed.
 
 ## Regression tests (Playwright)
 
 ```sh
-pnpm test:e2e            # from the repo root; or `npx playwright test` in apps/kitchen-sink
+pnpm test:e2e            # from the repo root: both apps in turn; or `npx playwright test` in one app
 npx playwright test --ui # step through a test
 ```
 
-`e2e/` runs against the dev server on `:3000`, reusing one that is already
+`shared/e2e/` runs against an app's dev server on its port, reusing one that is already
 running (otherwise it starts `pnpm dev` itself). Two layers:
 
-- `smoke.spec.ts` derives every page from `frontend/navigation.ts`, loads each
+- `smoke.spec.ts` checks it is talking to the platform the app is for, derives every page from `shared/react/navigation.ts`, loads each
   one on a first load with no console errors, then clicks through all of them
   from the sidebar and checks each was an Inertia visit, not a reload.
 - One spec per sidebar group (`forms`, `navigation`, `data-loading`,
@@ -134,7 +158,7 @@ running (otherwise it starts `pnpm dev` itself). Two layers:
   the SSR route ships markup, and so on.
 
 State is in memory per server, so tests use unique values and never assume an
-empty list. Restart the server after editing `frontend/` from a script: Vite
+empty list. Restart the server after editing `shared/react/` from a script: Vite
 does not always notice those writes.
 
 Manual checks while developing:
@@ -145,7 +169,7 @@ Manual checks while developing:
    counters and lists them under `deferredProps`, then a second request fills them in.
 3. **Validation flow** — submit a short message and confirm the redirect back, the
    populated `errors.message`, and no full reload.
-4. **Asset versioning** — change `version` in `src/app.module.ts`, then navigate; the
+4. **Asset versioning** — change `version` in `shared/server/kitchen-sink.module.ts`, then navigate; the
    server answers `409` and forces a full page visit.
 5. **HMR** — edit a page component while a form has input; it should update without
    losing the value. Edit `app.css` and the `<link>` swaps in place.
@@ -190,13 +214,14 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 ## Production build
 
 ```sh
-pnpm --filter kitchen-sink build       # one `vite build`: dist/client + dist/ssr
-pnpm --filter kitchen-sink start:prod  # NODE_ENV=production is set by the script
+pnpm --filter kitchen-sink-react-express build       # one `vite build`: dist/client + dist/ssr
+pnpm --filter kitchen-sink-react-express start:prod  # needs APP_KEY and JWT_SECRET; same for -fastify
 ```
 
 Still one process: the SSR bundle is imported into the Nest process rather than
-served by a sidecar. Vite does not run. `main.ts` serves `dist/client` under
-`/build/`, and `ctx.assets()` resolves hashed tags from the manifest. Verify with
+served by a sidecar. Vite does not run. Each app's `main.ts` serves `dist/client` under
+`/build/` (`useStaticAssets()` on Express; `@fastify/static` registered and
+awaited on Fastify, where `useStaticAssets()` hangs `listen()` on NestJS 12), and `ctx.assets()` resolves hashed tags from the manifest. Verify with
 `curl -s localhost:3000/dashboard | grep 'link\|script'` — you should see
 `/build/assets/app-<hash>.css`, `/build/assets/client-<hash>.js` and no `@vite/client`.
 
@@ -204,37 +229,30 @@ served by a sidecar. Vite does not run. `main.ts` serves `dist/client` under
 
 ```
 apps/kitchen-sink
-├── src/                        # NestJS server
-│   ├── app.module.ts           # MvcModule.forRoot({ version, template, vite: { root }, errorPages })
-│   ├── app.controller.ts       # / redirect + the Forms/Validation feature page
-│   ├── pagination.ts           # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
-│   ├── features/               # Kitchen Sink controllers, one per feature group (forms, data loading, navigation, state, errors, layouts, events)
-│   ├── shared-props.middleware.ts  # shares auth.user on every response, via requestState(req)
-│   ├── template.ts             # HTML shell; ctx.assets() handles dev/prod tags
-│   ├── main.ts                 # bootstrap; StandardSchemaValidationPipe + static assets in production
-│   ├── crm/                    # Dashboard, Contacts, Organizations controllers
-│   └── database/               # TypeORM entities, module and seeder
-├── vite.config.ts              # react() + tailwindcss() + nestjsMvc(); no entries, no build block
-└── frontend/                   # React client — no main.tsx, no ssr.tsx: both are generated
-    ├── app.css                 # linked by nestjsMvc() as a stylesheet, in dev too
-    ├── navigation.ts           # sidebar config; items without href render muted
-    ├── layouts/AppLayout.tsx
-    ├── components/Sidebar.tsx
-    └── pages/
-        ├── Crm/Dashboard.tsx
-        ├── Contacts/{Index,Show}.tsx
-        ├── Organizations/{Index,Show}.tsx
-        ├── Features/Forms/{Validation,UseForm,FormComponent,FileUploads,Precognition,OptimisticUpdates}.tsx
-        ├── Features/Forms/DottedKeys.tsx
-        ├── Features/Errors/Http.tsx
-        ├── Features/Navigation/{History,Fragments,Links,PreserveState,PreserveScroll,Redirects}.tsx
-        ├── Features/DataLoading/{PartialReloads,WhenVisible,Polling}.tsx
-        ├── Features/Prefetching/{Links,Page,Swr,Quote,Cache,Products,Product}.tsx
-        ├── Features/State/{Remember,Flash}.tsx
-        ├── Features/State/SharedProps.tsx
-        ├── Errors/Show.tsx         # the error page errorPages renders
-        ├── Features/DataLoading/DeferredProps.tsx
-        ├── Features/DataLoading/InfiniteScroll.tsx
-        ├── Features/DataLoading/OnceProps.tsx
-        └── Features/DataLoading/PropMerging.tsx
+├── README.md                           # this file
+├── shared/                             # package `kitchen-sink`; does not run on its own
+│   ├── server/                         # NestJS, the same on every platform
+│   │   ├── index.ts                    # what the apps import: KitchenSinkModule, UploadGallery, Public
+│   │   ├── kitchen-sink.module.ts      # forRoot({ root, platform }): MvcModule config, controllers, middleware
+│   │   ├── app.controller.ts           # / redirect + the Forms/Validation feature page
+│   │   ├── pagination.ts               # paginate() (offset) and paginateAfter() (keyset) shaped for scroll()
+│   │   ├── features/                   # one controller per feature group; upload-gallery.ts keeps uploads
+│   │   ├── shared-props.middleware.ts  # shares auth.notifications on every response, via requestState(req)
+│   │   ├── template.ts                 # HTML shell; ctx.assets() handles dev/prod tags
+│   │   ├── auth/                       # the guard, login, password reset, email verification
+│   │   ├── crm/                        # Dashboard, Contacts, Organizations controllers
+│   │   └── database/                   # TypeORM entities, module (one SQLite file per app) and seeder
+│   ├── react/                          # no main.tsx, no ssr.tsx: both are generated
+│   │   ├── app.css                     # Tailwind, scanning this directory: source('.')
+│   │   ├── navigation.ts               # sidebar config; the smoke spec derives every page from it
+│   │   ├── layouts/ components/
+│   │   └── pages/                      # Crm, Contacts, Organizations, Features/*, Errors/Show
+│   └── e2e/                            # the Playwright specs, and config.ts every app calls
+├── react-express/                      # package `kitchen-sink-react-express`, :3000
+│   ├── src/main.ts                     # the adapter, static files in production
+│   ├── src/app.module.ts               # KitchenSinkModule.forRoot({ root, platform }) + UploadController
+│   ├── src/upload.controller.ts        # the file upload POST, the one handler per platform
+│   ├── vite.config.ts                  # nestjsMvc({ pages, css }) pointing at ../shared/react
+│   └── playwright.config.ts            # kitchenSinkConfig({ dir, port, platform })
+└── react-fastify/                      # package `kitchen-sink-react-fastify`, :3002; same shape, plus multipart in main.ts
 ```

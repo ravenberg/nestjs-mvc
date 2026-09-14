@@ -14,8 +14,8 @@ dist/
 test-results/
 playwright-report/
 blob-report/
-# The logged-in browser state the e2e setup writes (holds a login cookie)
-apps/kitchen-sink/e2e/.auth/
+# The logged-in browser state the e2e setup writes per kitchen-sink app (holds a login cookie)
+apps/kitchen-sink/*/.auth/
 
 # Purchased template (Tailwind Plus license: not redistributable); the port lives in apps/docs
 apps/docs/tailwind-plus-syntax/

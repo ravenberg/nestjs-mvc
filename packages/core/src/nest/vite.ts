@@ -135,7 +135,7 @@ export class ViteAssets {
     }
     // Stylesheets as real links, so a server-rendered page is styled before any JS runs.
     return [
-      ...api.css.map((file) => `<link rel="stylesheet" href="/${file}">`),
+      ...api.hrefs.map((href) => `<link rel="stylesheet" href="${href}">`),
       `<script type="module" src="/@id/${api.client}"></script>`,
     ].join('\n')
   }

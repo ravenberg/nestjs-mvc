@@ -1,6 +1,8 @@
 packages:
   - packages/*
   - apps/*
+  # The kitchen sink groups its shared package and one app per permutation.
+  - apps/kitchen-sink/*
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:

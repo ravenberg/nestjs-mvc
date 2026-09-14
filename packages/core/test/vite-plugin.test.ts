@@ -107,6 +107,20 @@ describe('nestjsMvc() plugin', () => {
     expect((d.api as NestjsMvcPluginApi).css).toEqual([])
   })
 
+  it('links a stylesheet outside the Vite root through /@fs/ in development', () => {
+    // A monorepo app whose pages and stylesheet live in a shared package: a
+    // plain `/../shared/app.css` would resolve to `/shared/app.css` and 404.
+    const root = project({ react: '^19', '@inertiajs/react': '^3' })
+    const plugin = nestjsMvc({ css: ['frontend/app.css', '../shared/app.css'] })
+    configure(plugin, { root }, serve)
+    const api = plugin.api as NestjsMvcPluginApi
+
+    expect(api.css).toEqual(['frontend/app.css', '../shared/app.css'])
+    expect(api.hrefs[0]).toBe('/frontend/app.css')
+    expect(api.hrefs[1]).toMatch(/^\/@fs\/.+\/shared\/app\.css$/)
+    expect(api.hrefs[1]).not.toContain('..')
+  })
+
   it('contributes only the CSP nonce placeholder to the dev config, and a two-environment build otherwise', () => {
     const root = project({ react: '^19', '@inertiajs/react': '^3' }, ['frontend/app.css'])
     const plugin = nestjsMvc()
@@ -139,7 +153,7 @@ describe('nestjsMvc() plugin', () => {
 })
 
 describe('ViteAssets with generated entries', () => {
-  const api: NestjsMvcPluginApi = { client: CLIENT_ENTRY, ssr: SSR_ENTRY, css: ['frontend/app.css'] }
+  const api: NestjsMvcPluginApi = { client: CLIENT_ENTRY, ssr: SSR_ENTRY, css: ['frontend/app.css'], hrefs: ['/frontend/app.css'] }
   const devServer = {
     middlewares: () => {},
     transformIndexHtml: async (_url: string, html: string) => html,
