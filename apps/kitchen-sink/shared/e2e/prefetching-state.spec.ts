@@ -38,12 +38,12 @@ test.describe('Prefetching', () => {
 })
 
 test.describe('State', () => {
-  test('Remember: useRemember state survives Back, useState does not', async ({ page }) => {
+  test('Remember: useRemember state survives Back, plain component state does not', async ({ page }) => {
     await page.goto('/features/state/remember')
-    const section = (title: string) => page.locator('section', { has: page.getByRole('heading', { name: title }) })
+    const section = (title: string) => page.locator('section', { has: page.getByRole('heading', { name: title, exact: true }) })
     await section('useRemember').getByLabel('Search').fill('remembered query')
     await section('useRemember').getByLabel('Sort').selectOption('date')
-    await section('useState (for contrast)').getByLabel('Search').fill('forgotten query')
+    await section('Without useRemember (for contrast)').getByLabel('Search').fill('forgotten query')
 
     await page.getByRole('link', { name: 'visit the Dashboard' }).click()
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
@@ -51,7 +51,7 @@ test.describe('State', () => {
 
     await expect(section('useRemember').getByLabel('Search')).toHaveValue('remembered query')
     await expect(section('useRemember').getByLabel('Sort')).toHaveValue('date')
-    await expect(section('useState (for contrast)').getByLabel('Search')).toHaveValue('')
+    await expect(section('Without useRemember (for contrast)').getByLabel('Search')).toHaveValue('')
   })
 
   test('Flash: shown on the next render, gone on the one after, and the flash event fires', async ({ page }) => {

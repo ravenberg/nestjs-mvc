@@ -1,9 +1,10 @@
 import type { Multipart } from '@fastify/multipart'
 import { Controller, Inject, PayloadTooLargeException, Post, Req } from '@nestjs/common'
-import { Public, UploadGallery, type UploadedImage } from 'kitchen-sink/server'
 import { ViewService } from 'nestjs-mvc'
+import { Public } from '../../server/auth/public.decorator'
+import { UploadGallery, type UploadedImage } from '../../server/features/upload-gallery'
 
-/** The part of Fastify's request that `@fastify/multipart` adds (registered in main.ts). */
+/** The part of Fastify's request that `@fastify/multipart` adds (registered in bootstrap.ts). */
 interface MultipartRequest {
   parts(): AsyncIterableIterator<Multipart>
 }

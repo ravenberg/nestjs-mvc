@@ -42,6 +42,7 @@ The rows go under `data`. On the last page `nextPage` is `null`, and that tells 
 
 Wrap the list in `InfiniteScroll` and name the prop:
 
+{% framework-code %}
 ```tsx
 import { InfiniteScroll } from 'nestjs-mvc/react'
 
@@ -60,6 +61,21 @@ export default function Index({ posts }: Props) {
 }
 ```
 
+```vue
+<script setup lang="ts">
+import { InfiniteScroll } from 'nestjs-mvc/vue'
+
+defineProps<{ posts: { data: { id: number; title: string }[] } }>()
+</script>
+
+<template>
+  <InfiniteScroll data="posts">
+    <article v-for="post in posts.data" :key="post.id">{{ post.title }}</article>
+  </InfiniteScroll>
+</template>
+```
+{% /framework-code %}
+
 As the end of the list comes into view, the browser asks your controller for `?page=2` and adds those rows under the ones it already has.
 
 ## Starting in the middle
@@ -70,7 +86,7 @@ If you open `/posts?page=5`, the list starts at page 5. Scrolling down loads pag
 
 When a filter changes, the list has to start over, or the new results get added to the old ones. Pass `reset` for that:
 
-```tsx
+```ts
 router.get('/posts', { tag }, { only: ['posts'], reset: ['posts'] })
 ```
 

@@ -59,6 +59,6 @@ MvcModule.forRoot({ vite: {}, csp: { nonce: true } })
 
 ## Good to know
 
-* **Styles are trickier.** React `style` attributes can't carry a nonce, so keep `'unsafe-inline'` for styles like in the example above, unless you never use inline styles.
+* **Styles are trickier.** Inline `style` attributes can't carry a nonce, so keep `'unsafe-inline'` for styles like in the example above, unless you never use inline styles.
 * **`ws:` is there for development.** Vite uses a websocket to reload your pages when you save a file.
 * **Don't cache HTML pages at a CDN** when you use a nonce. A cached page has an old nonce that won't match the header anymore.

@@ -2,6 +2,8 @@ import Markdoc, { type RenderableTreeNode } from '@markdoc/markdoc'
 import React from 'react'
 import { Callout } from './Callout'
 import { Fence } from './Fence'
+import { FrameworkCode } from './FrameworkCode'
+import { FrameworkSwitch } from './FrameworkSwitch'
 import { QuickLink, QuickLinks } from './QuickLinks'
 
 function Figure({ src, alt = '', caption }: { src: string; alt?: string; caption?: string }) {
@@ -14,7 +16,7 @@ function Figure({ src, alt = '', caption }: { src: string; alt?: string; caption
 }
 
 /** The tag names the server's Markdoc schema emits, mapped to components. */
-const components = { Fence, Callout, QuickLinks, QuickLink, Figure }
+const components = { Fence, FrameworkCode, FrameworkSwitch, Callout, QuickLinks, QuickLink, Figure }
 
 /** Renders the tree the controller sent: Markdoc's renderable tree survives JSON as is. */
 export function Markdown({ content }: { content: RenderableTreeNode }) {

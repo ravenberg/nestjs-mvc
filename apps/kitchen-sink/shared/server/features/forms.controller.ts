@@ -138,6 +138,7 @@ export class FormsController {
     // The bytes stay on the server; the page gets a URL per image.
     return {
       platform: this.options.platform,
+      framework: this.options.framework,
       uploads: this.gallery.list().map(({ bytes: _bytes, ...upload }) => ({ ...upload, url: `/features/forms/file-uploads/${upload.id}/image` })),
     }
   }

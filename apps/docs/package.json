@@ -7,7 +7,8 @@
     "dev:fastify": "tsx watch src/main.fastify.ts",
     "build": "vite build",
     "start:prod": "NODE_ENV=production tsx src/main.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "tsx scripts/check-content.ts"
   },
   "dependencies": {
     "@algolia/autocomplete-core": "^1.19.0",

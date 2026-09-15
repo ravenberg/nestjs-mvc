@@ -8,6 +8,7 @@
   "include": [
     "src",
     "../shared/server",
+    "../shared/platform",
     "vite.config.ts",
     "playwright.config.ts"
   ]

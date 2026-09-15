@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": [
+      "vite/client"
+    ]
+  },
+  "include": [
+    "vue/**/*.vue",
+    "vue/**/*.ts",
+    "navigation.ts"
+  ]
+}

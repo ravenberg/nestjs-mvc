@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         # One app per frontend framework and HTTP platform, all running the same specs.
-        app: [kitchen-sink-react-express, kitchen-sink-react-fastify]
+        app: [kitchen-sink-react-express, kitchen-sink-react-fastify, kitchen-sink-vue-express, kitchen-sink-vue-fastify]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

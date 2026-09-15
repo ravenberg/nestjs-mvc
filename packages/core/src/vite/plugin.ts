@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import type { Plugin, UserConfig } from 'vite'
+import type { Plugin, UserConfig, ViteDevServer } from 'vite'
 import { NONCE_PLACEHOLDER } from '../protocol/constants'
 import { type Framework, type Preset, presets } from './presets'
 
@@ -114,6 +114,29 @@ export function nestjsMvc(options: NestjsMvcPluginOptions = {}): Plugin {
       return config
     },
 
+    // Vite refreshes an import.meta.glob when a matching file is added or removed,
+    // but not inside a generated module like these entries, and it does not watch
+    // a pages directory outside the root at all. Pages come and go while you
+    // develop, so without this a new page is "not found" until a restart.
+    configureServer(server: ViteDevServer) {
+      const pagesRoot = resolve(server.config.root, pagesDir)
+      server.watcher.add(pagesRoot)
+      const onPageAddedOrRemoved = (file: string) => {
+        const inPages = relative(pagesRoot, file)
+        if (inPages.startsWith('..') || isAbsolute(inPages)) return
+        if (!preset?.extensions.some((ext) => file.endsWith(`.${ext}`))) return
+        for (const environment of Object.values(server.environments)) {
+          for (const id of [RESOLVED + CLIENT_ENTRY, RESOLVED + SSR_ENTRY]) {
+            const module = environment.moduleGraph.getModuleById(id)
+            if (module) environment.moduleGraph.invalidateModule(module)
+          }
+        }
+        server.ws.send({ type: 'full-reload' })
+      }
+      server.watcher.on('add', onPageAddedOrRemoved)
+      server.watcher.on('unlink', onPageAddedOrRemoved)
+    },
+
     resolveId(id) {
       if (id === CLIENT_ENTRY || id === SSR_ENTRY) return RESOLVED + id
       return null
@@ -169,12 +192,14 @@ function devHref(root: string, file: string): string {
 const FRAMEWORKS: Record<string, Framework> = {
   react: 'react',
   '@inertiajs/react': 'react',
+  vue: 'vue',
+  '@inertiajs/vue3': 'vue',
 }
 
-const UNSUPPORTED = ['vue', 'svelte', '@inertiajs/vue3', '@inertiajs/svelte']
+const UNSUPPORTED = ['svelte', '@inertiajs/svelte']
 
 /** `nestjs-mvc/<framework>` re-exports this package; the app installs it next to nestjs-mvc. */
-const ADAPTERS: Record<Framework, string> = { react: '@inertiajs/react' }
+const ADAPTERS: Record<Framework, string> = { react: '@inertiajs/react', vue: '@inertiajs/vue3' }
 
 function declaredDependencies(root: string): Record<string, unknown> {
   try {
@@ -189,13 +214,20 @@ function detectFramework(root: string, explicit?: Framework): Framework {
   if (explicit) return explicit
   const deps = declaredDependencies(root)
 
-  for (const [dep, framework] of Object.entries(FRAMEWORKS)) if (dep in deps) return framework
+  const found = [...new Set(Object.entries(FRAMEWORKS).filter(([dep]) => dep in deps).map(([, framework]) => framework))]
+  if (found.length === 1) return found[0]
+  if (found.length > 1) {
+    throw new Error(
+      `[nestjs-mvc] package.json declares more than one frontend framework (${found.join(', ')}): ` +
+        `pass { framework: '${found[0]}' } to nestjsMvc() to pick one.`,
+    )
+  }
 
   const installed = UNSUPPORTED.find((adapter) => adapter in deps)
   throw new Error(
     installed
-      ? `[nestjs-mvc] ${installed} is installed, but only React is supported so far.`
-      : '[nestjs-mvc] Could not detect the frontend framework: add react and react-dom to package.json, ' +
+      ? `[nestjs-mvc] ${installed} is installed, but only React and Vue are supported so far.`
+      : '[nestjs-mvc] Could not detect the frontend framework: add react and react-dom, or vue, to package.json, ' +
           'or pass { framework } to nestjsMvc().',
   )
 }

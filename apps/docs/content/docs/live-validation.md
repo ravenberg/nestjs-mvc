@@ -8,6 +8,7 @@ You can show errors while the user is still filling in the form, instead of wait
 
 Pass the method and URL to `useForm`, then call `validate` when a field loses focus:
 
+{% framework-code %}
 ```tsx
 import { useForm } from 'nestjs-mvc/react'
 
@@ -28,6 +29,24 @@ export default function Register() {
   )
 }
 ```
+
+```vue
+<script setup lang="ts">
+import { useForm } from 'nestjs-mvc/vue'
+
+const form = useForm('post', '/users', { name: '', email: '' })
+</script>
+
+<template>
+  <form @submit.prevent="form.submit()">
+    <input v-model="form.email" @blur="form.validate('email')" />
+    <p v-if="form.invalid('email')">{{ form.errors.email }}</p>
+
+    <button :disabled="form.processing">Register</button>
+  </form>
+</template>
+```
+{% /framework-code %}
 
 ## The server
 

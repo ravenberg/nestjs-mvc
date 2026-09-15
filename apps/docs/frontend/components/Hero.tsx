@@ -1,27 +1,22 @@
 import clsx from 'clsx'
 import { Highlight } from 'prism-react-renderer'
 import { Fragment, useState, type ComponentPropsWithoutRef } from 'react'
+import '../lib/prism-vue'
 import { Button } from './Button'
 import { HeroBackground } from './HeroBackground'
 
-// The two halves of one page: the controller and the view it renders.
-const tabs = [
-  {
-    name: 'contacts.controller.ts',
-    language: 'typescript',
-    code: `@Controller('contacts')
+// The two halves of one page: the controller, and the view it renders in the
+// framework the reader picked (the site-wide switch; CSS shows one variant).
+const CONTROLLER = `@Controller('contacts')
 export class ContactsController {
   @Get()
   @View('Contacts/Index')
   async index() {
     return { contacts: await this.contacts.find() }
   }
-}`,
-  },
-  {
-    name: 'Contacts/Index.tsx',
-    language: 'tsx',
-    code: `export default function Index({ contacts }: Props) {
+}`
+
+const REACT_VIEW = `export default function Index({ contacts }: Props) {
   return (
     <ul>
       {contacts.map((contact) => (
@@ -29,12 +24,37 @@ export class ContactsController {
       ))}
     </ul>
   )
-}`,
-  },
+}`
+
+const VUE_VIEW = `<script setup lang="ts">
+defineProps<{ contacts: Contact[] }>()
+</script>
+
+<template>
+  <ul>
+    <li v-for="contact in contacts" :key="contact.id">{{ contact.name }}</li>
+  </ul>
+</template>`
+
+interface Variant {
+  framework?: 'react' | 'vue'
+  file: string
+  language: string
+  code: string
+}
+
+const tabs: Variant[][] = [
+  [{ file: 'contacts.controller.ts', language: 'typescript', code: CONTROLLER }],
+  [
+    { framework: 'react', file: 'Contacts/Index.tsx', language: 'tsx', code: REACT_VIEW },
+    { framework: 'vue', file: 'Contacts/Index.vue', language: 'vue', code: VUE_VIEW },
+  ],
 ]
 
-// The window reserves room for the longest file, so switching tabs never changes its height.
-const maxLines = Math.max(...tabs.map((tab) => tab.code.split('\n').length))
+// The window reserves room for the longest file, so switching never changes its height.
+const maxLines = Math.max(...tabs.flat().map((variant) => variant.code.split('\n').length))
+
+const frameworkClass = (variant: Variant) => (variant.framework ? `framework-${variant.framework}` : undefined)
 
 function TrafficLightsIcon(props: ComponentPropsWithoutRef<'svg'>) {
   return (
@@ -48,7 +68,6 @@ function TrafficLightsIcon(props: ComponentPropsWithoutRef<'svg'>) {
 
 export function Hero() {
   const [activeTab, setActiveTab] = useState(0)
-  const { code, language } = tabs[activeTab]
 
   return (
     <div className="overflow-hidden bg-neutral-950 dark:-mt-19 dark:-mb-32 dark:pt-19 dark:pb-32">
@@ -86,11 +105,11 @@ export function Hero() {
                 <div className="pt-4 pl-4">
                   <TrafficLightsIcon className="h-2.5 w-auto stroke-neutral-500/30" />
                   <div role="tablist" aria-label="Example files" className="mt-4 flex space-x-2 text-xs">
-                    {tabs.map((tab, index) => {
+                    {tabs.map((variants, index) => {
                       const isActive = index === activeTab
                       return (
                         <button
-                          key={tab.name}
+                          key={variants[0].file}
                           type="button"
                           role="tab"
                           aria-selected={isActive}
@@ -102,42 +121,51 @@ export function Hero() {
                               : 'text-neutral-500 hover:text-neutral-300',
                           )}
                         >
-                          <span className={clsx('flex items-center rounded-full px-2.5', isActive && 'bg-neutral-800')}>{tab.name}</span>
+                          <span className={clsx('flex items-center rounded-full px-2.5', isActive && 'bg-neutral-800')}>
+                            {variants.map((variant) => (
+                              <span key={variant.file} className={frameworkClass(variant)}>
+                                {variant.file}
+                              </span>
+                            ))}
+                          </span>
                         </button>
                       )
                     })}
                   </div>
-                  <div
-                    role="tabpanel"
-                    aria-label={tabs[activeTab].name}
-                    className="mt-6 flex items-start px-1 text-sm"
-                    // One text-sm line is 1.5rem; the extra line is the pre's bottom padding.
-                    style={{ minHeight: `${(maxLines + 1) * 1.5}rem` }}
-                  >
-                    <div aria-hidden="true" className="border-r border-neutral-300/5 pr-4 font-mono text-neutral-600 select-none">
-                      {Array.from({ length: code.split('\n').length }).map((_, index) => (
-                        <Fragment key={index}>
-                          {(index + 1).toString().padStart(2, '0')}
-                          <br />
-                        </Fragment>
-                      ))}
+                  {tabs[activeTab].map((variant) => (
+                    <div
+                      key={variant.file}
+                      role="tabpanel"
+                      aria-label={variant.file}
+                      className={clsx('mt-6 flex items-start px-1 text-sm', frameworkClass(variant))}
+                      // One text-sm line is 1.5rem; the extra line is the pre's bottom padding.
+                      style={{ minHeight: `${(maxLines + 1) * 1.5}rem` }}
+                    >
+                      <div aria-hidden="true" className="border-r border-neutral-300/5 pr-4 font-mono text-neutral-600 select-none">
+                        {Array.from({ length: variant.code.split('\n').length }).map((_, index) => (
+                          <Fragment key={index}>
+                            {(index + 1).toString().padStart(2, '0')}
+                            <br />
+                          </Fragment>
+                        ))}
+                      </div>
+                      <Highlight code={variant.code} language={variant.language} theme={{ plain: {}, styles: [] }}>
+                        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                          <pre className={clsx(className, 'flex overflow-x-auto pb-6')} style={style}>
+                            <code className="px-4">
+                              {tokens.map((line, lineIndex) => (
+                                <div key={lineIndex} {...getLineProps({ line })}>
+                                  {line.map((token, tokenIndex) => (
+                                    <span key={tokenIndex} {...getTokenProps({ token })} />
+                                  ))}
+                                </div>
+                              ))}
+                            </code>
+                          </pre>
+                        )}
+                      </Highlight>
                     </div>
-                    <Highlight code={code} language={language} theme={{ plain: {}, styles: [] }}>
-                      {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                        <pre className={clsx(className, 'flex overflow-x-auto pb-6')} style={style}>
-                          <code className="px-4">
-                            {tokens.map((line, lineIndex) => (
-                              <div key={lineIndex} {...getLineProps({ line })}>
-                                {line.map((token, tokenIndex) => (
-                                  <span key={tokenIndex} {...getTokenProps({ token })} />
-                                ))}
-                              </div>
-                            ))}
-                          </code>
-                        </pre>
-                      )}
-                    </Highlight>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

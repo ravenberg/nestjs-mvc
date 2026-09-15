@@ -2,13 +2,13 @@
 title: Introduction
 ---
 
-Build full stack apps with NestJS and React, where your controllers return pages instead of JSON. {% .lead %}
+Build full stack apps with NestJS and React or Vue, where your controllers return pages instead of JSON. {% .lead %}
 
 {% quick-links %}
 
 {% quick-link title="Installation" icon="installation" href="/docs/installation" description="Add nestjs-mvc to a NestJS project in a few minutes." /%}
 
-{% quick-link title="Your first page" icon="presets" href="/docs/your-first-page" description="How a controller and a React component make a page." /%}
+{% quick-link title="Your first page" icon="presets" href="/docs/your-first-page" description="How a controller and a page component work together." /%}
 
 {% quick-link title="Forms and validation" icon="plugins" href="/docs/forms" description="Save data, and send errors back to the form." /%}
 
@@ -22,7 +22,7 @@ Build full stack apps with NestJS and React, where your controllers return pages
 
 NestJS is great for the backend. For the frontend you'd usually build a separate app with an API in between, and that's a lot of work when one team, or even one person, owns both sides.
 
-With nestjs-mvc you skip that API. A controller returns the data for a page, and a React component renders it:
+With nestjs-mvc you skip that API. A controller returns the data for a page, and a React or Vue component renders it:
 
 ```ts
 @Controller('users')
@@ -35,6 +35,7 @@ export class UsersController {
 }
 ```
 
+{% framework-code %}
 ```tsx
 // frontend/pages/Users/Index.tsx
 export default function Index({ users }: { users: { id: number; name: string }[] }) {
@@ -47,6 +48,20 @@ export default function Index({ users }: { users: { id: number; name: string }[]
   )
 }
 ```
+
+```vue
+<!-- frontend/pages/Users/Index.vue -->
+<script setup lang="ts">
+defineProps<{ users: { id: number; name: string }[] }>()
+</script>
+
+<template>
+  <ul>
+    <li v-for="user in users" :key="user.id">{{ user.name }}</li>
+  </ul>
+</template>
+```
+{% /framework-code %}
 
 The object your controller returns becomes the props of the component, and that's really the whole idea.
 
@@ -65,7 +80,7 @@ The sidebar starts easy and gets more advanced as you go down:
 * **Building your app** is about things real apps need, such as logins, shared data and error pages.
 * **Going further** gets into performance, security and production.
 
-You don't have to know React well, but it helps to know the basics of NestJS, like modules, controllers and dependency injection.
+You don't have to know React or Vue well, but it helps to know the basics of NestJS, like modules, controllers and dependency injection.
 
 {% callout title="A community project" %}
 nestjs-mvc is a community project and isn't made by the NestJS team.

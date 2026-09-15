@@ -8,6 +8,7 @@ An upload is a normal form that happens to have a file in it, and NestJS receive
 
 Put a `File` in `useForm`. As soon as there's a file in the data, the form is sent as `multipart/form-data`.
 
+{% framework-code %}
 ```tsx
 import { useForm } from 'nestjs-mvc/react'
 
@@ -31,6 +32,30 @@ export default function Avatar() {
   )
 }
 ```
+
+```vue
+<script setup lang="ts">
+import { useForm } from 'nestjs-mvc/vue'
+
+const form = useForm<{ avatar: File | null }>({ avatar: null })
+
+function pick(event: Event) {
+  form.avatar = (event.target as HTMLInputElement).files?.[0] ?? null
+}
+</script>
+
+<template>
+  <form @submit.prevent="form.post('/profile/avatar')">
+    <input type="file" @change="pick" />
+    <p v-if="form.errors.avatar">{{ form.errors.avatar }}</p>
+
+    <progress v-if="form.progress" :value="form.progress.percentage" max="100" />
+
+    <button :disabled="form.processing">Upload</button>
+  </form>
+</template>
+```
+{% /framework-code %}
 
 `form.progress` tells you how much has been uploaded, so you can show a progress bar for large files.
 

@@ -51,6 +51,31 @@ export function schema(): Config {
         selfClosing: true,
         attributes: { src: { type: String }, alt: { type: String }, caption: { type: String } },
       },
+      // A page example in React and in Vue: one tsx and one vue fence. Each is
+      // wrapped so CSS can show the framework the reader picked.
+      'framework-code': {
+        render: 'FrameworkCode',
+        transform(node, config) {
+          const children = node.transformChildren(config).map((child) =>
+            Tag.isTag(child) && child.name === 'Fence'
+              ? new Tag('div', { class: child.attributes.language === 'vue' ? 'framework-vue' : 'framework-react' }, [child])
+              : child,
+          )
+          return new Tag('FrameworkCode', {}, children)
+        },
+      },
+      // Text that only applies to one framework: a block (installation steps) or a
+      // few words inside a sentence (`Show.tsx` versus `Show.vue`).
+      framework: {
+        attributes: { name: { type: String, required: true, matches: ['react', 'vue'], errorLevel: 'critical' } },
+        transform(node, config) {
+          const tag = node.inline ? 'span' : 'div'
+          return new Tag(tag, { class: `framework-${String(node.attributes.name)}` }, node.transformChildren(config))
+        },
+      },
+      // The React | Vue switch in the page itself, for a page whose framework
+      // blocks have no code example next to them (the header switch is hidden on phones).
+      'framework-switch': { render: 'FrameworkSwitch', selfClosing: true },
       'quick-links': { render: 'QuickLinks' },
       'quick-link': {
         render: 'QuickLink',

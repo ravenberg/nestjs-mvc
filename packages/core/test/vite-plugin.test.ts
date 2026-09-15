@@ -45,11 +45,54 @@ describe('nestjsMvc() plugin', () => {
   })
 
   it('explains itself when no framework is installed, or an unsupported one', () => {
-    expect(() => configure(nestjsMvc(), { root: project({}) }, serve)).toThrow(/add react and react-dom/)
-    expect(() => configure(nestjsMvc(), { root: project({ vue: '^3' }) }, serve)).toThrow(/only React is supported so far/)
-    expect(() => configure(nestjsMvc(), { root: project({ '@inertiajs/vue3': '^3' }) }, serve)).toThrow(
-      /only React is supported so far/,
+    expect(() => configure(nestjsMvc(), { root: project({}) }, serve)).toThrow(/add react and react-dom, or vue/)
+    expect(() => configure(nestjsMvc(), { root: project({ '@inertiajs/svelte': '^3' }) }, serve)).toThrow(
+      /only React and Vue are supported so far/,
     )
+  })
+
+  it('detects Vue from package.json, by vue itself or by the adapter', () => {
+    expect(() => configure(nestjsMvc(), { root: project({ vue: '^3', '@inertiajs/vue3': '^3' }) }, serve)).not.toThrow()
+    expect(() => configure(nestjsMvc(), { root: project({ '@inertiajs/vue3': '^3' }) }, serve)).not.toThrow()
+  })
+
+  it('asks for the adapter when the app declares vue but not @inertiajs/vue3', () => {
+    expect(() => configure(nestjsMvc(), { root: project({ vue: '^3' }) }, serve)).toThrow(/pnpm add @inertiajs\/vue3/)
+  })
+
+  it('refuses to guess when package.json declares both React and Vue, and follows an explicit choice', () => {
+    const both = project({ react: '^19', '@inertiajs/react': '^3', vue: '^3', '@inertiajs/vue3': '^3' })
+    expect(() => configure(nestjsMvc(), { root: both }, serve)).toThrow(/more than one frontend framework \(react, vue\)/)
+
+    const plugin = nestjsMvc({ framework: 'vue' })
+    configure(plugin, { root: both }, serve)
+    expect(generated(plugin, CLIENT_ENTRY)).toContain("from 'nestjs-mvc/vue'")
+  })
+
+  it('generates a Vue client entry that hydrates server-rendered pages and mounts the rest', () => {
+    const plugin = nestjsMvc()
+    configure(plugin, { root: project({ vue: '^3', '@inertiajs/vue3': '^3' }) }, serve)
+
+    const code = generated(plugin, CLIENT_ENTRY)
+
+    expect(code).toContain(`import.meta.glob("/frontend/pages/**/*.vue")`)
+    expect(code).toContain("from 'nestjs-mvc/vue'")
+    expect(code).not.toContain('@inertiajs')
+    expect(code).not.toContain('react')
+    expect(code).toContain("el.hasAttribute('data-server-rendered') ? createSSRApp : createApp")
+    expect(code).toContain('.use(plugin)')
+  })
+
+  it('generates a Vue SSR entry that renders with vue/server-renderer', () => {
+    const plugin = nestjsMvc()
+    configure(plugin, { root: project({ vue: '^3', '@inertiajs/vue3': '^3' }) }, serve)
+
+    const code = generated(plugin, SSR_ENTRY)
+
+    expect(code).toContain(`import.meta.glob("/frontend/pages/**/*.vue", { eager: true })`)
+    expect(code).toContain("import { renderToString } from 'vue/server-renderer'")
+    expect(code).toContain('export default function render(page)')
+    expect(code).toContain('createSSRApp')
   })
 
   it('generates a client entry that lazily resolves pages from the pages directory', () => {

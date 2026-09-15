@@ -1,7 +1,8 @@
 import { Body, Controller, Inject, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { Public, UploadGallery } from 'kitchen-sink/server'
 import { ViewService } from 'nestjs-mvc'
+import { Public } from '../../server/auth/public.decorator'
+import { UploadGallery } from '../../server/features/upload-gallery'
 
 /** What multer hands `@UploadedFile()`; declared here so the app needs no `@types/multer`. */
 interface MulterFile {
@@ -15,7 +16,7 @@ interface MulterFile {
  * The POST of the File Uploads page. Inertia sends a multipart body when the
  * form data holds a File; Nest's `FileInterceptor` (multer, memory storage)
  * makes it `@UploadedFile()` and the text fields land in `@Body()` as usual.
- * `FileInterceptor` exists for Express only: the Fastify app reads the same
+ * `FileInterceptor` exists for Express only: the Fastify apps read the same
  * form with `@fastify/multipart`.
  */
 @Public()

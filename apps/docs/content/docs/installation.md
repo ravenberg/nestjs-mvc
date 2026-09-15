@@ -2,23 +2,39 @@
 title: Installation
 ---
 
-Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 and Node 20.19 or newer. {% .lead %}
+Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 or Vue 3.5, and Node 20.19 or newer. {% .lead %}
+
+Every page in these docs shows its examples in React or in Vue. Pick yours, and the whole site follows:
+
+{% framework-switch /%}
 
 ## Install the packages
 
 Run this in your NestJS project:
 
+{% framework name="react" %}
 ```sh
 npm install nestjs-mvc @inertiajs/react react react-dom
 npm install -D vite @vitejs/plugin-react @types/react @types/react-dom
 ```
 
 `@inertiajs/react` is what runs nestjs-mvc in the browser. It needs to be installed, but you'll import everything from `nestjs-mvc/react`, so you won't use it directly.
+{% /framework %}
+
+{% framework name="vue" %}
+```sh
+npm install nestjs-mvc @inertiajs/vue3 vue
+npm install -D vite @vitejs/plugin-vue vue-tsc
+```
+
+`@inertiajs/vue3` is what runs nestjs-mvc in the browser. It needs to be installed, but you'll import everything from `nestjs-mvc/vue`, so you won't use it directly.
+{% /framework %}
 
 ## Configure Vite
 
-Vite builds your React pages. Create a `vite.config.ts` in the root of your project:
+Vite builds your pages. Create a `vite.config.ts` in the root of your project:
 
+{% framework name="react" %}
 ```ts
 // vite.config.ts
 import react from '@vitejs/plugin-react'
@@ -29,8 +45,22 @@ export default defineConfig({
   plugins: [react(), nestjsMvc()],
 })
 ```
+{% /framework %}
 
-You don't need an entry file. The plugin looks for your pages in `frontend/pages`, and if there's a `frontend/app.css` it loads that too.
+{% framework name="vue" %}
+```ts
+// vite.config.ts
+import vue from '@vitejs/plugin-vue'
+import { nestjsMvc } from 'nestjs-mvc/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [vue(), nestjsMvc()],
+})
+```
+{% /framework %}
+
+You don't need an entry file. The plugin sees in your `package.json` whether you use React or Vue, looks for your pages in `frontend/pages`, and if there's a `frontend/app.css` it loads that too.
 
 ## Register the module
 
@@ -76,7 +106,18 @@ npm install class-validator class-transformer
 
 ## TypeScript
 
-Your pages are `.tsx` files. TypeScript needs to know about JSX, and the pages should stay out of your server build:
+Your pages should stay out of your server build:
+
+```json
+// tsconfig.build.json
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "frontend"]
+}
+```
+
+{% framework name="react" %}
+Your pages are `.tsx` files, so TypeScript needs to know about JSX:
 
 ```json
 // tsconfig.json
@@ -86,14 +127,24 @@ Your pages are `.tsx` files. TypeScript needs to know about JSX, and the pages s
   }
 }
 ```
+{% /framework %}
+
+{% framework name="vue" %}
+Your pages are `.vue` files, which `tsc` can't read. `vue-tsc` can, with a small config of its own:
 
 ```json
-// tsconfig.build.json
+// tsconfig.vue.json
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "frontend"]
+  "compilerOptions": { "jsx": "preserve" },
+  "include": ["frontend/**/*.vue", "frontend/**/*.ts"]
 }
 ```
+
+```sh
+npx vue-tsc -p tsconfig.vue.json --noEmit
+```
+{% /framework %}
 
 ## Start the app
 

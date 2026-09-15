@@ -10,9 +10,9 @@ The browser asks for `/users` and your controller returns `{ users: [...] }`. ne
 
 * your scripts and styles,
 * the page name and the props, as JSON in a `<script>` tag,
-* an empty element where React renders the page.
+* an empty element where your page renders.
 
-React reads the JSON, finds `frontend/pages/Users/Index.tsx` and renders it.
+The browser code reads the JSON, finds {% framework name="react" %}`frontend/pages/Users/Index.tsx`{% /framework %}{% framework name="vue" %}`frontend/pages/Users/Index.vue`{% /framework %} and renders it.
 
 ## Every visit after that
 
@@ -51,4 +51,4 @@ NestJS serves all your users from one process, so nestjs-mvc doesn't keep anythi
 
 ## The protocol
 
-The browser and the server talk through a small open protocol called [Inertia](https://inertiajs.com). nestjs-mvc implements the server side of it for NestJS and ships the React side as `nestjs-mvc/react`. Everything you need is in these docs, so you won't have to learn Inertia itself.
+The browser and the server talk through a small open protocol called [Inertia](https://inertiajs.com). nestjs-mvc implements the server side of it for NestJS and ships the browser side as {% framework name="react" %}`nestjs-mvc/react`{% /framework %}{% framework name="vue" %}`nestjs-mvc/vue`{% /framework %}. Everything you need is in these docs, so you won't have to learn Inertia itself.

@@ -6,8 +6,9 @@ Most pages share a header and a menu, so you put those in a layout once. {% .lea
 
 ## A layout component
 
-A layout is a normal React component that wraps the page:
+A layout is a normal component that wraps the page. {% framework name="react" %}The page comes in as `children`:{% /framework %}{% framework name="vue" %}The page goes where the layout puts its `<slot />`:{% /framework %}
 
+{% framework-code %}
 ```tsx
 // frontend/layouts/AppLayout.tsx
 import { Link } from 'nestjs-mvc/react'
@@ -26,10 +27,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
 }
 ```
 
+```vue
+<!-- frontend/layouts/AppLayout.vue -->
+<script setup lang="ts">
+import { Link } from 'nestjs-mvc/vue'
+</script>
+
+<template>
+  <nav>
+    <Link href="/">Home</Link>
+    <Link href="/users">Users</Link>
+  </nav>
+  <main>
+    <slot />
+  </main>
+</template>
+```
+{% /framework-code %}
+
 ## Attach it to a page
 
-Set `layout` on the page component:
+Tell the page which layout it uses:
 
+{% framework-code %}
 ```tsx
 // frontend/pages/Users/Index.tsx
 import type { ReactNode } from 'react'
@@ -42,12 +62,27 @@ export default function Index() {
 Index.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>
 ```
 
+```vue
+<!-- frontend/pages/Users/Index.vue -->
+<script setup lang="ts">
+import AppLayout from '../../layouts/AppLayout.vue'
+
+defineOptions({ layout: AppLayout })
+</script>
+
+<template>
+  <h1>Users</h1>
+</template>
+```
+{% /framework-code %}
+
 The layout now stays on screen while you move between pages. Because it isn't rebuilt on every visit, it keeps its state, so an open menu stays open and a video keeps playing.
 
 ## Nested layouts
 
 You can wrap a page in more than one layout, from the outside in:
 
+{% framework-code %}
 ```tsx
 Settings.layout = (page: ReactNode) => (
   <AppLayout>
@@ -56,10 +91,21 @@ Settings.layout = (page: ReactNode) => (
 )
 ```
 
+```vue
+<script setup lang="ts">
+import AppLayout from '../../layouts/AppLayout.vue'
+import SettingsLayout from '../../layouts/SettingsLayout.vue'
+
+defineOptions({ layout: [AppLayout, SettingsLayout] })
+</script>
+```
+{% /framework-code %}
+
 ## The page title
 
 Use `Head` to set the title of the browser tab:
 
+{% framework-code %}
 ```tsx
 import { Head } from 'nestjs-mvc/react'
 
@@ -73,14 +119,35 @@ export default function Index() {
 }
 ```
 
+```vue
+<script setup lang="ts">
+import { Head } from 'nestjs-mvc/vue'
+</script>
+
+<template>
+  <Head title="Users" />
+  <h1>Users</h1>
+</template>
+```
+{% /framework-code %}
+
 You can put other tags in `Head` too:
 
+{% framework-code %}
 ```tsx
 <Head>
   <title>Users</title>
   <meta name="description" content="Everyone in your team" />
 </Head>
 ```
+
+```vue
+<Head>
+  <title>Users</title>
+  <meta name="description" content="Everyone in your team" />
+</Head>
+```
+{% /framework-code %}
 
 ## The HTML around your app
 

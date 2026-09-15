@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { navigation } from '../react/navigation'
+import { navigation } from '../navigation'
 import { isSameDocument, markDocument, watchErrors } from './helpers'
 
 /** Every sidebar entry with a link: the whole kitchen sink plus the CRM pages. */
@@ -25,12 +25,13 @@ test.describe('every page', () => {
   }
 })
 
-test('runs on the platform this app is for', async ({ request }, testInfo) => {
-  // Express announces itself, Fastify does not: proof the suite is not testing the other app.
+test('runs on the platform and framework this app is for', async ({ request }, testInfo) => {
+  // Express announces itself, Fastify does not: proof the suite is not testing another app.
   const response = await request.get('/features/forms/file-uploads')
   const platform = testInfo.config.metadata.platform as string
   expect(response.headers()['x-powered-by']).toBe(platform === 'express' ? 'Express' : undefined)
   expect(await response.text()).toContain(`"platform":"${platform}"`)
+  expect(await response.text()).toContain(`"framework":"${testInfo.config.metadata.framework as string}"`)
 })
 
 test('the sidebar navigates every page as an Inertia visit, never a full reload', async ({ page }) => {

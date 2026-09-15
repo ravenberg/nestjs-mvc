@@ -44,7 +44,7 @@ A token can stop being valid, for example after you deploy with a new key. When 
 
 ## Plain HTML forms
 
-A plain `<form method="post">` doesn't send the token, so it gets a `419`. Use `useForm` or `Form` from `nestjs-mvc/react` instead.
+A plain `<form method="post">` doesn't send the token, so it gets a `419`. Use `useForm` or `Form` from {% framework name="react" %}`nestjs-mvc/react`{% /framework %}{% framework name="vue" %}`nestjs-mvc/vue`{% /framework %} instead.
 
 ## In tests
 

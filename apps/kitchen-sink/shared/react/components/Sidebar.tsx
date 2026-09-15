@@ -1,7 +1,26 @@
 import { Deferred, Link, usePage } from 'nestjs-mvc/react'
-import { Bell, ChevronRight, LogOut } from 'lucide-react'
+import {
+  Bell,
+  Boxes,
+  Building2,
+  CircleAlert,
+  Contact,
+  Layers,
+  LayoutDashboard,
+  Radio,
+  Rss,
+  SquarePen,
+  Wifi,
+  Zap,
+  ChevronRight,
+  LogOut,
+  Navigation,
+  type LucideIcon,
+} from 'lucide-react'
 import { useState } from 'react'
-import { navigation, type NavGroup } from '../navigation'
+import { navigation, type NavGroup, type NavIcon } from '../../navigation'
+
+const icons: Record<NavIcon, LucideIcon> = { Boxes, Building2, CircleAlert, Contact, Layers, LayoutDashboard, Navigation, Radio, Rss, SquarePen, Wifi, Zap }
 
 function isActive(currentUrl: string, href?: string): boolean {
   if (!href) return false
@@ -11,7 +30,7 @@ function isActive(currentUrl: string, href?: string): boolean {
 function CollapsibleGroup({ group, currentUrl }: { group: NavGroup; currentUrl: string }) {
   const hasActiveChild = group.items?.some((item) => isActive(currentUrl, item.href)) ?? false
   const [open, setOpen] = useState(hasActiveChild)
-  const Icon = group.icon
+  const Icon = icons[group.icon]
 
   return (
     <li>
@@ -55,6 +74,11 @@ function CollapsibleGroup({ group, currentUrl }: { group: NavGroup; currentUrl: 
       )}
     </li>
   )
+}
+
+function GroupIcon({ name, active }: { name: NavIcon; active: boolean }) {
+  const Icon = icons[name]
+  return <Icon className={`size-4 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`} />
 }
 
 export function Sidebar() {
@@ -107,9 +131,7 @@ export function Sidebar() {
                           : 'text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <group.icon
-                        className={`size-4 shrink-0 ${isActive(url, group.href) ? 'text-blue-600' : 'text-slate-500'}`}
-                      />
+                      <GroupIcon name={group.icon} active={isActive(url, group.href)} />
                       {group.label}
                     </Link>
                   </li>

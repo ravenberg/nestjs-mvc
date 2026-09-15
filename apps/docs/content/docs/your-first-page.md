@@ -2,7 +2,7 @@
 title: Your first page
 ---
 
-A page is made of a controller method that returns data and a React component that shows it. {% .lead %}
+A page is made of a controller method that returns data and a {% framework name="react" %}React{% /framework %}{% framework name="vue" %}Vue{% /framework %} component that shows it. {% .lead %}
 
 ## The controller
 
@@ -25,8 +25,9 @@ export class AppController {
 
 ## The page
 
-The name `Home` points to `frontend/pages/Home.tsx`, and the object you returned comes in as props.
+The name `Home` points to {% framework name="react" %}`frontend/pages/Home.tsx`{% /framework %}{% framework name="vue" %}`frontend/pages/Home.vue`{% /framework %}, and the object you returned comes in as props.
 
+{% framework-code %}
 ```tsx
 // frontend/pages/Home.tsx
 export default function Home({ name }: { name: string }) {
@@ -34,12 +35,25 @@ export default function Home({ name }: { name: string }) {
 }
 ```
 
+```vue
+<!-- frontend/pages/Home.vue -->
+<script setup lang="ts">
+defineProps<{ name: string }>()
+</script>
+
+<template>
+  <h1>Hello, {{ name }}</h1>
+</template>
+```
+{% /framework-code %}
+
 Open `http://localhost:3000` and you'll see "Hello, Ada".
 
 ## Folders
 
-Page names can include folders, so `@View('Users/Show')` renders `frontend/pages/Users/Show.tsx`. Most apps end up with a folder per controller:
+Page names can include folders, so `@View('Users/Show')` renders {% framework name="react" %}`frontend/pages/Users/Show.tsx`{% /framework %}{% framework name="vue" %}`frontend/pages/Users/Show.vue`{% /framework %}. Most apps end up with a folder per controller:
 
+{% framework name="react" %}
 ```text
 frontend/pages/
   Home.tsx
@@ -47,6 +61,17 @@ frontend/pages/
     Index.tsx
     Show.tsx
 ```
+{% /framework %}
+
+{% framework name="vue" %}
+```text
+frontend/pages/
+  Home.vue
+  Users/
+    Index.vue
+    Show.vue
+```
+{% /framework %}
 
 ## Using services
 
@@ -72,6 +97,6 @@ Everything you return ends up in the browser. So pick the fields you want to sho
 
 ## What happens
 
-On the first visit the server sends a full HTML page with your data in it, and React takes over from there.
+On the first visit the server sends a full HTML page with your data in it, and your page takes over in the browser from there.
 
 When someone clicks a link after that, the browser asks the same controller for just the data and swaps the page in place. You get that without writing anything extra, and the next page shows how links work.

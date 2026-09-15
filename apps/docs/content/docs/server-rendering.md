@@ -22,7 +22,7 @@ export class HomeController {
 }
 ```
 
-The first response now has the finished HTML of your page in it, and React takes over in the browser as usual.
+The first response now has the finished HTML of your page in it, and your page takes over in the browser as usual.
 
 ## A whole controller
 
@@ -73,5 +73,5 @@ this.view.disableSsr()
 ```
 
 {% callout title="How to check it" %}
-To see whether a page was rendered on the server, use View Source in your browser. The element inspector shows the page after React has run, so it'll always look rendered there.
+To see whether a page was rendered on the server, use View Source in your browser. The element inspector shows the page after its JavaScript has run, so it'll always look rendered there.
 {% /callout %}

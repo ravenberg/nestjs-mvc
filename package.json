@@ -2,7 +2,7 @@
   "name": "nestjs-mvc-monorepo",
   "private": true,
   "version": "0.0.0",
-  "description": "Monorepo for nestjs-mvc \u2014 a modern Inertia.js adapter for NestJS",
+  "description": "Monorepo for nestjs-mvc — a modern Inertia.js adapter for NestJS",
   "engines": {
     "node": "^20.19.0 || ^22.12.0 || >=24"
   },
@@ -11,8 +11,10 @@
     "test": "pnpm -r --filter './packages/*' test",
     "dev": "pnpm --filter kitchen-sink-react-express dev",
     "dev:fastify": "pnpm --filter kitchen-sink-react-fastify dev",
-    "lint": "oxlint packages/core/src apps/kitchen-sink/shared/server apps/kitchen-sink/shared/react apps/kitchen-sink/shared/e2e apps/kitchen-sink/react-express/src apps/kitchen-sink/react-fastify/src apps/docs/src apps/docs/frontend apps/slides/src apps/slides/frontend",
-    "test:e2e": "pnpm --filter kitchen-sink-react-express test:e2e && pnpm --filter kitchen-sink-react-fastify test:e2e",
+    "dev:vue": "pnpm --filter kitchen-sink-vue-express dev",
+    "dev:vue-fastify": "pnpm --filter kitchen-sink-vue-fastify dev",
+    "lint": "oxlint packages/core/src apps/kitchen-sink/shared/server apps/kitchen-sink/shared/platform apps/kitchen-sink/shared/navigation.ts apps/kitchen-sink/shared/react apps/kitchen-sink/shared/vue apps/kitchen-sink/shared/e2e apps/kitchen-sink/react-express/src apps/kitchen-sink/react-fastify/src apps/kitchen-sink/vue-express/src apps/kitchen-sink/vue-fastify/src apps/docs/src apps/docs/frontend apps/docs/scripts apps/slides/src apps/slides/frontend",
+    "test:e2e": "pnpm --filter kitchen-sink-react-express test:e2e && pnpm --filter kitchen-sink-react-fastify test:e2e && pnpm --filter kitchen-sink-vue-express test:e2e && pnpm --filter kitchen-sink-vue-fastify test:e2e",
     "typecheck": "pnpm -r typecheck",
     "dev:docs": "pnpm --filter docs dev",
     "dev:slides": "pnpm --filter slides dev"

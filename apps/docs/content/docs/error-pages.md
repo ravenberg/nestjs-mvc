@@ -19,6 +19,7 @@ MvcModule.forRoot({
 })
 ```
 
+{% framework-code %}
 ```tsx
 // frontend/pages/Error.tsx
 const titles: Record<number, string> = {
@@ -32,6 +33,25 @@ export default function Error({ status }: { status: number }) {
   return <h1>{titles[status]}</h1>
 }
 ```
+
+```vue
+<!-- frontend/pages/Error.vue -->
+<script setup lang="ts">
+defineProps<{ status: number }>()
+
+const titles: Record<number, string> = {
+  403: 'You cannot see this page',
+  404: 'Page not found',
+  500: 'Something went wrong',
+  503: 'Back soon',
+}
+</script>
+
+<template>
+  <h1>{{ titles[status] }}</h1>
+</template>
+```
+{% /framework-code %}
 
 Now `throw new NotFoundException()` anywhere shows this page with status 404. Any error you don't return a page for gets NestJS's default response.
 

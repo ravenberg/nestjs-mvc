@@ -2,7 +2,7 @@
 
 ## NestJS in MVC mode, where the View is your frontend framework
 
-The NestJS docs have an MVC page. It tells you to install Handlebars and use `@Render()`. This package is the answer to that page: your controllers keep deciding everything, and the view is a React component tree instead of a template. Pages are delivered over the [Inertia](https://inertiajs.com) protocol, so the app feels like a single-page app while you build it like a monolith.
+The NestJS docs have an MVC page. It tells you to install Handlebars and use `@Render()`. This package is the answer to that page: your controllers keep deciding everything, and the view is a React or Vue component tree instead of a template. Pages are delivered over the [Inertia](https://inertiajs.com) protocol, so the app feels like a single-page app while you build it like a monolith.
 
 - **The monolith is back.** NestJS modules are the best modular monolith in TypeScript.
 - **MVC with a real V.** `@View('Contacts/Index')` on a handler, props returned as a plain object, a component on the other side.
@@ -19,7 +19,9 @@ pnpm add nestjs-mvc @inertiajs/react react react-dom
 pnpm add -D vite @vitejs/plugin-react
 ```
 
-Requires NestJS 12, React 19 and Node `^20.19 || ^22.12 || >=24`. `@inertiajs/react` is the client that `nestjs-mvc/react` re-exports; you install it, you never import it.
+Requires NestJS 12, React 19 or Vue 3.5, and Node `^20.19 || ^22.12 || >=24`. `@inertiajs/react` is the client that `nestjs-mvc/react` re-exports; you install it, you never import it.
+
+Using Vue? Install `@inertiajs/vue3 vue` and `@vitejs/plugin-vue` instead, and import from `nestjs-mvc/vue`. The examples below use React; the controllers are the same for both.
 
 ## Setup
 

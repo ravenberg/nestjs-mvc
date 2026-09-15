@@ -1,5 +1,6 @@
 import { Highlight } from 'prism-react-renderer'
 import { Fragment } from 'react'
+import '../lib/prism-vue'
 
 export function Fence({ children, language }: { children: string; language: string }) {
   return (

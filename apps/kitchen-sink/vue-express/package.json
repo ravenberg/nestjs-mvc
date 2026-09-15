@@ -1,0 +1,36 @@
+{
+  "name": "kitchen-sink-vue-express",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The kitchen sink with Vue on Express",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "vite build",
+    "start:prod": "NODE_ENV=production tsx src/main.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@inertiajs/vue3": "^3.7.0",
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/platform-express": "^12.0.1",
+    "kitchen-sink": "workspace:*",
+    "nestjs-mvc": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/express": "^5.0.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^8.2.2"
+  }
+}

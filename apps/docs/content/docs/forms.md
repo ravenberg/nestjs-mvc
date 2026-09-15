@@ -54,6 +54,7 @@ You'll notice there's no code for when validation fails. nestjs-mvc sends the us
 
 `useForm` holds the form data, sends it and gives you the errors back.
 
+{% framework-code %}
 ```tsx
 // frontend/pages/Users/Create.tsx
 import { useForm } from 'nestjs-mvc/react'
@@ -80,7 +81,36 @@ export default function Create() {
 }
 ```
 
-* `form.data` holds the values.
+```vue
+<!-- frontend/pages/Users/Create.vue -->
+<script setup lang="ts">
+import { useForm } from 'nestjs-mvc/vue'
+
+const form = useForm({ name: '', email: '' })
+</script>
+
+<template>
+  <form @submit.prevent="form.post('/users')">
+    <input v-model="form.name" />
+    <p v-if="form.errors.name">{{ form.errors.name }}</p>
+
+    <input v-model="form.email" />
+    <p v-if="form.errors.email">{{ form.errors.email }}</p>
+
+    <button :disabled="form.processing">Save</button>
+  </form>
+</template>
+```
+{% /framework-code %}
+
+{% framework name="react" %}
+* `form.data` holds the values, and `form.setData` changes one.
+{% /framework %}
+
+{% framework name="vue" %}
+* The values are properties of the form itself, so `v-model="form.name"` binds an input to one.
+{% /framework %}
+
 * `form.post(url)` sends them, and there's also `form.put`, `form.patch` and `form.delete`.
 * `form.errors` holds one message per field.
 * `form.processing` is `true` while the request runs.
@@ -106,7 +136,7 @@ async store(@Body() dto: CreateUserDto) {
 
 When saving works, you might want to reset the form. You can also show a [flash message](/docs/flash-messages).
 
-```tsx
+```ts
 form.post('/users', {
   onSuccess: () => form.reset(),
 })
@@ -116,6 +146,7 @@ form.post('/users', {
 
 For an edit form, start `useForm` with the current values and send a `PUT`:
 
+{% framework-code %}
 ```tsx
 export default function Edit({ user }: { user: { id: number; name: string; email: string } }) {
   const form = useForm({ name: user.name, email: user.email })
@@ -127,6 +158,22 @@ export default function Edit({ user }: { user: { id: number; name: string; email
   // ...the same fields as above
 }
 ```
+
+```vue
+<script setup lang="ts">
+import { useForm } from 'nestjs-mvc/vue'
+
+const props = defineProps<{ user: { id: number; name: string; email: string } }>()
+const form = useForm({ name: props.user.name, email: props.user.email })
+</script>
+
+<template>
+  <form @submit.prevent="form.put(`/users/${user.id}`)">
+    <!-- ...the same fields as above -->
+  </form>
+</template>
+```
+{% /framework-code %}
 
 ```ts
 @Put(':id')

@@ -42,7 +42,7 @@ export default function Remember({ renderedAt }: { renderedAt: string }) {
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 text-sm">
-          <h2 className="font-semibold">useState (for contrast)</h2>
+          <h2 className="font-semibold">Without useRemember (for contrast)</h2>
           <label className="mt-3 block">
             <span className="text-slate-700">Search</span>
             <input value={forgotten.query} onChange={(e) => setForgotten({ query: e.target.value })} className={input} />

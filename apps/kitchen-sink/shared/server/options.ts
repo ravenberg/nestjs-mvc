@@ -4,6 +4,8 @@ export interface KitchenSinkOptions {
   root: string
   /** The HTTP platform the app runs on; shown where the server code differs per platform. */
   platform: 'express' | 'fastify'
+  /** The frontend framework of the app's pages; the smoke spec checks it. */
+  framework: 'react' | 'vue'
 }
 
 export const KITCHEN_SINK_OPTIONS = 'KITCHEN_SINK_OPTIONS'

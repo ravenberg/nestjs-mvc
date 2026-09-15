@@ -38,6 +38,7 @@ Every page now gets an `appName` prop.
 
 Shared data ends up in the page props, so any component can read it with `usePage()`. Usually that's your layout:
 
+{% framework-code %}
 ```tsx
 import { usePage } from 'nestjs-mvc/react'
 
@@ -52,6 +53,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   )
 }
 ```
+
+```vue
+<!-- frontend/layouts/AppLayout.vue -->
+<script setup lang="ts">
+import { usePage } from 'nestjs-mvc/vue'
+
+const page = usePage<{ appName: string }>()
+</script>
+
+<template>
+  <header>{{ page.props.appName }}</header>
+  <main>
+    <slot />
+  </main>
+</template>
+```
+{% /framework-code %}
 
 ## Data that needs the database
 

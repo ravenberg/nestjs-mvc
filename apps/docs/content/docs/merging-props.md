@@ -22,7 +22,7 @@ chat(@Query('after') after?: string) {
 
 Now a reload adds the new messages after the ones on screen:
 
-```tsx
+```ts
 router.reload({ only: ['messages'], data: { after: lastId } })
 ```
 
@@ -58,7 +58,7 @@ board: deepMerge(() => this.board.changes(since), { matchOn: 'columns.id' })
 
 When the user changes a filter, the old items need to go, so reset the prop:
 
-```tsx
+```ts
 router.reload({ only: ['messages'], reset: ['messages'] })
 ```
 

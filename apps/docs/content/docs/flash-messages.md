@@ -12,7 +12,7 @@ Call `flash()` before you redirect:
 @Post()
 async store(@Body() dto: CreateUserDto) {
   const user = await this.users.create(dto)
-  return this.view.flash('message', `${user.name} was added.`).redirect('/users')
+  return this.view.flash('message', `${user.name} was added.`)Ik k.redirect('/users')
 }
 ```
 
@@ -20,6 +20,7 @@ async store(@Body() dto: CreateUserDto) {
 
 Read it from `usePage()` on the page you land on:
 
+{% framework-code %}
 ```tsx
 import { usePage } from 'nestjs-mvc/react'
 
@@ -28,14 +29,28 @@ export default function Index() {
 
   return (
     <>
-      {flash.message && <p className="notice">{String(flash.message)}</p>}
+      {flash?.message && <p className="notice">{String(flash.message)}</p>}
       {/* the rest of the page */}
     </>
   )
 }
 ```
 
-If you refresh the page, the message is gone, which is exactly what you want.
+```vue
+<script setup lang="ts">
+import { usePage } from 'nestjs-mvc/vue'
+
+const page = usePage()
+</script>
+
+<template>
+  <p v-if="page.flash?.message" class="notice">{{ page.flash.message }}</p>
+  <!-- the rest of the page -->
+</template>
+```
+{% /framework-code %}
+
+`flash` is only there when a message was sent, hence the `?.`. If you refresh the page, the message is gone, which is exactly what you want.
 
 ## Put it in your layout
 
@@ -56,5 +71,5 @@ this.view
 It's kept for a few minutes in a signed cookie in the user's browser, so your server doesn't have to remember anything between requests. That matters in NestJS, because one process serves all your users.
 
 {% callout title="Show it as text" %}
-Render flash messages as plain text. React already does that, as long as you don't use `dangerouslySetInnerHTML`.
+Render flash messages as plain text. {% framework name="react" %}React already does that, as long as you don't use `dangerouslySetInnerHTML`.{% /framework %}{% framework name="vue" %}Vue's `{{ }}` already does that, as long as you don't use `v-html`.{% /framework %}
 {% /callout %}

@@ -132,6 +132,7 @@ MvcModule.forRoot({
 })
 ```
 
+{% framework-code %}
 ```tsx
 import { Link, usePage } from 'nestjs-mvc/react'
 
@@ -148,6 +149,23 @@ function UserMenu() {
   )
 }
 ```
+
+```vue
+<script setup lang="ts">
+import { Link, usePage } from 'nestjs-mvc/vue'
+
+const page = usePage<{ auth: { user: { name: string } | null } }>()
+</script>
+
+<template>
+  <Link v-if="!page.props.auth.user" href="/login">Log in</Link>
+  <template v-else>
+    {{ page.props.auth.user.name }}
+    <Link href="/logout" method="post" as="button">Log out</Link>
+  </template>
+</template>
+```
+{% /framework-code %}
 
 `auth.user` is `null` for a guest.
 

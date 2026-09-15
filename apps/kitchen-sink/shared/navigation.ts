@@ -1,18 +1,18 @@
-import {
-  Boxes,
-  Building2,
-  CircleAlert,
-  Contact,
-  LayoutDashboard,
-  Layers,
-  Navigation,
-  Radio,
-  Rss,
-  SquarePen,
-  Wifi,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react'
+// The sidebar and the smoke spec share this: plain data, no framework code.
+
+export type NavIcon =
+  | 'Boxes'
+  | 'Building2'
+  | 'CircleAlert'
+  | 'Contact'
+  | 'Layers'
+  | 'LayoutDashboard'
+  | 'Navigation'
+  | 'Radio'
+  | 'Rss'
+  | 'SquarePen'
+  | 'Wifi'
+  | 'Zap'
 
 export interface NavItem {
   label: string
@@ -22,7 +22,8 @@ export interface NavItem {
 
 export interface NavGroup {
   label: string
-  icon: LucideIcon
+  /** A lucide icon name; each framework maps it to its own icon component. */
+  icon: NavIcon
   href?: string
   items?: NavItem[]
 }
@@ -40,9 +41,9 @@ export const navigation: NavSection[] = [
   {
     label: 'CRM demo',
     groups: [
-      { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-      { label: 'Organizations', icon: Building2, href: '/organizations' },
-      { label: 'Contacts', icon: Contact, href: '/contacts' },
+      { label: 'Dashboard', icon: 'LayoutDashboard', href: '/dashboard' },
+      { label: 'Organizations', icon: 'Building2', href: '/organizations' },
+      { label: 'Contacts', icon: 'Contact', href: '/contacts' },
     ],
   },
   {
@@ -50,7 +51,7 @@ export const navigation: NavSection[] = [
     groups: [
       {
         label: 'Forms',
-        icon: SquarePen,
+        icon: 'SquarePen',
         items: [
           { label: 'Validation', href: '/features/forms/validation' },
           { label: 'useForm', href: '/features/forms/use-form' },
@@ -63,7 +64,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Navigation',
-        icon: Navigation,
+        icon: 'Navigation',
         items: [
           { label: 'Links & Methods', href: '/features/navigation/links' },
           { label: 'Preserve State', href: '/features/navigation/preserve-state' },
@@ -75,7 +76,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Data Loading',
-        icon: Boxes,
+        icon: 'Boxes',
         items: [
           { label: 'Deferred Props', href: '/features/data-loading/deferred-props' },
           { label: 'Partial Reloads', href: '/features/data-loading/partial-reloads' },
@@ -88,7 +89,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Prefetching',
-        icon: Zap,
+        icon: 'Zap',
         items: [
           { label: 'Link Prefetch', href: '/features/prefetching/links' },
           { label: 'Stale While Revalidate', href: '/features/prefetching/swr' },
@@ -97,7 +98,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'State Management',
-        icon: Layers,
+        icon: 'Layers',
         items: [
           { label: 'Remember', href: '/features/state/remember' },
           { label: 'Flash Data', href: '/features/state/flash' },
@@ -106,7 +107,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Layouts & Head',
-        icon: Rss,
+        icon: 'Rss',
         items: [
           { label: 'Persistent Layouts', href: '/features/layouts/persistent/first' },
           { label: 'Nested Layouts', href: '/features/layouts/nested/overview' },
@@ -116,7 +117,7 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Events & Lifecycle',
-        icon: Radio,
+        icon: 'Radio',
         items: [
           { label: 'Global Events', href: '/features/events/global' },
           { label: 'Visit Callbacks', href: '/features/events/callbacks' },
@@ -125,10 +126,10 @@ export const navigation: NavSection[] = [
       },
       {
         label: 'Error Handling',
-        icon: CircleAlert,
+        icon: 'CircleAlert',
         items: [{ label: 'HTTP Exceptions', href: '/features/errors/http' }, { label: 'Network Errors', href: '/features/errors/network' }],
       },
-      { label: 'HTTP', icon: Wifi, items: [{ label: 'useHttp', href: '/features/http/use-http' }] },
+      { label: 'HTTP', icon: 'Wifi', items: [{ label: 'useHttp', href: '/features/http/use-http' }] },
     ],
   },
 ]

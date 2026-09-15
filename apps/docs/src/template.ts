@@ -3,11 +3,13 @@ import type { PageObject, TemplateContext } from 'nestjs-mvc'
 /**
  * The HTML shell. The inline script applies the stored theme before the first
  * paint so a dark-mode visitor never sees a white flash; the same logic lives
- * in frontend/lib/theme.ts for the selector.
+ * in frontend/lib/theme.ts for the selector. The framework choice (React or
+ * Vue, see frontend/lib/framework.ts) is applied the same way, so a Vue reader
+ * never sees React code flash by.
  */
 export function template(page: PageObject, ctx: TemplateContext): string {
   return `<!DOCTYPE html>
-<html lang="en" class="h-full antialiased">
+<html lang="en" class="h-full antialiased" data-framework="react">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,6 +19,7 @@ export function template(page: PageObject, ctx: TemplateContext): string {
       var stored = localStorage.getItem('theme')
       var dark = stored === 'dark' || (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
       document.documentElement.classList.toggle('dark', dark)
+      if (localStorage.getItem('framework') === 'vue') document.documentElement.dataset.framework = 'vue'
     } catch (e) {}
   })()
 </script>

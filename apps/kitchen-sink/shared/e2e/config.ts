@@ -8,6 +8,7 @@ interface Permutation {
   /** The port its dev server listens on; each app has its own, so they can run side by side. */
   port: number
   platform: 'express' | 'fastify'
+  framework: 'react' | 'vue'
 }
 
 /**
@@ -17,7 +18,7 @@ interface Permutation {
  * so `pnpm dev` in one terminal and `pnpm test:e2e` in another is the fast
  * loop; CI starts its own.
  */
-export function kitchenSinkConfig({ dir, port, platform }: Permutation) {
+export function kitchenSinkConfig({ dir, port, platform, framework }: Permutation) {
   const baseURL = `http://localhost:${port}`
   // The logged-in browser state `auth.setup.ts` writes; per app, because the database is.
   const storageState = join(dir, '.auth/user.json')
@@ -31,7 +32,7 @@ export function kitchenSinkConfig({ dir, port, platform }: Permutation) {
     workers: process.env.CI ? 1 : 3,
     retries: process.env.CI ? 1 : 0,
     reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: join(dir, 'playwright-report') }]] : 'list',
-    metadata: { platform, storageState },
+    metadata: { platform, framework, storageState },
     use: {
       baseURL,
       trace: 'retain-on-failure',

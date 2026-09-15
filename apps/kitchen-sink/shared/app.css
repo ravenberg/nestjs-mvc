@@ -1,4 +1,5 @@
-/* Scan from this directory: the Vite root is the permutation app, which holds no pages. */
+/* Scan the whole shared directory: the React and the Vue pages both live here, and the
+   Vite root is the app, which holds no pages. */
 @import 'tailwindcss' source('.');
 
 @theme {

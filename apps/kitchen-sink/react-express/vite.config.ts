@@ -8,5 +8,5 @@ import { defineConfig } from 'vite'
 // makes `vite build` produce dist/client and dist/ssr in one go. The pages are
 // the shared kitchen sink's, which is the only reason `pages` and `css` are set.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), nestjsMvc({ pages: '../shared/react/pages', css: ['../shared/react/app.css'] })],
+  plugins: [react(), tailwindcss(), nestjsMvc({ pages: '../shared/react/pages', css: ['../shared/app.css'] })],
 })

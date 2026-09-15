@@ -10,6 +10,9 @@ dist/
 # Demo SQLite database (seeded on boot)
 *.sqlite
 
+# The throwaway Vue app packages/core/test/vue.test.ts builds (removed after the run)
+packages/core/test/.vue-app-*/
+
 # Playwright
 test-results/
 playwright-report/
