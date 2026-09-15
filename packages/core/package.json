@@ -50,7 +50,7 @@
     "monolith",
     "react",
     "vue",
-    "svelte"
+    "mvc"
   ],
   "peerDependencies": {
     "@inertiajs/react": "^3.7.0",

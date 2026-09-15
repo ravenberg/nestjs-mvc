@@ -5,7 +5,7 @@
 The NestJS docs have an MVC page. It tells you to install Handlebars and use `@Render()`. This package is the answer to that page: your controllers keep deciding everything, and the view is a React or Vue component tree instead of a template. Pages are delivered over the [Inertia](https://inertiajs.com) protocol, so the app feels like a single-page app while you build it like a monolith.
 
 - **The monolith is back.** NestJS modules are the best modular monolith in TypeScript.
-- **The V in MVC** `@View('Contacts/Index')` on a handler, props returned as a plain object, a component on the other side.
+- **MVC with a real V.** `@View('Contacts/Index')` on a handler, props returned as a plain object, a component on the other side.
 - **Zero API.** The request/response cycle is your state management. No endpoints designed for your own frontend, no DTOs typed twice, no cache invalidation choreography. Mutate with a POST, handle failure with an `errors` prop, redirect back, and the page is fresh.
 
 One process, one port, one codebase: `nest start --watch` runs the Vite dev server inside your Nest process, and a single `vite build` produces the production assets. Client-rendered by default; server rendering is one decorator away on the routes that need it.
@@ -97,6 +97,16 @@ if (process.env.NODE_ENV === 'production') {
 await app.listen(3000)
 ```
 
+In production, set `APP_KEY` in the environment: everything nestjs-mvc hands the browser (the flash cookie, for one) is signed with it, and the app refuses to start without one. Generate a key with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; to rotate, move the old one to `APP_PREVIOUS_KEYS`. In development a random key per process is used, with a warning. Behind a reverse proxy, tell your platform to trust it (`app.set('trust proxy', 1)` on Express, `new FastifyAdapter({ trustProxy: true })` on Fastify); nestjs-mvc reads the origin the platform works out, and `back()` never redirects to another site.
+
+CSRF protection is on without configuration: a POST, PUT, PATCH or DELETE must come from your own pages (`Sec-Fetch-Site`/`Origin`) and echo the `XSRF-TOKEN` cookie as `X-XSRF-TOKEN`, which the client does on every request. Put `@SkipCsrf()` on webhooks and on controllers that machines call with a bearer token. It is off under a test runner (`NODE_ENV=test`) unless you set `csrf` explicitly, so your supertest suite needs no tokens.
+
+A Content Security Policy needs every script on the page to carry the same nonce as the header. Ask for it with `nonce(req)` where you build that header, in your helmet configuration, and nestjs-mvc puts it on the tags it renders, including the ones Vite injects while you develop. `ctx.nonce` is there for a script of your own.
+
+For links that have to work without a login, like an invite, an unsubscribe link or a password reset, inject `SignedUrls`: `this.links.sign('/invitations/7', { expiresIn: 3600 })` makes one that carries its own proof, and `@ValidSignature()` refuses it when it was changed or has expired. Bind a link to something that changes (`bind: passwordHash`) and it becomes single-use without a table of tokens.
+
+Authentication stays yours (a NestJS guard, Passport, a hosted provider), and nestjs-mvc makes it behave in a browser. A guard's `UnauthorizedException` on a page load or Inertia visit becomes a redirect to `/login` (JSON clients keep the 401), and `this.view.intended('/dashboard')` in your login handler sends the user back where they were going. Add `auth: { share: (user) => ({ id: user.id, name: user.name }) }` to show the logged-in user on every page as `auth.user`; only what you return reaches the browser. When the user changes (a login, a logout, a switch in another tab), the next request from a page rendered for the previous user gets one full page load instead, so nothing that user loaded is shown to the next, and a form rendered for them is not submitted as someone else.
+
 ## A page from a controller
 
 A handler with `@View()` returns props. Everything else, from data access to authorization, is plain NestJS.
@@ -180,7 +190,7 @@ export default function Index({ search, contacts }: Props) {
 A POST handler validates, saves, flashes a message and redirects. Validation is a schema on the parameter: when it fails, nestjs-mvc sends the client back to the form with the field errors as the `errors` prop. There is no error response to design and nothing to catch.
 
 ```ts
-// src/contacts/contacts.controller.ts — the same controller, the mutation side
+// src/contacts/contacts.controller.ts (the same controller, the mutation side)
 import { Body, Controller, Get, Post } from '@nestjs/common'
 import { View, ViewService } from 'nestjs-mvc'
 import { z } from 'zod'
