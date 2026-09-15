@@ -20,7 +20,7 @@ jobs:
         node: [20.19, 22.12, 24]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -45,7 +45,7 @@ jobs:
         app: [kitchen-sink-react-express, kitchen-sink-react-fastify, kitchen-sink-vue-express, kitchen-sink-vue-fastify]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 24
