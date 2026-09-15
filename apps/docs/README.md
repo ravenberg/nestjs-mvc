@@ -9,8 +9,34 @@ ported to `nestjs-mvc/react`.
 pnpm dev          # http://localhost:3001
 pnpm dev:fastify  # the same app on Fastify (dev server, SSR and HMR included)
 pnpm build        # dist/client + dist/ssr
-pnpm start:prod
+pnpm start:prod   # loads .env (APP_KEY, PORT) when it exists
 ```
+
+## Deploy
+
+The site is one Node process behind a reverse proxy. `nestjs-mvc` is the
+workspace package, so build it before the docs. On the server, from the repo
+root:
+
+```sh
+pnpm install
+pnpm build                  # packages/core → dist/
+pnpm --filter docs build    # apps/docs → dist/client + dist/ssr
+cp apps/docs/.env.example apps/docs/.env   # once; fill in APP_KEY
+```
+
+Run it with pm2 (`ecosystem.config.cjs` runs `src/main.ts` with tsx, in
+production mode, reading `.env`):
+
+```sh
+cd apps/docs
+pm2 start ecosystem.config.cjs
+pm2 save && pm2 startup     # keep it running after a reboot
+```
+
+To update, run `apps/docs/deploy.sh`: it pulls, installs, builds nestjs-mvc
+and the docs, and starts or restarts the app with pm2.
+
 
 ## How a page is made
 

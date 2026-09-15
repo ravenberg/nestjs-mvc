@@ -1,3 +1,4 @@
+import './env'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
@@ -8,8 +9,8 @@ import { AppModule } from './app.module'
 // The same docs app on Fastify: the in-process Vite dev server, server
 // rendering and hot reload in development (`pnpm dev:fastify`), and the built
 // assets through @fastify/static in production. Keeps the "Using Fastify"
-// docs page honest.
-const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter())
+// docs page honest. Behind a reverse proxy, like the Express entry.
+const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ trustProxy: true }))
 
 if (process.env.NODE_ENV === 'production') {
   // Registered and awaited directly: NestJS 12's app.useStaticAssets() on

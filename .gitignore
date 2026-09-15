@@ -7,6 +7,9 @@ dist/
 .claude/
 .mcp.json
 
+# Local secrets such as APP_KEY; .env.example files stay committed
+.env
+
 # Demo SQLite database (seeded on boot)
 *.sqlite
 
