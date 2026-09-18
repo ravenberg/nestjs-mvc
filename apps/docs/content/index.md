@@ -76,9 +76,11 @@ The object your controller returns becomes the props of the component, and that'
 
 The sidebar starts easy and gets more advanced as you go down:
 
-* **Getting started** has what every app needs, like pages, links, forms and layouts.
-* **Building your app** is about things real apps need, such as logins, shared data and error pages.
-* **Going further** gets into performance, security and production.
+* **Getting started** walks you through what every app has: pages, links, forms and layouts. It ends with how it all works, so the rest makes sense.
+* **The basics** covers the everyday things around them, like redirects and file uploads.
+* **Data** is about getting the right data to your pages at the right time.
+* **Security** covers logins and keeping your users safe.
+* **Going further** gets your app ready for production.
 
 You don't have to know React or Vue well, but it helps to know the basics of NestJS, like modules, controllers and dependency injection.
 
