@@ -39,11 +39,11 @@ When validation fails, nestjs-mvc redirects back to the form and puts the errors
 
 ## Loading less
 
-On a reload with `only: ['stats']`, the browser tells the server which props it wants, and nestjs-mvc skips the others without calling their functions. `defer()`, `optional()`, `once()` and `merge()` are all built on that.
+On a reload with `only: ['stats']`, the browser tells the server which props it wants, and nestjs-mvc skips the others without calling their functions. `defer()`, `optional()`, `once()` and `merge()` are all built on that. [Loading only what you need](/docs/partial-reloads) shows it from your side.
 
 ## After a deploy
 
-Every page carries a `version`. When a tab that's still on an old version asks for data, nestjs-mvc tells it to reload, and the browser does a full page load to get the new code.
+Every page carries a `version`. When a tab that's still on an old version asks for data, nestjs-mvc tells it to reload, and the browser does a full page load to get the new code. [Going to production](/docs/production) covers how the version is set.
 
 ## State stays out of the server
 

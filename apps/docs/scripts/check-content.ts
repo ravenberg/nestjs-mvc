@@ -1,15 +1,15 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import Markdoc, { type Node } from '@markdoc/markdoc'
+import Markdoc, { type Node, type RenderableTreeNode } from '@markdoc/markdoc'
 import { schema } from '../src/docs/markdoc'
 import { navigation } from '../src/navigation'
 
 /**
  * Checks the content before anyone reads it: every page is in the navigation
- * and valid Markdoc, links point at pages, prose has no dashes as punctuation,
- * every page example exists in React and in Vue, and prose that names one
- * framework only shows for that framework.
+ * and valid Markdoc, links point at pages and at headings that exist, prose
+ * has no dashes as punctuation, every page example exists in React and in
+ * Vue, and prose that names one framework only shows for that framework.
  *
  *   pnpm --filter docs check
  */
@@ -21,6 +21,22 @@ const problems: string[] = []
 for (const href of hrefs) if (!existsSync(fileFor(href))) problems.push(`navigation links to ${href}, which has no file`)
 
 const files = ['index.md', ...readdirSync(join(root, 'docs')).map((file) => `docs/${file}`)]
+
+// The heading ids of every page, as the site renders them, for links with a #fragment.
+const hrefOf = (file: string) => (file === 'index.md' ? '/' : `/${file.replace(/\.md$/, '')}`)
+const headingIds = new Map<string, Set<string>>()
+for (const file of files) {
+  const tree = Markdoc.transform(Markdoc.parse(readFileSync(join(root, file), 'utf8')), schema())
+  const ids = new Set<string>()
+  const collect = (node: RenderableTreeNode) => {
+    if (!Markdoc.Tag.isTag(node)) return
+    if (/^h[1-6]$/.test(node.name) && typeof node.attributes.id === 'string') ids.add(node.attributes.id)
+    node.children.forEach(collect)
+  }
+  collect(tree)
+  headingIds.set(hrefOf(file), ids)
+}
+
 for (const file of files) {
   const href = file === 'index.md' ? '/' : `/${file.replace(/\.md$/, '')}`
   if (!hrefs.includes(href)) problems.push(`${file}: not in the navigation`)
@@ -29,8 +45,9 @@ for (const file of files) {
   const ast = Markdoc.parse(source)
   for (const { lines, error } of Markdoc.validate(ast, schema())) problems.push(`${file}:${lines[0] ?? '?'}: ${error.message}`)
 
-  for (const [, link] of source.matchAll(/\]\((\/[^)#\s]*)/g)) {
+  for (const [, link, fragment] of source.matchAll(/\]\((\/[^)#\s]*)(?:#([^)\s]+))?\)/g)) {
     if (link !== '/' && !hrefs.includes(link)) problems.push(`${file}: broken link ${link}`)
+    else if (fragment && !headingIds.get(link)?.has(fragment)) problems.push(`${file}: no heading #${fragment} on ${link}`)
   }
 
   // Prose only: not inside fences, not tag lines, not the frontmatter.

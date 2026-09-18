@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 or Vue 3.5, and Node 20.19 or newer. {% .lead %}
+Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 or Vue 3.5, and Node 20.19+, 22.12+ or 24+. {% .lead %}
 
 Every page in these docs shows its examples in React or in Vue. Pick yours, and the whole site follows:
 
@@ -104,9 +104,11 @@ This uses `class-validator`, so install it if you haven't already:
 npm install class-validator class-transformer
 ```
 
+Rather use Zod? [Validation](/docs/validation) shows how to set that up instead.
+
 ## TypeScript
 
-Your pages should stay out of your server build:
+Your server and your pages are compiled differently. Nest compiles the server with `tsc`, and Vite builds your pages. So keep the pages out of the server build:
 
 ```json
 // tsconfig.build.json
@@ -116,33 +118,47 @@ Your pages should stay out of your server build:
 }
 ```
 
-{% framework name="react" %}
-Your pages are `.tsx` files, so TypeScript needs to know about JSX:
+And give the pages a config of their own, with the options Vite reads them with. Imports don't need a file extension there, and importing a stylesheet or an image type-checks:
 
+{% framework name="react" %}
 ```json
-// tsconfig.json
+// frontend/tsconfig.json
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
-  }
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["."]
 }
 ```
+
+Your editor picks it up by itself. To check your pages from the command line, run `npx tsc -p frontend`.
 {% /framework %}
 
 {% framework name="vue" %}
-Your pages are `.vue` files, which `tsc` can't read. `vue-tsc` can, with a small config of its own:
+Your pages are `.vue` files, which `tsc` can't read. `vue-tsc` can:
 
 ```json
 // tsconfig.vue.json
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "jsx": "preserve" },
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
   "include": ["frontend/**/*.vue", "frontend/**/*.ts"]
 }
 ```
 
 ```sh
-npx vue-tsc -p tsconfig.vue.json --noEmit
+npx vue-tsc -p tsconfig.vue.json
 ```
 {% /framework %}
 

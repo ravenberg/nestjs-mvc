@@ -175,7 +175,7 @@ declare module '@inertiajs/core' {
 }
 ```
 
-With that, `flash.message` is a `string` instead of `unknown`. Only set `errorValueType` when you've asked for [every message](/docs/forms#every-message-instead-of-the-first), because by default each field has a single `string`.
+With that, `flash.message` is a `string` instead of `unknown`. Only set `errorValueType` when you've asked for [every message](/docs/validation#every-message-instead-of-the-first), because by default each field has a single `string`.
 
 ## Typing forms
 
@@ -237,41 +237,7 @@ MvcModule.forRoot({
 
 ## Your frontend's compiler options
 
-The [installation](/docs/installation#typescript) keeps your pages out of the server build. If your root `tsconfig.json` uses `"module": "nodenext"`, give your pages options that match how Vite reads them: `"moduleResolution": "bundler"`, so imports don't need file extensions, and the `vite/client` types, so importing an image or a stylesheet and reading `import.meta.env` type-check.
-
-{% framework name="react" %}
-```json
-// frontend/tsconfig.json
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "noEmit": true,
-    "types": ["vite/client"]
-  },
-  "include": ["."]
-}
-```
-{% /framework %}
-
-{% framework name="vue" %}
-```json
-// tsconfig.vue.json
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "jsx": "preserve",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "types": ["vite/client"]
-  },
-  "include": ["frontend/**/*.vue", "frontend/**/*.ts"]
-}
-```
-{% /framework %}
-
-The setup file with your shared data sits in `frontend`, so it's picked up by this config too.
+Your pages have a config of their own, which the [installation](/docs/installation#type-script) sets up. The setup file with your shared data sits in `frontend`, so that config picks it up too.
 
 ## In detail
 

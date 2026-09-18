@@ -78,7 +78,7 @@ function Search() {
   return (
     <input
       placeholder="Search"
-      onChange={(e) => router.get('/users', { search: e.target.value }, { preserveState: true })}
+      onChange={(e) => router.get('/users', { search: e.target.value }, { preserveState: true, replace: true })}
     />
   )
 }
@@ -90,7 +90,7 @@ import { router } from 'nestjs-mvc/vue'
 
 function search(event: Event) {
   const value = (event.target as HTMLInputElement).value
-  router.get('/users', { search: value }, { preserveState: true })
+  router.get('/users', { search: value }, { preserveState: true, replace: true })
 }
 </script>
 
@@ -102,7 +102,9 @@ function search(event: Event) {
 
 `router.get('/users', { search })` visits `/users?search=...`, and your controller reads the value with `@Query('search')`.
 
-With `preserveState: true`, whatever the user typed stays in the input while the page updates.
+With `preserveState: true`, whatever the user typed stays in the input while the page updates. And `replace: true` updates the current entry in the browser's history instead of adding one, so the back button doesn't step through every letter.
+
+If only part of the page depends on the search, you can ask for just that part. [Loading only what you need](/docs/partial-reloads) shows how.
 
 ## Keep the scroll position
 
@@ -155,3 +157,7 @@ const page = usePage()
 </template>
 ```
 {% /framework-code %}
+
+## Load before the click
+
+A link can fetch its page as soon as the mouse is over it, so the page is there the moment someone clicks. See [Prefetching](/docs/prefetching).
