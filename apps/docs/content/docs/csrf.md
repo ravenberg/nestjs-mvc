@@ -36,7 +36,7 @@ export class WebhooksController {
 }
 ```
 
-You can put it on a whole controller or on a single handler.
+You can put it on a whole controller or on a single handler. Every detail of the checks and of `@SkipCsrf()` is in the [reference](/docs/skip-csrf).
 
 ## When a page expires
 

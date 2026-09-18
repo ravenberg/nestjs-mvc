@@ -112,3 +112,5 @@ dashboard() {
   return { stats: this.stats.today() }
 }
 ```
+
+Precedence, `always()` and the `sharedProps` field are covered in the [reference](/docs/shared-props).

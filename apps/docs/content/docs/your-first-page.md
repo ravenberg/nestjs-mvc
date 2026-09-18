@@ -100,3 +100,5 @@ Everything you return ends up in the browser. So pick the fields you want to sho
 On the first visit the server sends a full HTML page with your data in it, and your page takes over in the browser from there.
 
 When someone clicks a link after that, the browser asks the same controller for just the data and swaps the page in place. You get that without writing anything extra, and the next page shows how links work.
+
+Everything `@View()` does, including every field of the page object, is in the [reference](/docs/view).

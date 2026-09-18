@@ -60,3 +60,5 @@ You could return a page straight from a `POST`, but redirecting works better. Re
 * These methods stop the handler by throwing a special exception, so code after them won't run. Writing `return this.view.redirect(...)` makes that clear when you read it.
 * After a `PUT`, `PATCH` or `DELETE`, nestjs-mvc answers with status `303` so the browser follows up with a `GET`. That happens on its own.
 * You can put a [flash message](/docs/flash-messages) in front, like `this.view.flash('message', 'Saved.').back()`.
+
+Every method of `ViewService` and what it sends over the wire is in the [reference](/docs/view-service).

@@ -12,7 +12,7 @@ Call `flash()` before you redirect:
 @Post()
 async store(@Body() dto: CreateUserDto) {
   const user = await this.users.create(dto)
-  return this.view.flash('message', `${user.name} was added.`)Ik k.redirect('/users')
+  return this.view.flash('message', `${user.name} was added.`).redirect('/users')
 }
 ```
 
@@ -68,7 +68,7 @@ this.view
 
 ## Where is it stored?
 
-It's kept for a few minutes in a signed cookie in the user's browser, so your server doesn't have to remember anything between requests. That matters in NestJS, because one process serves all your users.
+It's kept for a few minutes in a signed cookie in the user's browser, so your server doesn't have to remember anything between requests. That matters in NestJS, because one process serves all your users. The stores, the signing and exactly when a message lands are in the [Flash data](/docs/flash) reference.
 
 {% callout title="Show it as text" %}
 Render flash messages as plain text. {% framework name="react" %}React already does that, as long as you don't use `dangerouslySetInnerHTML`.{% /framework %}{% framework name="vue" %}Vue's `{{ }}` already does that, as long as you don't use `v-html`.{% /framework %}

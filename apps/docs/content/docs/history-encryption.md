@@ -56,3 +56,5 @@ If your [authentication](/docs/authentication) guard puts the user on `req.user`
 ## Pressing back after that
 
 The copies are still in the history, but without the key they can't be read. When the next person presses back, the page notices that and asks your server for the page, like any other visit. Your guard runs and decides what they get to see, which usually means the login page.
+
+The precedence rules and exactly what the browser does with the key are in the [reference](/docs/encrypt-history).

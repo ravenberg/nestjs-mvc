@@ -97,4 +97,4 @@ For the `Express.Multer.File` type, install `@types/multer` as a dev dependency.
 
 ## Why ValidationException
 
-`ValidationException` puts the message on the `avatar` field, so the form shows it right next to the input. NestJS's own file pipes throw a general error without a field, so it wouldn't show up in your form.
+`ValidationException` puts the message on the `avatar` field, so the form shows it right next to the input. NestJS's own file pipes throw a general error without a field, so it wouldn't show up in your form. How errors travel back to the form is in the [Validation](/docs/validation) reference.

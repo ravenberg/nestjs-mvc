@@ -65,3 +65,5 @@ router.reload({ only: ['messages'], reset: ['messages'] })
 {% callout title="Paging through a long list?" %}
 For "load more when I scroll down", use [infinite scroll](/docs/infinite-scroll). It works the same way underneath and keeps track of the page numbers for you.
 {% /callout %}
+
+Every option, the labels on the wire and how the browser merges are in the [merge() reference](/docs/merge).

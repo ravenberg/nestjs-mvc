@@ -61,3 +61,5 @@ Just make sure both pages return the same shape under that key.
 The copy lives in the browser. Since the server doesn't remember anything, you won't have a cache to clear, and one user's data can't reach someone else.
 
 It also means other users won't see a change right away. They get it when their copy expires, so don't use `once()` for data that always has to be current.
+
+Every option, and exactly when a refresh is used up, is in the [once() reference](/docs/once-props).

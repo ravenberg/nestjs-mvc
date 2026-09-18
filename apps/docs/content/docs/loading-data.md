@@ -160,6 +160,8 @@ usePoll(5000, { only: ['queue'] })
 ```
 {% /framework-code %}
 
+The modes, background tabs and what the server sees on each tick are in the [polling reference](/docs/polling).
+
 ## Which one to pick
 
 | You want | Use |
@@ -172,3 +174,5 @@ usePoll(5000, { only: ['queue'] })
 {% callout title="Only what's asked for runs" %}
 When the browser asks for `only: ['export']`, the functions for the other props don't get called. So wrapping a query in a function is enough to keep it from running when nobody needs it.
 {% /callout %}
+
+Every option and edge case is in the reference pages for [defer()](/docs/defer), [optional()](/docs/optional), [lazy props](/docs/lazy-props) and [partial reloads](/docs/partial-reloads).

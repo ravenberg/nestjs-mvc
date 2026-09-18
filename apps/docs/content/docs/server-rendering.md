@@ -75,3 +75,5 @@ this.view.disableSsr()
 {% callout title="How to check it" %}
 To see whether a page was rendered on the server, use View Source in your browser. The element inspector shows the page after its JavaScript has run, so it'll always look rendered there.
 {% /callout %}
+
+Every option, the renderers and how failures are reported are in the [reference](/docs/ssr).

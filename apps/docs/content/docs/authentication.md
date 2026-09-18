@@ -100,7 +100,7 @@ export class AuthController {
 }
 ```
 
-`intended('/dashboard')` sends the user to the page they were trying to open before they had to log in, or to `/dashboard` if there wasn't one.
+`intended('/dashboard')` sends the user to the page they were trying to open before they had to log in, or to `/dashboard` if there wasn't one. How the redirect to the login page and back works is in the [reference](/docs/login-redirects).
 
 ## The protected page
 

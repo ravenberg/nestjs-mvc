@@ -132,6 +132,8 @@ async store(@Body() dto: CreateUserDto) {
 }
 ```
 
+Every way errors reach the form is in the [Validation](/docs/validation) reference, and pages with more than one form can keep them apart with [error bags](/docs/error-bags).
+
 ## After a success
 
 When saving works, you might want to reset the form. You can also show a [flash message](/docs/flash-messages).

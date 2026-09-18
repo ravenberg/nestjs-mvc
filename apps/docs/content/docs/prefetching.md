@@ -111,3 +111,5 @@ Your server stays the same, because a prefetch is a normal `GET` to your control
 {% callout title="Keep GET free of changes" type="warning" %}
 A prefetch calls your `GET` handlers before anyone clicks. So a `GET` that marks a message as read or counts a view would do that on hover. Put changes like that behind a `POST`.
 {% /callout %}
+
+What a prefetch looks like to your server and how the cache works is in the [reference](/docs/prefetch-requests).

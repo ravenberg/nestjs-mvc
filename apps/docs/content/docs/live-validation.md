@@ -77,3 +77,5 @@ const UserSchema = z.object({
 {% callout title="Pipes run on every check" type="warning" %}
 Every live check runs your pipes, so a pipe that writes to the database or sends an email would do that every time a field loses focus. Keep your pipes free of side effects.
 {% /callout %}
+
+The headers, the responses and every helper on the form are in the [Precognition](/docs/precognition) reference.

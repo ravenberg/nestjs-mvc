@@ -97,3 +97,5 @@ Anything else you return next to `data` gets to the page as it is, which is hand
 ```ts
 return { data: rows, total, currentPage: current, previousPage, nextPage }
 ```
+
+The page shape, the headers and the reset flag are all in the [scroll() reference](/docs/scroll).

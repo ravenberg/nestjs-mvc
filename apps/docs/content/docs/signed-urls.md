@@ -86,7 +86,7 @@ As soon as the password changes, the old link stops matching, and you don't need
 const result = this.links.check(req)   // 'valid', 'expired' or 'invalid'
 ```
 
-That lets you show "this link has expired" instead of a general error.
+That lets you show "this link has expired" instead of a general error. Every option of `sign()` and `check()` is in the [reference](/docs/signed-url-api).
 
 {% callout title="Anyone with the link can use it" type="warning" %}
 The signature only stops people from changing a link. Anyone who has it can still read it and use it, so keep `expiresIn` short for links that give access to something.
