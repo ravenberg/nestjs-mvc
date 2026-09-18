@@ -43,6 +43,8 @@ and the docs, and starts or restarts the app with pm2.
 - `content/**/*.md` — Markdoc files with a `title` in the frontmatter. `/` is
   `content/index.md`; `/docs/<slug>` is `content/docs/<slug>.md`.
 - `src/navigation.ts` — the sidebar, shared with every page as a prop.
+- `src/moved.ts` — pages that were removed or merged, each with the place its
+  content lives now; the controller answers them with a 301.
 - `src/docs/docs.service.ts` — reads a file, transforms it with the Markdoc
   schema in `src/docs/markdoc.ts` (headings get ids, fences and callouts
   become components), collects the table of contents, and builds the search

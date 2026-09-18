@@ -1,12 +1,16 @@
 import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common'
-import { Ssr, View } from 'nestjs-mvc'
+import { Ssr, View, ViewService } from 'nestjs-mvc'
+import { moved } from '../moved'
 import { DocsService } from './docs.service'
 
 /** Every docs route renders on the server: the pages are indexable and readable without JavaScript. */
 @Controller()
 @Ssr()
 export class DocsController {
-  constructor(@Inject(DocsService) private readonly docs: DocsService) {}
+  constructor(
+    @Inject(DocsService) private readonly docs: DocsService,
+    @Inject(ViewService) private readonly view: ViewService,
+  ) {}
 
   @Get('/')
   @View('Docs/Page')
@@ -17,6 +21,7 @@ export class DocsController {
   @Get('docs/:slug')
   @View('Docs/Page')
   doc(@Param('slug') slug: string) {
+    if (Object.hasOwn(moved, slug)) this.view.redirect(moved[slug], 301)
     return this.page(`/docs/${slug}`)
   }
 
