@@ -36,7 +36,7 @@ export class WebhooksController {
 }
 ```
 
-You can put it on a whole controller or on a single handler. Every detail of the checks and of `@SkipCsrf()` is in the [reference](/docs/skip-csrf).
+You can put it on a whole controller or on a single handler.
 
 ## When a page expires
 
@@ -53,3 +53,60 @@ The check is turned off while tests run (`NODE_ENV=test`), so your supertest tes
 ```ts
 MvcModule.forRoot({ csrf: true })
 ```
+
+## In detail
+
+### Reading requests are never checked
+
+`GET`, `HEAD` and `OPTIONS` requests pass without any check, because they aren't supposed to change anything. That's also why a [signed link](/docs/signed-urls) always works. So keep changes out of your `GET` handlers: a link on another site could trigger them.
+
+### Skipping only some handlers
+
+When `@SkipCsrf()` is on a controller, a handler you add to it later is unprotected too. If only one or two handlers need it, put it on those. You can also switch the check back on for a single handler inside a skipped controller:
+
+```ts
+@Controller('api')
+@SkipCsrf()
+export class ApiController {
+  @Post('orders')
+  @SkipCsrf(false)
+  createOrder() {} // checked again
+}
+```
+
+Only skip routes that prove who's calling in their own way, like a signature or an `Authorization` header. A route that relies on the login cookie needs the check, because that cookie is exactly what a forged request carries along.
+
+### Sending a request with fetch
+
+If you call your app with a plain `fetch()`, the token isn't sent for you. The token lives in a cookie called `XSRF-TOKEN`, which your JavaScript can read, and the server expects the same value back in an `X-XSRF-TOKEN` header:
+
+```ts
+const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
+
+await fetch('/orders', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': token },
+  body: JSON.stringify(order),
+})
+```
+
+A request like that doesn't get the "page expired" redirect. When the token is wrong, it gets a plain `419`, and a fresh token in the cookie, so retrying works.
+
+### Other subdomains
+
+A form on `blog.example.com` that posts to `app.example.com` is refused, even with a valid token. Serve your pages and the routes they post to from the same origin.
+
+### After changing your key
+
+The token is signed with your `APP_KEY`. When you [change the key](/docs/production) and keep the old one in `APP_PREVIOUS_KEYS`, tokens that browsers already have keep working. Without the old key, users get the "page expired" message once, and it works when they try again.
+
+### Turning part of it off
+
+The `csrf` option decides how much runs:
+
+```ts
+MvcModule.forRoot({ csrf: { token: false } }) // only check where requests come from
+MvcModule.forRoot({ csrf: false })            // no protection at all
+```
+
+With `csrf: false`, the app logs a warning when it starts, because any site can then make your users submit forms. It stays off in tests too. Any other value you set explicitly also applies while tests run.

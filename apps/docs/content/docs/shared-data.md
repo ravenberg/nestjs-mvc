@@ -113,4 +113,49 @@ dashboard() {
 }
 ```
 
-Precedence, `always()` and the `sharedProps` field are covered in the [reference](/docs/shared-props).
+## In detail
+
+### When a page returns the same name
+
+A page's props are put together in this order, and a later key replaces an earlier one:
+
+1. `errors`, the validation errors from the previous request
+2. your shared data, with `auth.user` added
+3. what the handler returns
+
+So a handler that returns `title: 'Dashboard'` wins over a shared `title`. The replacement is shallow: if a handler returns its own `auth`, the shared `auth` (and the user in it) is gone for that page. And don't share a key called `errors`, because it replaces the validation errors.
+
+### Your own auth object
+
+If you share an `auth` object yourself, the user is added to it:
+
+```ts
+requestState(req).shared.auth = { can: { invite: true } }
+// the page gets: auth: { can: { invite: true }, user: { id: 1, name: 'Ada' } }
+```
+
+When nobody is logged in, `auth.user` is `null`, and so it is when `share` returns nothing. `share` also gets the request as its second argument, and it may be `async`. Whatever it returns ends up in the HTML source of every first load, so pick the fields the page needs and never return the whole user record.
+
+Without `auth.share` nothing about the user is shared. In development you get a warning when `req.user` is set but never reaches the page.
+
+### Data that must stay fresh
+
+When the page reloads a few props, say `router.reload({ only: ['stats'] })`, your shared data is left out too, and its functions aren't called. The page keeps the value it had, which is what you want for the app name or the user.
+
+For something that should be up to date after every request, like the unread count, wrap it in `always()`. It then comes along with every response, even a reload that asks for something else:
+
+```ts
+import { always, requestState } from 'nestjs-mvc'
+
+requestState(req).shared.unread = always(() => this.messages.countUnread())
+```
+
+Use it on a top level key. An `always()` inside an object is only sent when that object itself is part of the response. And since its function runs on every request to the page (each deferred prop, each poll tick), keep it cheap.
+
+### Other helpers work here too
+
+Shared data is resolved the same way as the props a handler returns. Functions are called at any depth, and `defer()`, `optional()` and `once()` work as well. A list of countries every form needs is a good fit for [`once()`](/docs/once): the browser keeps it across pages.
+
+### Error pages
+
+A page you return from `errorPages` only gets your shared data when it sets `shared: true`. See [Error pages](/docs/error-pages).

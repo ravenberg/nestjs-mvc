@@ -100,7 +100,7 @@ export class AuthController {
 }
 ```
 
-`intended('/dashboard')` sends the user to the page they were trying to open before they had to log in, or to `/dashboard` if there wasn't one. How the redirect to the login page and back works is in the [reference](/docs/login-redirects).
+`intended('/dashboard')` sends the user to the page they were trying to open before they had to log in, or to `/dashboard` if there wasn't one.
 
 ## The protected page
 
@@ -188,3 +188,52 @@ auth: {
 ```
 
 The [kitchen sink](https://github.com/ravenberg/nestjs-mvc/tree/main/apps/kitchen-sink/shared/server/auth) has a complete example with registration, password hashing, a password reset and login throttling.
+
+## In detail
+
+### Which requests go to the login page
+
+Any `401` counts, whichever guard threw it. It turns into a redirect to the login page when the browser wants a page: someone typed the URL, clicked a link or submitted a form. Requests that want data keep the plain `401`, like a `fetch` that asks for JSON or sends `X-Requested-With: XMLHttpRequest`, so your code can react to it.
+
+That also means an API route that someone opens in the browser gets the redirect. A client that calls your API doesn't ask for HTML, so it keeps getting the `401`.
+
+### Keep the login page public
+
+The login page is never sent to itself. If your guard throws a `401` there, the visitor just gets the `401`, so mark your login routes with `@Public()`, like above.
+
+### What intended() remembers
+
+* After a page visit, it's the URL they asked for, query string included.
+* After a form, it's the page the form was on, not the URL it posted to. So a guest who submits a comment comes back to the article.
+* A protected link that's [prefetched](/docs/prefetching) doesn't count, so hovering it can't overwrite what's remembered.
+* Only pages on your own site are remembered.
+
+The address waits for one hour, long enough for a password manager and a 2FA code, in a signed cookie. A visitor who edits that cookie ends up on the fallback.
+
+### A hosted login page
+
+`loginUrl` can be a full URL, like `https://id.example.com/login`, for a login page that lives somewhere else. The browser does a full page load to get there.
+
+With `loginUrl: false`, nothing is redirected: the `401` stays a `401`, and `intended()` always uses its fallback.
+
+### When the user changes
+
+When someone logs out, or a different user logs in, the browser still holds what the previous user loaded. nestjs-mvc notices that on the next request and reloads the page from scratch, so nothing carries over. That works across tabs too: a second tab that still shows the old user's page gets reloaded on its next click.
+
+If that request was a form, it isn't carried out for the new user. The browser goes back to the page the form was on, where the user can submit it again.
+
+### Users without an id
+
+To tell users apart, nestjs-mvc reads `id`, then `sub`, then `_id` from your user. If your user has none of those, nothing gets reset when the user changes, and you get a warning in development. Tell it where the id is:
+
+```ts
+auth: { id: (user: Account) => user.accountNumber }
+```
+
+### Sharing more under auth
+
+If you share an `auth` object yourself, with permissions for example, `user` is added to it rather than replacing it. And if your guard sets `req.user` but you haven't set `share`, you get a warning in development, because your pages won't see the user.
+
+### Error pages and 401
+
+If your [error pages](/docs/error-pages) return something for a `401`, that wins over the login redirect. Return nothing for `401` to keep the redirect.

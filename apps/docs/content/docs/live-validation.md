@@ -78,4 +78,32 @@ const UserSchema = z.object({
 Every live check runs your pipes, so a pipe that writes to the database or sends an email would do that every time a field loses focus. Keep your pipes free of side effects.
 {% /callout %}
 
-The headers, the responses and every helper on the form are in the [Precognition](/docs/precognition) reference.
+## In detail
+
+### Which fields are checked
+
+The browser always sends the whole form, so a rule that compares two fields, like a password confirmation, sees both values. But it only asks about the fields the user has touched, so fields they haven't reached yet don't light up red.
+
+A field is only checked again when its value changed, and checks wait 1.5 seconds after the last change. You can change that wait with `form.setValidationTimeout(500)`, in milliseconds.
+
+### More helpers on the form
+
+* `form.valid('email')` is `true` once the field was checked and passed, handy for a "Looks good" message.
+* `form.validating` is `true` while a check runs.
+* `form.touch('name')` marks a field as touched without checking it, and `form.validate()` without a field checks every touched field at once.
+
+### What runs on the server
+
+Your pipes run for every `@Body()`, `@Query()` and `@Param()`, in the same order as on a real submit: the global ones, then those on the controller, the handler and the parameter. Other parameters, like `@Headers()` or your own decorators, are skipped. A route without any pipes always passes.
+
+Your guards do run. If the user was logged out in the meantime, the check gets a `401` instead of being sent to the login page, and an expired page gets a `419`.
+
+When a pipe fails without naming a field, like `ParseIntPipe` on an `:id` that isn't a number, the check doesn't count it as a verdict and simply fails with a `400`.
+
+### Files
+
+Files are left out of live checks, so check them when the form is submitted, as in [File uploads](/docs/file-uploads).
+
+### Forms with an error bag
+
+A live check writes its errors straight into its own form, so it doesn't use an [error bag](/docs/forms#two-forms-on-one-page). You can still give the real submit one, and it works as usual.

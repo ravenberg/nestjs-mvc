@@ -57,4 +57,62 @@ If your [authentication](/docs/authentication) guard puts the user on `req.user`
 
 The copies are still in the history, but without the key they can't be read. When the next person presses back, the page notices that and asks your server for the page, like any other visit. Your guard runs and decides what they get to see, which usually means the login page.
 
-The precedence rules and exactly what the browser does with the key are in the [reference](/docs/encrypt-history).
+## In detail
+
+### Which setting wins
+
+You can also decide in the middle of a request, from a guard or the handler:
+
+```ts
+this.view.encryptHistory()      // encrypt this page
+this.view.encryptHistory(false) // or don't
+```
+
+That call wins over the decorators. After it comes `@EncryptHistory()` on the handler, then the one on its controller, then `history.encrypt` in the module options. Without any of them, nothing is encrypted.
+
+[Error pages](/docs/error-pages) don't belong to a route, so the decorators don't apply to them. They're encrypted only by a call during the request or by the module option.
+
+### It needs HTTPS
+
+The browser only encrypts on HTTPS, and on `localhost` while you develop. On plain HTTP the page isn't encrypted, and the browser console says "Encryption is not supported in this environment. SSL is required." So when you test on another machine in your network, use HTTPS.
+
+### Encrypting isn't enough on its own
+
+The key lasts as long as the tab. If nobody throws it away when the user logs out, the next person in that tab can still go back and read everything. So encrypt and clear together.
+
+### Clearing from the page
+
+You can also throw the key away in the browser, for example right before a logout request:
+
+{% framework-code %}
+```tsx
+import { router } from 'nestjs-mvc/react'
+
+export function LogoutButton() {
+  return <button onClick={() => { router.clearHistory(); router.post('/logout') }}>Log out</button>
+}
+```
+
+```vue
+<script setup lang="ts">
+import { router } from 'nestjs-mvc/vue'
+
+function logout() {
+  router.clearHistory()
+  router.post('/logout')
+}
+</script>
+
+<template>
+  <button @click="logout">Log out</button>
+</template>
+```
+{% /framework-code %}
+
+### When another user logs in
+
+The automatic clearing needs your user to have an `id`. When a page that was rendered for one user makes a request after someone else has logged in, it gets a full page reload instead of an answer, and the history key is thrown away on the way.
+
+### What it doesn't do
+
+This is only about the copies in the browser's history. The data still travels to the browser the normal way, so use HTTPS to protect it on the network.

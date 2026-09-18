@@ -160,8 +160,6 @@ usePoll(5000, { only: ['queue'] })
 ```
 {% /framework-code %}
 
-The modes, background tabs and what the server sees on each tick are in the [polling reference](/docs/polling).
-
 ## Which one to pick
 
 | You want | Use |
@@ -175,4 +173,117 @@ The modes, background tabs and what the server sees on each tick are in the [pol
 When the browser asks for `only: ['export']`, the functions for the other props don't get called. So wrapping a query in a function is enough to keep it from running when nobody needs it.
 {% /callout %}
 
-Every option and edge case is in the reference pages for [defer()](/docs/defer), [optional()](/docs/optional), [lazy props](/docs/lazy-props) and [partial reloads](/docs/partial-reloads).
+## In detail
+
+### Keep the work inside the function
+
+Every reload calls your controller method again: each click on "Load export", each group of deferred props, each poll tick. What gets skipped is the functions of the props nobody asked for. So a query you run in the handler body, like `const project = await this.projects.find(id)`, runs every time. Move it into the prop's function and it only runs when that prop is needed.
+
+A plain function works for this too, without any helper. It runs on every normal page load and is skipped on a reload that asks for something else.
+
+Props are resolved one after the other. Two slow queries in two functions take as long as both together, so if they can run side by side, start them in one function:
+
+```ts
+dashboard: async () => {
+  const [orders, visits] = await Promise.all([this.orders.today(), this.visits.today()])
+  return { orders, visits }
+},
+```
+
+### Several slow props at once
+
+All deferred props arrive in one follow-up request by default. Give a prop a group name and each group gets its own request, sent side by side, so a slow group doesn't hold up a fast one:
+
+```ts
+stats: defer(() => this.stats.calculate()),
+activity: defer(() => this.activity.recent(), 'sidebar'),
+suggestions: defer(() => this.suggestions.forUser(), { group: 'sidebar', rescue: true }),
+```
+
+A string is short for `{ group }`. `Deferred` takes one name or a list in `data`, and shows its fallback until all of them are there.
+
+### When deferred data fails
+
+Without `rescue`, a failing function fails the follow-up request, like any exception in your handler. With `rescue: true` the prop is left out (so it's `undefined` on the page, not `null`) and the error is logged as a warning. To send it to your error tracker instead, set `onRescue`, which gets the error and the prop's name:
+
+```ts
+MvcModule.forRoot({
+  onRescue: (error, path) => reportError(error, { prop: path }),
+})
+```
+
+`rescue` only exists on `defer()`. An error in any other prop still fails the response.
+
+On the page, give `Deferred` something to show in that case. Without it, the fallback stays up:
+
+{% framework-code %}
+```tsx
+<Deferred data="stats" fallback={<p>Loading stats…</p>} rescue={<p>Stats are unavailable right now.</p>}>
+  <p>{stats?.orders} orders today</p>
+</Deferred>
+```
+
+```vue
+<template>
+  <Deferred data="stats">
+    <template #fallback>
+      <p>Loading stats…</p>
+    </template>
+    <template #rescue>
+      <p>Stats are unavailable right now.</p>
+    </template>
+    <p>{{ stats?.orders }} orders today</p>
+  </Deferred>
+</template>
+```
+{% /framework-code %}
+
+### Asking for props by name
+
+`only` takes dots for nested data: `only: ['auth.user']` sends `user` and leaves the rest of `auth` on the page as it was. Naming a parent, `only: ['auth']`, sends everything inside it, including any `optional()` or `defer()` props in there.
+
+`except` does the opposite, but careful: `router.reload({ except: ['sidebar'] })` on its own asks for every other prop, `optional()` and `defer()` props included. And `router.reload()` with neither option reloads the whole page, so optional props are dropped again and deferred props are fetched again. To keep a reload small, use `only`.
+
+Once an optional prop is loaded it stays on the page through later reloads that ask for something else. A normal visit to the page drops it.
+
+### Polling options
+
+`usePoll` takes a third argument:
+
+```ts
+usePoll(5000, { only: ['queue'] }, { mode: 'rest', keepAlive: false, autoStart: true })
+```
+
+- `mode` decides what happens when a tick is still waiting for its answer. `'overlap'` (the default) fires every interval anyway, `'cancel'` cancels the one still running, and `'rest'` waits the full interval after each answer, so requests never overlap.
+- In a background tab the poll slows down to one in ten ticks, and picks up again when the tab is visible. `keepAlive: true` keeps the full rate.
+- `autoStart: false` doesn't start until you call `start()`. `usePoll` returns `start`, `stop` and `polling`, handy for a pause button.
+
+Always pass `only`. A tick without it reloads every prop on the page and fetches the deferred ones again, every few seconds.
+
+For values that change between ticks, pass a function as the second argument. It's called on every tick:
+
+{% framework-code %}
+```tsx
+usePoll(3000, () => ({
+  only: ['messages'],
+  data: { after: messages.at(-1)?.id ?? 0 },
+  preserveUrl: true,
+}))
+```
+
+```vue
+<script setup lang="ts">
+usePoll(3000, () => ({
+  only: ['messages'],
+  data: { after: props.messages.at(-1)?.id ?? 0 },
+  preserveUrl: true,
+}))
+</script>
+```
+{% /framework-code %}
+
+`data` ends up in the query string, and without `preserveUrl` that URL becomes the page's address. To add new messages to the list instead of replacing it, see [Growing lists](/docs/merging-props).
+
+### Put helpers straight on the prop
+
+Return `defer()`, `optional()` and the other helpers directly as a prop, or inside a plain object. Wrapped in a function, `() => defer(fn)`, the page gets the helper itself instead of its data. The same goes for class instances like ORM entities or a `Date`: they're sent as they are, and nothing inside them is called.

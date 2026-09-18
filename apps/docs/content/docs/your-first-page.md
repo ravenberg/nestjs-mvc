@@ -101,4 +101,41 @@ On the first visit the server sends a full HTML page with your data in it, and y
 
 When someone clicks a link after that, the browser asks the same controller for just the data and swaps the page in place. You get that without writing anything extra, and the next page shows how links work.
 
-Everything `@View()` does, including every field of the page object, is in the [reference](/docs/view).
+## In detail
+
+### Props that do some work
+
+A prop can be a function. It's called when the page renders, and a prop the browser doesn't ask for on a [reload of some props](/docs/loading-data) never runs its query at all:
+
+```ts
+return {
+  user: { id: 1, name: 'Ada' },
+  stats: () => this.stats.today(),
+}
+```
+
+Plain objects and arrays are looked through all the way down, so functions work inside them too. Anything else, like an entity, a `Date` or a `Map`, is turned into JSON the way `JSON.stringify` would do it.
+
+### Forgetting await
+
+A promise isn't a function, so `{ user: this.users.findOne(id) }` sends an empty object instead of the user. Either `await` it, or wrap it in a function: `{ user: () => this.users.findOne(id) }`.
+
+### What else is in the props
+
+Next to your own data, every page gets `errors` (the validation errors for its forms) and anything you [share with every page](/docs/shared-data). Your own keys come last and win, so don't return a prop called `errors`, or the form errors are gone.
+
+If a handler returns nothing, the page still renders, with only those.
+
+### A typo in the page name
+
+The server doesn't check that the page exists. When you write `@View('Users/Shw')`, you find out in the browser, with an error that says `Page "Users/Shw" not found` and the file it looked for.
+
+### When a handler shouldn't render a page
+
+A handler with `@View()` always renders what it returns. To do something else:
+
+* [redirect](/docs/redirects) with `ViewService`, which stops the handler right there,
+* throw an `HttpException`, like `NotFoundException`, which shows your [error page](/docs/error-pages) when you have one,
+* or leave `@View()` off for a route that sends a file or plain JSON. Nest handles that route like it always does.
+
+If you inject `@Res()` (without `passthrough: true`), you take over the response yourself, so your return value isn't used and no page is rendered.
