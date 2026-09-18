@@ -119,6 +119,8 @@ export class DashboardController {
 
 A guest who opens `/dashboard` ends up on `/login`, while a request that asks for JSON still gets the usual `401`.
 
+Deciding what a logged in user may do, like opening admin pages or editing someone's record, is covered in [Authorization](/docs/authorization).
+
 ## Show the user on every page
 
 Tell nestjs-mvc which fields of the user your pages are allowed to see:

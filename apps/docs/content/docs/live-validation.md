@@ -106,4 +106,4 @@ Files are left out of live checks, so check them when the form is submitted, as 
 
 ### Forms with an error bag
 
-A live check writes its errors straight into its own form, so it doesn't use an [error bag](/docs/forms#two-forms-on-one-page). You can still give the real submit one, and it works as usual.
+A live check writes its errors straight into its own form, so it doesn't use an [error bag](/docs/validation#two-forms-on-one-page). You can still give the real submit one, and it works as usual.

@@ -54,6 +54,8 @@ The check is turned off while tests run (`NODE_ENV=test`), so your supertest tes
 MvcModule.forRoot({ csrf: true })
 ```
 
+[Testing](/docs/testing#testing-the-csrf-protection-itself) shows how such a test gets the token and sends it back.
+
 ## In detail
 
 ### Reading requests are never checked

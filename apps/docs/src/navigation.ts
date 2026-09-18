@@ -32,15 +32,21 @@ export const navigation: NavSection[] = [
     title: 'The basics',
     links: [
       { title: 'Redirects', href: '/docs/redirects' },
-      { title: 'File uploads', href: '/docs/file-uploads' },
+      { title: 'Validation', href: '/docs/validation' },
       { title: 'Live validation', href: '/docs/live-validation' },
+      { title: 'File uploads', href: '/docs/file-uploads' },
+      { title: "Requests that aren't pages", href: '/docs/http-requests' },
+      { title: 'Optimistic updates', href: '/docs/optimistic-updates' },
+      { title: 'Remembering state', href: '/docs/remembering-state' },
     ],
   },
   {
     title: 'Data',
     links: [
       { title: 'Data on every page', href: '/docs/shared-data' },
+      { title: 'Loading only what you need', href: '/docs/partial-reloads' },
       { title: 'Loading data later', href: '/docs/loading-data' },
+      { title: 'Keeping data fresh', href: '/docs/polling' },
       { title: 'Data the browser keeps', href: '/docs/once' },
       { title: 'Growing lists', href: '/docs/merging-props' },
       { title: 'Infinite scroll', href: '/docs/infinite-scroll' },
@@ -51,6 +57,7 @@ export const navigation: NavSection[] = [
     title: 'Security',
     links: [
       { title: 'Authentication', href: '/docs/authentication' },
+      { title: 'Authorization', href: '/docs/authorization' },
       { title: 'CSRF protection', href: '/docs/csrf' },
       { title: 'Signed links', href: '/docs/signed-urls' },
       { title: 'Private history', href: '/docs/history-encryption' },
@@ -62,6 +69,8 @@ export const navigation: NavSection[] = [
     links: [
       { title: 'Error pages', href: '/docs/error-pages' },
       { title: 'Server rendering', href: '/docs/server-rendering' },
+      { title: 'Testing', href: '/docs/testing' },
+      { title: 'TypeScript', href: '/docs/typescript' },
       { title: 'Going to production', href: '/docs/production' },
       { title: 'Using Fastify', href: '/docs/fastify' },
       { title: 'Acknowledgements', href: '/docs/acknowledgements' },

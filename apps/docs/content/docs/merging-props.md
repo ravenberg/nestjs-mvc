@@ -110,4 +110,4 @@ A helper can't wrap another one. `defer(() => merge(...))` sends the helper itse
 feed: defer(() => ({ items: merge(this.feed.latest()) }))
 ```
 
-When you [refresh on a timer](/docs/loading-data) with `only`, every tick is a reload of those props, so a merge prop grows on each tick.
+When you [refresh on a timer](/docs/polling) with `only`, every tick is a reload of those props, so a merge prop grows on each tick.

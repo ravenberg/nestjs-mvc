@@ -183,52 +183,14 @@ async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) 
 }
 ```
 
-{% callout title="Prefer Zod?" %}
-Any Standard Schema library works too, like Zod, Valibot or ArkType. Use `@Body({ schema: UserSchema })` with NestJS's `StandardSchemaValidationPipe` and `standardSchemaExceptionFactory` from `nestjs-mvc`, and the errors end up in your form the same way.
-{% /callout %}
+## Going further
+
+[Validation](/docs/validation) picks up from here: rules written with Zod, nested fields and lists, messages that belong to no field, two forms on one page, and what clients other than your pages get back.
 
 ## In detail
-
-### Nested fields and lists
-
-Errors are keyed by a dot path. When an `address` object has a bad `zip`, the error is under `address.zip`, and the second item of a `tags` list is `tags.1`. Read them the same way in the page, as in `form.errors['address.zip']`.
-
-When you throw a `ValidationException` yourself, use the same paths. A message that belongs to the whole form rather than one field goes under `_form`.
 
 ### Where the user is sent back
 
 The user goes back to the page they came from, and what they typed is still in the form. The errors are there for one page only: the next visit starts with an empty `errors` again. On the page, a failed submit calls `onError`, never `onSuccess`, so the `form.reset()` above doesn't wipe the form.
 
-### Why the factory matters
-
-Without `validationExceptionFactory`, the field of a class-validator message is guessed from its first word. That works for NestJS's default messages, like "email must be an email", but your own "Please enter a name." would end up under `Please`. With the factory every message lands on the right field.
-
-A `BadRequestException` without any field in it, like `new BadRequestException('Nope')`, isn't treated as a validation error. It goes to your [error page](/docs/error-pages) instead of back to the form.
-
-### Two forms on one page
-
-Say an account page has a profile form and a password form, and both have a `name` field. Give each submit its own error bag, as in `profile.put('/account/profile', { errorBag: 'profile' })`. Nothing changes on the server. Each form still reads its own `form.errors.name`, and the errors of one never show up in the other.
-
-If you read the raw `errors` prop from `usePage()` instead, the bag's name is an extra level in front: `errors.profile.name`.
-
-### Every message instead of the first
-
-By default each field gets one message, the first rule that failed. To get all of them as a list, set `messages: 'all'` on the factory. If some of your pipes don't use the factory, set it on the module too, so their errors come as lists as well.
-
-```ts
-app.useGlobalPipes(
-  new ValidationPipe({ exceptionFactory: createValidationExceptionFactory({ messages: 'all' }) }),
-)
-
-MvcModule.forRoot({ validation: { messages: 'all' } })
-```
-
-Each field in `form.errors` is then an array of strings.
-
-### Requests that don't come from your pages
-
-A mobile app or a script that posts JSON isn't sent back anywhere. It gets a `400` with the errors in the body, under `errors`. If that client expects a `422` with `{ message, errors }`, ask for it:
-
-```ts
-MvcModule.forRoot({ validation: { jsonStatus: 422 } })
-```
+What someone typed is lost when they leave the page, though. To keep it for when they come back with the back button, give the form a key, as in [Remembering state](/docs/remembering-state).

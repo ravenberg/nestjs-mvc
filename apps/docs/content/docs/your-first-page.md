@@ -105,7 +105,7 @@ When someone clicks a link after that, the browser asks the same controller for 
 
 ### Props that do some work
 
-A prop can be a function. It's called when the page renders, and a prop the browser doesn't ask for on a [reload of some props](/docs/loading-data) never runs its query at all:
+A prop can be a function. It's called when the page renders, and a prop the browser doesn't ask for on a [reload of some props](/docs/partial-reloads) never runs its query at all:
 
 ```ts
 return {

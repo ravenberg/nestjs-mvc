@@ -97,7 +97,7 @@ import { router } from 'nestjs-mvc/vue'
 ```
 {% /framework-code %}
 
-`router.reload({ only })` calls the same controller again and only resolves the props you name, so the rest of the page stays as it is.
+`router.reload({ only })` calls the same controller again and only resolves the props you name, so the rest of the page stays as it is. The functions of the other props aren't called, so wrapping a query in a function is enough to keep it from running when nobody needs it. [Loading only what you need](/docs/partial-reloads) explains how these reloads work.
 
 ## Load when it scrolls into view
 
@@ -132,34 +132,6 @@ import { WhenVisible } from 'nestjs-mvc/vue'
 ```
 {% /framework-code %}
 
-## Refresh on a timer
-
-`usePoll` reloads props on an interval you give in milliseconds. It works well for a live counter or a status page:
-
-{% framework-code %}
-```tsx
-import { usePoll } from 'nestjs-mvc/react'
-
-export default function Status({ queue }: { queue: number }) {
-  usePoll(5000, { only: ['queue'] })
-  return <p>{queue} jobs waiting</p>
-}
-```
-
-```vue
-<script setup lang="ts">
-import { usePoll } from 'nestjs-mvc/vue'
-
-defineProps<{ queue: number }>()
-usePoll(5000, { only: ['queue'] })
-</script>
-
-<template>
-  <p>{{ queue }} jobs waiting</p>
-</template>
-```
-{% /framework-code %}
-
 ## Which one to pick
 
 | You want | Use |
@@ -167,28 +139,10 @@ usePoll(5000, { only: ['queue'] })
 | The page to show before slow data is ready | `defer()` |
 | Data only after a click | `optional()` and `router.reload({ only })` |
 | Data when it scrolls into view | `optional()` and `WhenVisible` |
-| Data that updates on its own | `usePoll` |
 
-{% callout title="Only what's asked for runs" %}
-When the browser asks for `only: ['export']`, the functions for the other props don't get called. So wrapping a query in a function is enough to keep it from running when nobody needs it.
-{% /callout %}
+For data that should update on its own every few seconds, see [Keeping data fresh](/docs/polling).
 
 ## In detail
-
-### Keep the work inside the function
-
-Every reload calls your controller method again: each click on "Load export", each group of deferred props, each poll tick. What gets skipped is the functions of the props nobody asked for. So a query you run in the handler body, like `const project = await this.projects.find(id)`, runs every time. Move it into the prop's function and it only runs when that prop is needed.
-
-A plain function works for this too, without any helper. It runs on every normal page load and is skipped on a reload that asks for something else.
-
-Props are resolved one after the other. Two slow queries in two functions take as long as both together, so if they can run side by side, start them in one function:
-
-```ts
-dashboard: async () => {
-  const [orders, visits] = await Promise.all([this.orders.today(), this.visits.today()])
-  return { orders, visits }
-},
-```
 
 ### Several slow props at once
 
@@ -201,6 +155,8 @@ suggestions: defer(() => this.suggestions.forUser(), { group: 'sidebar', rescue:
 ```
 
 A string is short for `{ group }`. `Deferred` takes one name or a list in `data`, and shows its fallback until all of them are there.
+
+Each follow-up request calls your controller method again, so keep slow work [inside the prop functions](/docs/partial-reloads#your-controller-still-runs).
 
 ### When deferred data fails
 
@@ -237,52 +193,6 @@ On the page, give `Deferred` something to show in that case. Without it, the fal
 </template>
 ```
 {% /framework-code %}
-
-### Asking for props by name
-
-`only` takes dots for nested data: `only: ['auth.user']` sends `user` and leaves the rest of `auth` on the page as it was. Naming a parent, `only: ['auth']`, sends everything inside it, including any `optional()` or `defer()` props in there.
-
-`except` does the opposite, but careful: `router.reload({ except: ['sidebar'] })` on its own asks for every other prop, `optional()` and `defer()` props included. And `router.reload()` with neither option reloads the whole page, so optional props are dropped again and deferred props are fetched again. To keep a reload small, use `only`.
-
-Once an optional prop is loaded it stays on the page through later reloads that ask for something else. A normal visit to the page drops it.
-
-### Polling options
-
-`usePoll` takes a third argument:
-
-```ts
-usePoll(5000, { only: ['queue'] }, { mode: 'rest', keepAlive: false, autoStart: true })
-```
-
-- `mode` decides what happens when a tick is still waiting for its answer. `'overlap'` (the default) fires every interval anyway, `'cancel'` cancels the one still running, and `'rest'` waits the full interval after each answer, so requests never overlap.
-- In a background tab the poll slows down to one in ten ticks, and picks up again when the tab is visible. `keepAlive: true` keeps the full rate.
-- `autoStart: false` doesn't start until you call `start()`. `usePoll` returns `start`, `stop` and `polling`, handy for a pause button.
-
-Always pass `only`. A tick without it reloads every prop on the page and fetches the deferred ones again, every few seconds.
-
-For values that change between ticks, pass a function as the second argument. It's called on every tick:
-
-{% framework-code %}
-```tsx
-usePoll(3000, () => ({
-  only: ['messages'],
-  data: { after: messages.at(-1)?.id ?? 0 },
-  preserveUrl: true,
-}))
-```
-
-```vue
-<script setup lang="ts">
-usePoll(3000, () => ({
-  only: ['messages'],
-  data: { after: props.messages.at(-1)?.id ?? 0 },
-  preserveUrl: true,
-}))
-</script>
-```
-{% /framework-code %}
-
-`data` ends up in the query string, and without `preserveUrl` that URL becomes the page's address. To add new messages to the list instead of replacing it, see [Growing lists](/docs/merging-props).
 
 ### Put helpers straight on the prop
 
