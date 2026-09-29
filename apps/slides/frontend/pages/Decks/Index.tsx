@@ -15,7 +15,7 @@ export default function Index({ decks }: { decks: DeckSummary[] }) {
         <h1 className="text-3xl font-semibold tracking-tight">Slides</h1>
         <p className="mt-2 text-slate-400">
           One Markdown file per deck in <code className="rounded bg-slate-800 px-1">content/decks/</code>. Press <kbd>S</kbd> in a deck
-          for speaker notes, <kbd>F</kbd> for full screen, <kbd>Esc</kbd> for the overview.
+          for the speaker view with notes and a timer, <kbd>F</kbd> for full screen, <kbd>Esc</kbd> for the overview.
         </p>
         <ul className="mt-10 divide-y divide-slate-800 rounded-xl border border-slate-800">
           {decks.map((deck) => (
@@ -30,6 +30,14 @@ export default function Index({ decks }: { decks: DeckSummary[] }) {
                 <span>{deck.slides} slides</span>
                 <a href={`/decks/${deck.slug}?print-pdf`} target="_blank" rel="noreferrer" className="hover:text-slate-300">
                   PDF
+                </a>
+                <a
+                  href={`/decks/${deck.slug}?print-pdf&showNotes=true`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-slate-300"
+                >
+                  PDF with notes
                 </a>
               </div>
             </li>

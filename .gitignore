@@ -25,3 +25,6 @@ apps/kitchen-sink/*/.auth/
 
 # Purchased template (Tailwind Plus license: not redistributable); the port lives in apps/docs
 apps/docs/tailwind-plus-syntax/
+
+# Notioly illustrations (licensed, not redistributable); copy them in from the collection
+apps/slides/content/illustrations/notioly/

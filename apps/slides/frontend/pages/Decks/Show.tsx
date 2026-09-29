@@ -48,14 +48,19 @@ export default function Show({ title, markdown }: Deck) {
 
   useEffect(() => {
     if (!container.current) return
+    // `?print-pdf` renders every slide on one page with all fragments shown; the
+    // code stays fully lit there instead of dimming to the last step.
+    const printing = /print-pdf/i.test(window.location.search)
     const deck = new Reveal(container.current, {
       // Code arrives highlighted from the server (Shiki), so no highlight plugin here.
       plugins: [Markdown, Notes],
       hash: true,
       slideNumber: 'c/t',
       transition: 'slide',
+      pdfSeparateFragments: false,
     })
     deck.initialize().then(() => {
+      if (printing) return
       focusLines(container.current!)
       for (const event of ['slidechanged', 'fragmentshown', 'fragmenthidden'] as const) {
         deck.on(event, () => focusLines(container.current!))

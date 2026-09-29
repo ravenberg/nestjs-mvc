@@ -28,14 +28,16 @@ pnpm dev          # http://localhost:3002
   `.s1` to `.s4` for size and `.nest` for grey) and `.scatter` (an SVG chart
   with dashed axes and labelled dots).
 - Illustrations go in `content/illustrations/` and are served at
-  `/illustrations/<file>` in dev and production alike. Wrap an image in
-  `<figure class="slot" data-image="<file>">` and, until the file exists, the
-  slot draws a dashed box with that name in the place the image will take, so
-  a deck renders before the artwork lands and shows where every image goes.
-  A bare `<img class="illustration">` with the `onerror` handler hides itself
-  instead.
+  `/illustrations/<file>` in dev and production alike. The deck uses the
+  Notioly collection: copy the SVGs you need into
+  `content/illustrations/notioly/` (gitignored, the license does not allow
+  redistribution) with a short slug as the file name, and reference them as
+  `/illustrations/notioly/<slug>.svg`. For an image that is not there yet,
+  wrap it in `<figure class="slot" data-image="<file>">` and the slot draws a
+  dashed box with that name until the file lands.
+- The index page links a `PDF` and a `PDF with notes` version of each deck
+  (`?print-pdf`, with `&showNotes=true` for the notes under every slide).
 
 The deck, `nestjs-in-mvc-mode.md`, is the talk in three acts (the why, the
-what, the how) with the talk track in the notes. Its image slots expect PNG
-files named after the slide (`act1-the-split.png` and so on); the file name
-is shown on the slide until the image is there.
+what, the how). Every bullet on a slide has a bold echo in the notes with what
+to say; every code slide's arrow steps are described there too.

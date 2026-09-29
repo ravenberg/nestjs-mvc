@@ -133,8 +133,16 @@
   grid-template-columns: 1fr;
 }
 
+.reveal .split > div > h1:first-child,
 .reveal .split > div > h2:first-child {
   margin-top: 0;
+}
+
+/* The speaker's name under the title */
+.reveal .byline {
+  margin-top: 1.2em;
+  font-size: 0.7em;
+  color: #64748b; /* slate-500 */
 }
 
 /* A split with a long list: smaller type and tighter rows so nine items
