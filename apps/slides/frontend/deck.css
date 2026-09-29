@@ -2,7 +2,8 @@
  * The deck style: Reveal's white theme with the docs site's typography on
  * top (Inter for text, Lexend for headings), calmer headings, roomier and
  * smaller code blocks, and a few layout helpers the Markdown can use as
- * plain HTML: .split, .illustration, .scatter, .one-liner.
+ * plain HTML: .split, .illustration, .slot, .one-liner, .kicker, .columns,
+ * .pair, .mvc, .cloud and .scatter.
  */
 @import 'reveal.js/theme/white.css';
 
@@ -136,6 +137,20 @@
   margin-top: 0;
 }
 
+/* A split with a long list: smaller type and tighter rows so nine items
+   and a subtitle still leave a margin at the bottom */
+.reveal .split.compact {
+  font-size: 0.74em;
+}
+
+.reveal .split.compact li + li {
+  margin-top: 0.1em;
+}
+
+.reveal .split.compact > div > p {
+  margin-bottom: 0.6em;
+}
+
 .reveal .illustration {
   width: 100%;
   max-height: 62vh;
@@ -226,4 +241,179 @@
 /* Speaker notes are Markdown too; keep them readable in the notes window */
 .reveal aside.notes {
   display: none;
+}
+
+/* Act dividers: a small label above the act title */
+.reveal .kicker {
+  margin-bottom: 0.4em;
+  font-family: var(--r-heading-font);
+  font-size: 0.6em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #0284c7; /* sky-600 */
+}
+
+/* Image slots: room for an illustration that is not there yet. When the file
+   is missing, the slot draws a dashed box with the file name it expects, so the
+   deck shows where every image goes. Drop the file in content/illustrations/
+   and the box becomes the image. */
+.reveal .slot {
+  margin: 0;
+}
+
+.reveal .slot.missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  padding: 1em;
+  border: 3px dashed #cbd5e1; /* slate-300 */
+  border-radius: 0.75em;
+  background: #f8fafc; /* slate-50 */
+  font-family: var(--r-heading-font);
+  font-size: 0.55em;
+  text-align: center;
+  color: #94a3b8; /* slate-400 */
+}
+
+.reveal .slot.missing::after {
+  content: attr(data-image);
+}
+
+.reveal .slot.small.missing {
+  width: 40%;
+  margin: 1em auto 0;
+  aspect-ratio: 16 / 7;
+}
+
+/* Two equal columns, for a comparison */
+.reveal .columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.6em;
+  align-items: start;
+  font-size: 0.85em;
+}
+
+.reveal .columns h3 {
+  margin-top: 0;
+}
+
+/* Two code blocks next to each other. minmax(0, 1fr) keeps a long line from
+   widening its column past the slide. */
+.reveal .pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1em;
+  align-items: start;
+}
+
+.reveal .pair pre,
+.reveal .pair .code-steps {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.reveal .pair pre {
+  padding: 1em;
+  font-size: 0.44em;
+}
+
+.reveal .pair .code-steps pre {
+  margin: 0;
+}
+
+/* The MVC triangle, flattened into a row */
+.reveal .mvc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  margin: 0.6em 0 1em;
+  font-family: var(--r-heading-font);
+}
+
+.reveal .mvc .box {
+  padding: 0.5em 1.2em;
+  border: 3px solid #0f172a;
+  border-radius: 0.6em;
+  background: #ffffff;
+  text-align: center;
+}
+
+.reveal .mvc .box small {
+  display: block;
+  font-family: var(--r-main-font);
+  font-size: 0.5em;
+  color: #64748b; /* slate-500 */
+}
+
+.reveal .mvc .box.v {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.reveal .mvc .arrow {
+  font-size: 1.3em;
+  color: #94a3b8;
+}
+
+/* The feature cloud: size is weight, grey is NestJS and its ecosystem */
+.reveal .cloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em 0.75em;
+  font-family: var(--r-heading-font);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.reveal .cloud span {
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.reveal .cloud .s1 {
+  font-size: 0.55em;
+  color: #475569; /* slate-600 */
+}
+
+.reveal .cloud .s2 {
+  font-size: 0.75em;
+}
+
+.reveal .cloud .s3 {
+  font-size: 1em;
+  color: #0284c7;
+}
+
+.reveal .cloud .s4 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.reveal .cloud .nest {
+  color: #94a3b8; /* slate-400 */
+}
+
+/* Tables: Reveal's default is too large for a comparison with code in it */
+.reveal table {
+  font-size: 0.7em;
+}
+
+.reveal table th {
+  font-family: var(--r-heading-font);
+  font-weight: 500;
+}
+
+.reveal table td:first-child {
+  white-space: nowrap;
+}
+
+.reveal table code {
+  font-size: 0.8em;
 }

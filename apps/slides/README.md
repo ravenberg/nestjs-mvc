@@ -22,11 +22,20 @@ pnpm dev          # http://localhost:3002
 - Files are read on every request: edit, refresh.
 - Slides can mix Markdown and HTML. `deck.css` provides `.split` (text next
   to an image, `.reverse` to swap), `.illustration` (`.small` for a short
-  one), `.one-liner` (a highlighted sentence) and `.scatter` (an SVG chart with dashed
-  axes and labelled dots); the first deck uses all of them.
+  one), `.one-liner` (a highlighted sentence), `.kicker` (a small label above
+  an act title), `.columns` (two equal columns), `.split.compact` (a split with a long list), `.pair` (two code blocks side
+  by side), `.mvc` (the model, view, controller row), `.cloud` (a word cloud,
+  `.s1` to `.s4` for size and `.nest` for grey) and `.scatter` (an SVG chart
+  with dashed axes and labelled dots).
 - Illustrations go in `content/illustrations/` and are served at
-  `/illustrations/<file>` in dev and production alike. An image that is not
-  there yet hides itself, so a deck renders before the artwork lands.
+  `/illustrations/<file>` in dev and production alike. Wrap an image in
+  `<figure class="slot" data-image="<file>">` and, until the file exists, the
+  slot draws a dashed box with that name in the place the image will take, so
+  a deck renders before the artwork lands and shows where every image goes.
+  A bare `<img class="illustration">` with the `onerror` handler hides itself
+  instead.
 
-The first deck, `nestjs-in-mvc-mode.md`, is a draft of the team introduction
-with the talk track in the notes.
+The deck, `nestjs-in-mvc-mode.md`, is the talk in three acts (the why, the
+what, the how) with the talk track in the notes. Its image slots expect PNG
+files named after the slide (`act1-the-split.png` and so on); the file name
+is shown on the slide until the image is there.
