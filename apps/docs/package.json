@@ -11,7 +11,7 @@
     "check": "tsx scripts/check-content.ts"
   },
   "dependencies": {
-    "@algolia/autocomplete-core": "^1.19.0",
+    "@algolia/autocomplete-core": "^1.19.10",
     "@headlessui/react": "^2.2.0",
     "@inertiajs/react": "^3.7.0",
     "@markdoc/markdoc": "^0.5.0",
