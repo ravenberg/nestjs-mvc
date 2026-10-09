@@ -94,7 +94,7 @@ describe('NestJS v12 compatibility', () => {
       }).compile()
       // The unhandled-error case logs a stack trace by design; keep test output readable.
       app = moduleRef.createNestApplication({ logger: false })
-      await app.init()
+      await app.listen(0, '127.0.0.1')
     })
 
     it('passes HttpExceptions it does not own through untouched', async () => {

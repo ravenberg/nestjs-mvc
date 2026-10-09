@@ -71,7 +71,7 @@ describe('rescued deferred props on the wire (e2e)', () => {
       controllers: [DashboardController],
     }).compile()
     app = moduleRef.createNestApplication({ logger: false })
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {

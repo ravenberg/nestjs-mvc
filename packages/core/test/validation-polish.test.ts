@@ -167,7 +167,7 @@ describe('validation: { messages: "all", jsonStatus: 422 } (e2e)', () => {
     app.useGlobalPipes(
       new StandardSchemaValidationPipe({ exceptionFactory: createStandardSchemaExceptionFactory({ messages: 'all' }) }),
     )
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {

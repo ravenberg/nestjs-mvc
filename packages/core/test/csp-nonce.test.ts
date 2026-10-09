@@ -58,7 +58,7 @@ async function boot(options: MvcModuleOptions = {}, withHeader = false): Promise
     providers: [CspHeader],
   }).compile()
   const app = moduleRef.createNestApplication({ logger: false })
-  await app.init()
+  await app.listen(0, '127.0.0.1')
   return app
 }
 
@@ -162,8 +162,7 @@ describe('the nonce on Fastify', () => {
       controllers: [PagesController],
     }).compile()
     const app = moduleRef.createNestApplication(new FastifyAdapter() as never, { logger: false })
-    await app.init()
-    await app.getHttpAdapter().getInstance().ready()
+    await app.listen(0, '127.0.0.1')
 
     const res = await request(app.getHttpServer()).get('/page')
     expect(res.text).toMatch(/<script nonce="[A-Za-z0-9+/=]{24}">/)

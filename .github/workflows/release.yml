@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -35,6 +35,8 @@ jobs:
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
           [ "v$version" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != package version v$version"; exit 1; }
+      # The apps typecheck against nestjs-mvc's built .d.ts files, so build first.
       # prepublishOnly builds and tests again inside publish.
+      - run: pnpm build
       - run: pnpm lint && pnpm typecheck
       - run: pnpm --filter nestjs-mvc publish --provenance --access public --no-git-checks

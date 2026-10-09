@@ -109,7 +109,7 @@ describe('Standard Schema validation (e2e)', () => {
     }).compile()
     app = moduleRef.createNestApplication({ logger: false })
     app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: standardSchemaExceptionFactory }))
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {

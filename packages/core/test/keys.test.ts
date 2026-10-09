@@ -114,7 +114,7 @@ describe('MvcModule and keys', () => {
       controllers: [KeysController],
     }).compile()
     const app = moduleRef.createNestApplication({ logger: false })
-    await app.init()
+    await app.listen(0, '127.0.0.1')
 
     const res = await request(app.getHttpServer()).get('/sign')
     expect(new KeyRing([current]).verify('invite', res.body.signed)).toBe('team:7')

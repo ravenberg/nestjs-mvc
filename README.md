@@ -19,7 +19,7 @@ pnpm add nestjs-mvc @inertiajs/react react react-dom
 pnpm add -D vite @vitejs/plugin-react
 ```
 
-Requires NestJS 12, React 19 or Vue 3.5, and Node `^20.19 || ^22.12 || >=24`. `@inertiajs/react` is the client that `nestjs-mvc/react` re-exports; you install it, you never import it.
+Requires NestJS 12, React 19 or Vue 3.5, and Node `^22.12 || >=24`. `@inertiajs/react` is the client that `nestjs-mvc/react` re-exports; you install it, you never import it.
 
 Using Vue? Install `@inertiajs/vue3 vue` and `@vitejs/plugin-vue` instead, and import from `nestjs-mvc/vue`. The examples below use React; the controllers are the same for both.
 

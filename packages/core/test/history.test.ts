@@ -80,7 +80,7 @@ describe('history encryption and clearing', () => {
       controllers: [PagesController, VaultController],
     }).compile()
     app = moduleRef.createNestApplication({ logger: false })
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   }
 
   afterEach(async () => {

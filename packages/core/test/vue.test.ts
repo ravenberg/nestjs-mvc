@@ -33,6 +33,9 @@ function config(): InlineConfig {
     // What an app gets from the published package; here, the source.
     resolve: { alias: { 'nestjs-mvc/vue': fileURLToPath(new URL('../src/vue.ts', import.meta.url)) } },
     plugins: [vue(), nestjsMvc()],
+    // No dependency pre-bundling: it runs in the background, outlives server.close()
+    // and writes into `root` while afterAll removes it (ENOTEMPTY).
+    optimizeDeps: { noDiscovery: true },
   }
 }
 

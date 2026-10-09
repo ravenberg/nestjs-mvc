@@ -132,8 +132,7 @@ async function boot(platform: Platform, options: MvcModuleOptions = {}, trustPro
       ? moduleRef.createNestApplication(new FastifyAdapter({ trustProxy }) as never, { logger: false })
       : moduleRef.createNestApplication<NestExpressApplication>({ logger: false })
   if (platform === 'express' && trustProxy) (app as NestExpressApplication).set('trust proxy', true)
-  await app.init()
-  if (platform === 'fastify') await app.getHttpAdapter().getInstance().ready()
+  await app.listen(0, '127.0.0.1')
   return app
 }
 

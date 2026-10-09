@@ -89,8 +89,7 @@ describe.each(platforms)('precognition (%s)', (platform, adapter) => {
       ? moduleRef.createNestApplication(instance as never, { logger: false })
       : moduleRef.createNestApplication({ logger: false })
     app.useGlobalPipes(new StandardSchemaValidationPipe({ exceptionFactory: standardSchemaExceptionFactory }))
-    await app.init()
-    if (platform === 'fastify') await app.getHttpAdapter().getInstance().ready()
+    await app.listen(0, '127.0.0.1')
   })
 
   beforeEach(() => handled.mockClear())

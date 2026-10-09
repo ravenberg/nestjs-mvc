@@ -5,7 +5,7 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
-  target: 'node20',
+  target: 'node22',
   // ESM-only: let the extension follow "type": "module" (.js) instead of forcing .mjs.
   fixedExtension: false,
   deps: {

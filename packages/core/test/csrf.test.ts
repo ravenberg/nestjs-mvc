@@ -92,8 +92,7 @@ async function boot(platform: Platform, options: MvcModuleOptions = {}): Promise
     platform === 'fastify'
       ? moduleRef.createNestApplication(new FastifyAdapter() as never, { logger: false })
       : moduleRef.createNestApplication({ logger: false })
-  await app.init()
-  if (platform === 'fastify') await app.getHttpAdapter().getInstance().ready()
+  await app.listen(0, '127.0.0.1')
   return app
 }
 
@@ -158,7 +157,8 @@ describe.each<Platform>(['express', 'fastify'])('CSRF on the wire (%s)', (platfo
     const unsigned = 'x'.repeat(87)
 
     const missing = await post('/save', undefined)
-    const mismatched = await post('/save', valid).set('X-XSRF-TOKEN', await token())
+    const second = await token()
+    const mismatched = await post('/save', valid).set('X-XSRF-TOKEN', second)
     const forged = await post('/save', unsigned)
     const foreign = await post('/save', other)
     const otherPurpose = await post('/save', new KeyRing([KEY]).sign('flash', 'abc'))

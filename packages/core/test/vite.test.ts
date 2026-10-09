@@ -97,7 +97,7 @@ describe('template asset tags (e2e)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    await app.init()
+    await app.listen(0, '127.0.0.1')
 
     const res = await request(app.getHttpServer()).get('/').expect(200)
     expect(res.text).toContain('<script type="module" src="/build/assets/main-abc.js"></script>')
@@ -116,7 +116,7 @@ describe('template asset tags (e2e)', () => {
     }).compile()
 
     app = moduleRef.createNestApplication()
-    await app.init()
+    await app.listen(0, '127.0.0.1')
 
     const res = await request(app.getHttpServer()).get('/').expect(200)
     expect(res.text).toContain('<head></head>')

@@ -11,24 +11,32 @@ concurrency:
 
 jobs:
   test:
-    name: Build, lint, test (Node ${{ matrix.node }})
+    name: Build and lint on 24, test on Node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        # Matches engines: the require(esm) floor NestJS v12 depends on.
-        node: [20.19, 22.12, 24]
+        # Matches engines: 22.12 is the require(esm) floor NestJS v12 depends on.
+        node: ['22.12', '24']
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
+      # The build tools need a newer Node than the package does (tsdown wants
+      # 22.18+), so install, build, lint and typecheck on 24 ...
       - uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm lint
       - run: pnpm typecheck
+      # ... and run the tests on the Node version this job promises.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --version
       - run: pnpm test
       # The package is ESM-only, but must stay loadable from CommonJS via
       # require(esm). That only works without top-level await, so assert it.
@@ -38,6 +46,7 @@ jobs:
   e2e:
     name: Kitchen sink ${{ matrix.app }} (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -45,7 +54,7 @@ jobs:
         app: [kitchen-sink-react-express, kitchen-sink-react-fastify, kitchen-sink-vue-express, kitchen-sink-vue-fastify]
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v7
         with:
           node-version: 24

@@ -59,8 +59,7 @@ describe.each(platforms)('fragments (%s)', (platform, adapter) => {
     app = instance
       ? moduleRef.createNestApplication(instance as never, { logger: false })
       : moduleRef.createNestApplication({ logger: false })
-    await app.init()
-    if (platform === 'fastify') await app.getHttpAdapter().getInstance().ready()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {

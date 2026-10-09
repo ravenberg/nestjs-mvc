@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 or Vue 3.5, and Node 20.19+, 22.12+ or 24+. {% .lead %}
+Here's how to add nestjs-mvc to a NestJS project. You'll need NestJS 12, React 19 or Vue 3.5, and Node 22.12+ or 24+. {% .lead %}
 
 Every page in these docs shows its examples in React or in Vue. Pick yours, and the whole site follows:
 
@@ -159,6 +159,12 @@ Your pages are `.vue` files, which `tsc` can't read. `vue-tsc` can:
 
 ```sh
 npx vue-tsc -p tsconfig.vue.json
+```
+
+`vue-tsc` needs TypeScript 6, the version a new Nest project starts with, so this works as it is. TypeScript 7 doesn't have the programming interface that `vue-tsc` and the Nest CLI build on yet. If you want the `tsc` command of TypeScript 7 anyway, install 6 under the name `typescript`, where `vue-tsc` and the Nest CLI look for it, and 7 next to it:
+
+```sh
+npm install -D typescript@npm:@typescript/typescript6 @typescript/native@npm:typescript@7
 ```
 {% /framework %}
 

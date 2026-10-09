@@ -241,7 +241,7 @@ importers:
         version: 3.7.0(axios@1.19.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@inertiajs/vue3':
         specifier: ^3.7.0
-        version: 3.7.0(axios@1.19.0)(vue@3.5.42(typescript@7.0.2))
+        version: 3.7.0(axios@1.19.0)(vue@3.5.42(@typescript/typescript6@6.0.2))
       '@nestjs/common':
         specifier: ^12.0.1
         version: 12.0.1(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -271,7 +271,7 @@ importers:
         version: 1.42.0(react@19.2.8)
       lucide-vue-next:
         specifier: ^1.0.0
-        version: 1.0.0(vue@3.5.42(typescript@7.0.2))
+        version: 1.0.0(vue@3.5.42(@typescript/typescript6@6.0.2))
       nestjs-mvc:
         specifier: workspace:*
         version: link:../../../packages/core
@@ -292,7 +292,7 @@ importers:
         version: 1.1.1(better-sqlite3@12.11.1)
       vue:
         specifier: ^3.5.42
-        version: 3.5.42(typescript@7.0.2)
+        version: 3.5.42(@typescript/typescript6@6.0.2)
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -309,15 +309,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.4(@types/react@19.2.18)
+      '@typescript/native':
+        specifier: npm:typescript@^7.0.2
+        version: typescript@7.0.2
       typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
+        specifier: npm:@typescript/typescript6@^6.0.2
+        version: '@typescript/typescript6@6.0.2'
       vite:
         specifier: ^8.3.1
         version: 8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
       vue-tsc:
         specifier: ^3.3.11
-        version: 3.3.11(typescript@7.0.2)
+        version: 3.3.11(@typescript/typescript6@6.0.2)
 
   apps/kitchen-sink/vue-express:
     dependencies:
@@ -1692,6 +1695,10 @@ packages:
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [win32]
+
+  '@typescript/typescript6@6.0.2':
+    resolution: {integrity: sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w==}
+    hasBin: true
 
   '@ungap/structured-clone@1.4.0':
     resolution: {integrity: sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==}
@@ -3404,6 +3411,11 @@ packages:
       typeorm-aurora-data-api-driver:
         optional: true
 
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
@@ -3940,6 +3952,15 @@ snapshots:
       laravel-precognition: 2.0.0(axios@1.19.0)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
+    transitivePeerDependencies:
+      - axios
+
+  '@inertiajs/vue3@3.7.0(axios@1.19.0)(vue@3.5.42(@typescript/typescript6@6.0.2))':
+    dependencies:
+      '@inertiajs/core': 3.7.0(axios@1.19.0)
+      es-toolkit: 1.52.0
+      laravel-precognition: 2.0.0(axios@1.19.0)
+      vue: 3.5.42(@typescript/typescript6@6.0.2)
     transitivePeerDependencies:
       - axios
 
@@ -4550,6 +4571,10 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
+
+  '@typescript/typescript6@6.0.2':
+    dependencies:
+      '@typescript/old': typescript@6.0.3
 
   '@ungap/structured-clone@1.4.0': {}
 
@@ -5494,9 +5519,9 @@ snapshots:
     dependencies:
       react: 19.2.8
 
-  lucide-vue-next@1.0.0(vue@3.5.42(typescript@7.0.2)):
+  lucide-vue-next@1.0.0(vue@3.5.42(@typescript/typescript6@6.0.2)):
     dependencies:
-      vue: 3.5.42(typescript@7.0.2)
+      vue: 3.5.42(@typescript/typescript6@6.0.2)
 
   magic-string@0.30.21:
     dependencies:
@@ -6194,6 +6219,8 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
+  typescript@6.0.3: {}
+
   typescript@7.0.2:
     optionalDependencies:
       '@typescript/typescript-aix-ppc64': 7.0.2
@@ -6315,11 +6342,28 @@ snapshots:
 
   vscode-uri@3.2.0: {}
 
+  vue-tsc@3.3.11(@typescript/typescript6@6.0.2):
+    dependencies:
+      '@volar/typescript': 2.4.28
+      '@vue/language-core': 3.3.11
+      typescript: '@typescript/typescript6@6.0.2'
+
   vue-tsc@3.3.11(typescript@7.0.2):
     dependencies:
       '@volar/typescript': 2.4.28
       '@vue/language-core': 3.3.11
       typescript: 7.0.2
+    optional: true
+
+  vue@3.5.42(@typescript/typescript6@6.0.2):
+    dependencies:
+      '@vue/compiler-dom': 3.5.42
+      '@vue/compiler-sfc': 3.5.42
+      '@vue/runtime-dom': 3.5.42
+      '@vue/server-renderer': 3.5.42
+      '@vue/shared': 3.5.42
+    optionalDependencies:
+      typescript: '@typescript/typescript6@6.0.2'
 
   vue@3.5.42(typescript@7.0.2):
     dependencies:
