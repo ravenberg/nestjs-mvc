@@ -148,9 +148,12 @@ test.describe('Forms', () => {
     await expect(todo).not.toContainText('saving…', { timeout: 5_000 })
 
     // The optimistic copy shows for the 1.2 s the server takes, then is rolled back with the error.
+    // The page posts with `only: ['todos']`, so the redirect back is a partial reload that must
+    // still carry the errors; otherwise onSuccess runs and resets the form.
     await page.getByPlaceholder('New todo…').fill('fail')
     await page.getByRole('button', { name: 'Add' }).click()
     await expect(page.getByText('The server rejected this one on purpose.')).toBeVisible()
+    await expect(page.getByPlaceholder('New todo…')).toHaveValue('fail')
     await expect(page.getByRole('listitem').filter({ hasText: 'fail' })).toHaveCount(0)
   })
 

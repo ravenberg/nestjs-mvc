@@ -17,7 +17,7 @@ export default function OptimisticUpdates({ todos }: { todos: Todo[] }) {
       .optimistic<{ todos: Todo[] }>((props) => ({
         todos: [...props.todos, { id: -Date.now(), title: form.data.title, done: false, pending: true }],
       }))
-      .post('/features/forms/optimistic-updates/todos', { onSuccess: () => form.reset() })
+      .post('/features/forms/optimistic-updates/todos', { only: ['todos'], onSuccess: () => form.reset() })
 
   const toggle = (todo: Todo) =>
     router.patch(

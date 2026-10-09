@@ -124,7 +124,7 @@ router
   .patch(`/tickets/${ticket.id}`, { status }, { only: ['tickets'] })
 ```
 
-The browser follows the redirect with the same request, so the page that comes back is a reload of just `tickets`, the same as in [Loading only what you need](/docs/partial-reloads). Make those props functions in your controller, so the queries of the other props don't run at all.
+The browser follows the redirect with the same request, so the page that comes back is a reload of just `tickets`, the same as in [Loading only what you need](/docs/partial-reloads). Make those props functions in your controller, so the queries of the other props don't run at all. Validation errors come back too, even though `only` doesn't name them, so a refused change still shows its error.
 
 When the change also affects [data on every page](/docs/shared-data), like a count of open tickets in the menu, name that prop too: `only: ['tickets', 'openTickets']`.
 

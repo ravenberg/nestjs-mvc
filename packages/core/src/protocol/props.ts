@@ -326,33 +326,41 @@ interface Resolved {
   value?: unknown
 }
 
-async function resolveNode(value: unknown, path: string, state: WalkState): Promise<Resolved> {
-  // Always-props ignore the partial filters, but only within a branch we already
-  // evaluate: honouring them inside a pruned branch would mean calling every
-  // closure on every partial reload, defeating laziness.
-  const match = value instanceof AlwaysProp ? 'full' : matchPath(path, state.partial)
+async function resolveNode(value: unknown, path: string, state: WalkState, insideAlways = false): Promise<Resolved> {
+  // An always-prop is sent whole, whatever `only` and `except` say: the client
+  // replaces a top-level prop wholesale, so a child left out here is lost there.
+  // This holds only within a branch we already evaluate: honouring one inside a
+  // pruned branch would mean calling every closure on every partial reload,
+  // defeating laziness.
+  const requested = matchPath(path, state.partial)
+  const inAlways = insideAlways || value instanceof AlwaysProp
+  const match = inAlways ? 'full' : requested
   if (match === 'none') return { include: false }
+
+  // Under an always-prop everything matches, so optional and deferred props
+  // resolve. A part the partial reload did not ask for also travels as plain
+  // data: merge and scroll props are not labelled (the client would append the
+  // same items on every reload), and a once prop the client holds stays out.
+  const plain = insideAlways && requested === 'none'
 
   const deferred = value instanceof DeferProp || (value instanceof ScrollProp && value.deferGroup !== null)
 
-  // The metadata is sent whether or not the value is: it is what lets the client
-  // fill its remembered copy back in. On a partial reload the client asked for
-  // this path explicitly, so it is always resolved afresh.
-  if (value instanceof OnceProp && (state.partial === null || match === 'full')) {
-    state.onceProps[value.key ?? path] = { prop: path, expiresAt: value.expiresAt() }
+  if (value instanceof OnceProp) {
+    const key = value.key ?? path
+    const held = !value.fresh && !state.refreshOnce.includes(key) && state.loadedOnce.includes(key)
+    // A partial reload keeps the client's copy and its metadata; sending the
+    // metadata again would only push the copy's expiry forward.
+    if (held && plain) return { include: false }
+    // The metadata is sent whether or not the value is: it is what lets the client
+    // fill its remembered copy back in. On a partial reload that asks for this
+    // path it is always resolved afresh.
+    if (state.partial === null || match === 'full') state.onceProps[key] = { prop: path, expiresAt: value.expiresAt() }
+    // The client still has it: skip the closure and leave the prop out.
+    if (held && state.partial === null) return { include: false }
   }
 
   if (state.partial === null) {
     if (value instanceof OptionalProp) return { include: false }
-    if (
-      value instanceof OnceProp &&
-      !value.fresh &&
-      !state.refreshOnce.includes(value.key ?? path) &&
-      state.loadedOnce.includes(value.key ?? path)
-    ) {
-      // The client still has it: skip the closure and leave the prop out.
-      return { include: false }
-    }
     if (deferred) {
       // Announced by dot-path, grouped, and resolved in the client's follow-up request.
       const group = value instanceof DeferProp ? value.group : (value as ScrollProp).deferGroup!
@@ -363,11 +371,11 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
       return { include: false }
     }
   } else if ((value instanceof OptionalProp || deferred) && match !== 'full') {
-    // On a partial reload these resolve only when explicitly selected.
+    // On a partial reload these resolve only when selected, or inside an always-prop.
     return { include: false }
   }
 
-  if (value instanceof MergeProp) labelMerge(value, path, state)
+  if (value instanceof MergeProp && !plain) labelMerge(value, path, state)
 
   let resolved: unknown
   try {
@@ -387,16 +395,17 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
   }
 
   if (value instanceof ScrollProp) {
-    labelScrollMerge(value, path, state)
-    // `reset` tells the client to forget its cursor and re-sync to this page.
-    state.scrollProps[path] = { ...value.cursor(resolved, path), reset: state.reset.includes(path) }
+    if (!plain) labelScrollMerge(value, path, state)
+    // `reset` tells the client to forget its cursor and re-sync to this page;
+    // plain data has replaced the pages it had.
+    state.scrollProps[path] = { ...value.cursor(resolved, path), reset: plain || state.reset.includes(path) }
   }
 
   if (isPlainObject(resolved)) {
     const out: Record<string, unknown> = {}
     let kept = false
     for (const [key, child] of Object.entries(resolved)) {
-      const result = await resolveNode(child, path === '' ? key : `${path}.${key}`, state)
+      const result = await resolveNode(child, path === '' ? key : `${path}.${key}`, state, inAlways)
       if (result.include) {
         out[key] = result.value
         kept = true
@@ -410,7 +419,7 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
   if (Array.isArray(resolved)) {
     const out: unknown[] = []
     for (const [index, child] of resolved.entries()) {
-      const result = await resolveNode(child, `${path}.${index}`, state)
+      const result = await resolveNode(child, `${path}.${index}`, state, inAlways)
       if (result.include) out.push(result.value)
     }
     return { include: true, value: out }
@@ -431,15 +440,19 @@ async function resolveNode(value: unknown, path: string, state: WalkState): Prom
  *   defer props skipped but listed in `deferredProps` per group
  * - partial reload: only the requested paths (minus `except`) are evaluated, so a
  *   closure guarding an unrequested branch is never called; always-props are
- *   included regardless
+ *   included whole regardless, and what the reload did not ask for inside them
+ *   travels as plain data (optional/defer resolved, merge/scroll unlabelled, a
+ *   once prop the client holds left out)
  * - merge props are listed in `mergeProps`, `prependProps` or `deepMergeProps`
  *   (plus `matchPropsOn` for their identifying fields) unless reset via
  *   X-Inertia-Reset
  * - scroll props label their inner array in `mergeProps` or `prependProps`
  *   (per `mergeIntent`, from X-Inertia-Infinite-Scroll-Merge-Intent) and emit
  *   their cursor under `scrollProps`; a reset drops the label and flags the cursor
- * - once props are skipped when their key is in `loadedOnce` (unless `fresh`),
- *   and always described in `onceProps` so the client can fill its copy back in
+ * - once props are skipped when their key is in `loadedOnce` (unless `fresh`) on
+ *   a full load, and still described in `onceProps` so the client can fill its
+ *   copy back in; inside an always-prop a partial reload that does not ask for
+ *   one skips it too, without metadata, since the client keeps its own
  */
 export async function resolveProps(
   raw: Record<string, unknown>,

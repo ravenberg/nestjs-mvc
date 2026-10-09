@@ -82,6 +82,17 @@ describe('once() props', () => {
     expect(notAsked.onceProps).toEqual({})
   })
 
+  it('resolves again on a partial reload that asks for a path inside it', async () => {
+    const settings = vi.fn(() => ({ theme: 'dark', locale: 'nl' }))
+
+    const { props } = await resolveProps({ settings: once(settings), other: 1 }, partial(['settings.theme']), {
+      loadedOnce: ['settings'],
+    })
+
+    expect(props).toEqual({ settings: { theme: 'dark' } })
+    expect(settings).toHaveBeenCalledOnce()
+  })
+
   it('works at any depth, keyed by dot path unless `as` says otherwise', async () => {
     const closure = vi.fn(() => ['admin'])
     const raw = () => ({ auth: { user: 'lee', permissions: once(closure) } })
@@ -130,7 +141,7 @@ describe('once() on the wire (e2e)', () => {
       controllers: [PagesController],
     }).compile()
     app = moduleRef.createNestApplication()
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {

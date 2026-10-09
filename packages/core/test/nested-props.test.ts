@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { always, defer, merge, optional, resolveProps } from '../src/protocol/props'
+import { always, defer, merge, once, optional, resolveProps, scroll } from '../src/protocol/props'
 
 describe('nested prop resolution', () => {
   const nested = () => ({
@@ -77,6 +77,157 @@ describe('nested prop resolution', () => {
     // it does not force evaluation of ones we skipped.
     expect(props).toEqual({})
     expect(authFactory).not.toHaveBeenCalled()
+  })
+
+  it('sends an always-prop whole on a partial reload that asks for something else', async () => {
+    const raw = {
+      errors: always({ title: 'Give the incident a title.', createUser: { email: 'Taken.' } }),
+      report: always(() => ({ route: { path: '/incidents/:id' }, count: 3, tags: [{ id: 1 }] })),
+      timeline: [1, 2],
+      other: 'x',
+    }
+
+    const { props } = await resolveProps(raw, { only: ['timeline'], except: [] })
+
+    // The client replaces a top-level prop wholesale, so a child left out here
+    // would be gone there: a failed form would look like it succeeded.
+    expect(props).toEqual({
+      errors: { title: 'Give the incident a title.', createUser: { email: 'Taken.' } },
+      report: { route: { path: '/incidents/:id' }, count: 3, tags: [{ id: 1 }] },
+      timeline: [1, 2],
+    })
+  })
+
+  it('keeps an always-prop whole against only and except naming its children', async () => {
+    const raw = () => ({
+      errors: always({ 'user.name': 'Required.', email: 'Invalid.' }),
+      list: always([{ id: 1 }, { id: 2 }]),
+    })
+    const whole = { errors: { 'user.name': 'Required.', email: 'Invalid.' }, list: [{ id: 1 }, { id: 2 }] }
+
+    expect((await resolveProps(raw(), { only: ['errors.email'], except: [] })).props).toEqual(whole)
+    expect((await resolveProps(raw(), { only: [], except: ['errors.user', 'list.0'] })).props).toEqual(whole)
+    expect((await resolveProps(raw(), { only: [], except: ['errors', 'list'] })).props).toEqual(whole)
+  })
+
+  it('sends a nested always-prop whole within an evaluated branch', async () => {
+    const raw = { auth: () => ({ user: { id: 1 }, flash: always({ message: 'Saved', level: 'info' }) }) }
+
+    const { props } = await resolveProps(raw, { only: ['auth.user'], except: [] })
+    expect(props).toEqual({ auth: { user: { id: 1 }, flash: { message: 'Saved', level: 'info' } } })
+  })
+
+  it('resolves optional and deferred props inside an always-prop on a partial reload', async () => {
+    const slow = vi.fn(() => 'slow')
+    const heavy = vi.fn(() => 'heavy')
+    const raw = () => ({ report: always({ count: 3, slow: defer(slow), heavy: optional(heavy) }), timeline: [1] })
+
+    // A full load keeps their own rules: deferred is announced, optional left out.
+    const full = await resolveProps(raw(), null)
+    expect(full.props.report).toEqual({ count: 3 })
+    expect(full.deferredProps).toEqual({ default: ['report.slow'] })
+    expect(slow).not.toHaveBeenCalled()
+    expect(heavy).not.toHaveBeenCalled()
+
+    // A partial reload replaces `report` on the client, so a deferred value left
+    // out would disappear from the page with nothing to fetch it back.
+    const partial = await resolveProps(raw(), { only: ['timeline'], except: [] })
+    expect(partial.props).toEqual({ report: { count: 3, slow: 'slow', heavy: 'heavy' }, timeline: [1] })
+    expect(partial.deferredProps).toEqual({})
+  })
+
+  it('sends merge and scroll props inside an always-prop unlabelled unless the reload asks for them', async () => {
+    const page = { data: [1, 2], currentPage: 1, nextPage: 2, previousPage: null }
+    const raw = () => ({
+      report: always({
+        feed: merge(() => [{ id: 1 }], { matchOn: 'id' }),
+        items: scroll(() => page),
+        later: scroll(() => page, { defer: true }),
+      }),
+      timeline: [1],
+    })
+    const cursor = { pageName: 'page', previousPage: null, nextPage: 2, currentPage: 1 }
+
+    // Labelled, the client would append the same items again on every poll.
+    const other = await resolveProps(raw(), { only: ['timeline'], except: [] })
+    expect(other.props.report).toEqual({ feed: [{ id: 1 }], items: page, later: page })
+    expect(other.mergeProps).toEqual([])
+    expect(other.matchPropsOn).toEqual([])
+    expect(other.deferredProps).toEqual({})
+    // The scroll pages it had are replaced, so its cursor starts over.
+    expect(other.scrollProps).toEqual({
+      'report.items': { ...cursor, reset: true },
+      'report.later': { ...cursor, reset: true },
+    })
+
+    const asked = await resolveProps(raw(), { only: ['report.feed', 'report.items'], except: [] })
+    expect(asked.mergeProps).toEqual(['report.feed', 'report.items.data'])
+    expect(asked.matchPropsOn).toEqual(['report.feed.id'])
+    expect(asked.scrollProps['report.items'].reset).toBe(false)
+  })
+
+  it('leaves out a once prop inside an always-prop that the client still holds', async () => {
+    const countries = vi.fn(() => ['NL', 'BE'])
+    const raw = () => ({ form: always({ title: 'New', countries: once(countries, { until: 60 }) }), timeline: [1] })
+
+    // The client fills `form.countries` back in from its own copy, and keeps its
+    // own metadata: new metadata would push the copy's expiry forward.
+    const held = await resolveProps(raw(), { only: ['timeline'], except: [] }, { loadedOnce: ['form.countries'] })
+    expect(held.props).toEqual({ form: { title: 'New' }, timeline: [1] })
+    expect(held.onceProps).toEqual({})
+    expect(countries).not.toHaveBeenCalled()
+
+    // Not held yet, or marked for refresh: resolved.
+    const missing = await resolveProps(raw(), { only: ['timeline'], except: [] })
+    expect(missing.props.form).toEqual({ title: 'New', countries: ['NL', 'BE'] })
+    expect(missing.onceProps).toHaveProperty(['form.countries', 'prop'], 'form.countries')
+    const refreshed = await resolveProps(
+      raw(),
+      { only: ['timeline'], except: [] },
+      { loadedOnce: ['form.countries'], refreshOnce: ['form.countries'] },
+    )
+    expect(refreshed.props.form).toEqual({ title: 'New', countries: ['NL', 'BE'] })
+    expect(countries).toHaveBeenCalledTimes(2)
+  })
+
+  it('resolves a held once prop inside an always-prop when the reload asks for it', async () => {
+    const options = vi.fn(() => ({ countries: ['NL'], currencies: ['EUR'] }))
+    const raw = () => ({ form: always({ title: 'New', options: once(options) }), timeline: [1] })
+    const whole = { title: 'New', options: { countries: ['NL'], currencies: ['EUR'] } }
+    const held = { loadedOnce: ['form.options'] }
+
+    // By name, through the always-prop, through a path inside it, and through an
+    // except-only reload that leaves it in: resolved afresh, as outside an always-prop.
+    for (const partial of [
+      { only: ['form.options'], except: [] },
+      { only: ['form'], except: [] },
+      { only: ['form.options.countries'], except: [] },
+      { only: [], except: ['timeline'] },
+    ]) {
+      expect((await resolveProps(raw(), partial, held)).props.form).toEqual(whole)
+    }
+    expect(options).toHaveBeenCalledTimes(4)
+  })
+
+  it('honours fresh and the shared key of a once prop inside an always-prop', async () => {
+    const countries = vi.fn(() => ['NL', 'BE'])
+    const partial = { only: ['timeline'], except: [] }
+
+    const fresh = await resolveProps(
+      { form: always({ countries: once(countries, { fresh: true }) }), timeline: [1] },
+      partial,
+      { loadedOnce: ['form.countries'] },
+    )
+    expect(fresh.props.form).toEqual({ countries: ['NL', 'BE'] })
+    expect(countries).toHaveBeenCalledOnce()
+
+    const shared = await resolveProps(
+      { form: always({ countries: once(countries, { as: 'countries' }) }), timeline: [1] },
+      partial,
+      { loadedOnce: ['countries'] },
+    )
+    expect(shared.props.form).toEqual({})
+    expect(countries).toHaveBeenCalledOnce()
   })
 
   it('records nested merge props by dot path and honours reset', async () => {

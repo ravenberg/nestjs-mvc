@@ -150,7 +150,11 @@ import { always, requestState } from 'nestjs-mvc'
 requestState(req).shared.unread = always(() => this.messages.countUnread())
 ```
 
-Use it on a top level key. An `always()` inside an object is only sent when that object itself is part of the response. And since its function runs on every request to the page (each deferred prop, each poll tick), keep it cheap.
+Use it on a top level key. An `always()` inside an object is only sent when that object itself is part of the response.
+
+On a reload an `always()` value is sent whole, whatever `only` or `except` name. A `defer()` or `optional()` inside it is worked out too, where it would otherwise wait until it's asked for. A list from `merge()` or `scroll()` inside it replaces the list on the page instead of growing it, unless the reload asks for that list. A [`once()`](/docs/once) inside it works as usual, because the browser keeps its own copy, so its function isn't called again on every reload.
+
+Since it's worked out on every request to the page (each deferred prop, each poll tick), keep it cheap, and give anything slow or paginated a key of its own.
 
 ### Other helpers work here too
 

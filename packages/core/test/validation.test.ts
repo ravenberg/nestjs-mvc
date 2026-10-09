@@ -49,7 +49,7 @@ describe('validation errors (e2e)', () => {
       controllers: [FormsController],
     }).compile()
     app = moduleRef.createNestApplication()
-    await app.init()
+    await app.listen(0, '127.0.0.1')
   })
 
   afterAll(async () => {
@@ -105,6 +105,23 @@ describe('validation errors (e2e)', () => {
       .set('X-Inertia-Partial-Data', 'title')
     expect(res.status).toBe(200)
     expect(res.body.props).toEqual({ title: 'New user', errors: {} })
+  })
+
+  it('includes the whole error bag on a partial reload that does not name it', async () => {
+    const partial = (req: request.Test) =>
+      req
+        .set('X-Inertia', 'true')
+        .set('X-Inertia-Partial-Component', 'Users/Create')
+        .set('X-Inertia-Partial-Data', 'title')
+    const flash = await partial(request(app.getHttpServer()).post('/users'))
+      .set('X-Inertia-Error-Bag', 'createUser')
+      .set('Referer', '/users/create')
+      .send({})
+
+    const cookie = errorsCookie(flash)!.split(';')[0]
+    const res = await partial(request(app.getHttpServer()).get('/users/create')).set('Cookie', cookie)
+
+    expect(res.body.props).toEqual({ title: 'New user', errors: { createUser: { email: 'email must be an email' } } })
   })
 
   it('scopes errors under the bag from X-Inertia-Error-Bag', async () => {

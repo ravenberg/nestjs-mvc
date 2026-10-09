@@ -166,8 +166,7 @@ describe.each(platforms)('flash on the wire (%s)', (platform, adapter) => {
     }).compile()
     const instance = adapter()
     app = instance ? moduleRef.createNestApplication(instance as never, { logger: false }) : moduleRef.createNestApplication({ logger: false })
-    await app.init()
-    if (platform === 'fastify') await app.getHttpAdapter().getInstance().ready()
+    await app.listen(0, '127.0.0.1')
     return app
   }
 
@@ -279,6 +278,19 @@ describe.each(platforms)('flash on the wire (%s)', (platform, adapter) => {
     expect(back.body.flash).toBeUndefined()
   })
 
+  it('carries the errors whole into a redirect that is a partial reload', async () => {
+    // `form.post(url, { only: ['organizations'] })`: the browser follows the
+    // redirect with the same partial-reload headers, which do not name `errors`.
+    const partial = (req: request.Test) =>
+      inertia(req).set('X-Inertia-Partial-Component', 'Contacts/Create').set('X-Inertia-Partial-Data', 'organizations')
+    const post = await partial(request(app.getHttpServer()).post('/organizations').set('Referer', '/contacts/create'))
+      .send({})
+    expect(post.status).toBe(302)
+
+    const back = await partial(request(app.getHttpServer()).get('/contacts/create')).set('Cookie', flashCookie(post)!)
+    expect(back.body.props).toEqual({ errors: { name: 'Name is required.' }, organizations: ['Acme'] })
+  })
+
   it('renders the JSON page object and the HTML shell', async () => {
     const json = await inertia(request(app.getHttpServer()).get('/contacts/create'))
     expect(json.headers['x-inertia']).toBe('true')
@@ -304,7 +316,7 @@ describe('flash with a session store', () => {
       req.session = session
       next()
     })
-    await app.init()
+    await app.listen(0, '127.0.0.1')
 
     const post = await request(app.getHttpServer())
       .post('/organizations')
