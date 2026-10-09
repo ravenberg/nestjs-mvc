@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "PORT=3009 tsx watch src/main.ts",
     "build": "vite build",
     "start:prod": "NODE_ENV=production tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"

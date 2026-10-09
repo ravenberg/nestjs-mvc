@@ -52,17 +52,17 @@ Quick show of hands to warm the room up: who has worked on a server-rendered app
 <img class="illustration" src="/illustrations/notioly/newspaper.svg" alt="">
 </div>
 
-Note: Set the scene: 2005, Rails is one year old, Django and Symfony just came out, PHP is everywhere. The mental model is simple.
+Note: Rails is one year old, Django and Symfony just came out, PHP is everywhere. The mental model is simple.
 
-**Every click is a round trip to the server.** The browser asks for a URL, the server builds the page, the browser paints it. Request in, HTML out.
+The browser asks for a URL, the server builds the page. Request in, HTML out.
 
-**The whole page comes back as HTML.** No JSON, no client state. The server owns everything, the browser is a viewer.
+No JSON, no client state. The server owns everything, the browser is a viewer.
 
-**Forms just POST, and the server redirects.** Submit, validate, save, redirect, render. Nobody wrote a fetch call for a form.
+Submit, validate, save, redirect, render. Nobody wrote a fetch call for a form.
 
-**JavaScript only for sprinkles.** jQuery arrives in 2006. A datepicker, an accordion, a bit of Ajax to avoid a full reload. Nobody called it a frontend. It was decoration on a page the server owned.
+Javascript just for small things; jQuery arrives in 2006. A datepicker, an accordion, a bit of Ajax to avoid a full reload. Nobody called it a frontend. It was decoration on a page the server owned.
 
-Keep one phrase in the air for later: one framework, one language, one repo, and it shipped the whole app.
+One framework, one monolith shipped the whole app.
 
 ---
 
@@ -82,7 +82,10 @@ Keep one phrase in the air for later: one framework, one language, one repo, and
 <img class="illustration" src="/illustrations/notioly/touch-screen.svg" alt="">
 </div>
 
-Note: **Native apps: instant, animated, offline.** The iPhone in 2007, the App Store in 2008. Native apps kept their state, slid between screens, and worked on a bad connection.
+Note: 
+Smartphones raised the bar
+
+**Native apps: instant, animated, offline.** The iPhone in 2007, the App Store in 2008. Native apps were different. They kept their state, slid between screens, and worked on a bad connection.
 
 **No white flash between screens.** That is the thing everyone noticed. Tap, and the screen slides. On the web: click, white page, wait, paint.
 
@@ -116,7 +119,7 @@ Note: **The UI moves into the browser.** Backbone in 2010, AngularJS in 2010, Re
 
 **Two codebases, two teams.** And because the halves were so different, we split the people too. Frontend developers and backend developers became separate job titles.
 
-Say this clearly: this was a conscious, defensible decision. Nobody was stupid. We wanted a rich, app-like experience, and in 2012 this was the only way to get it.
+This was a conscious, defensible decision. Nobody was stupid. We wanted a rich, app-like experience, and in 2012 this was the only way to get it.
 
 ---
 
@@ -357,7 +360,7 @@ Note: **SSR, server components, server actions.** Next.js put rendering back on 
 
 <img class="illustration small" src="/illustrations/notioly/crossroad.svg" alt="">
 
-Note: Close the act on this line. The reasons were valid: templates could not give us the native feel, so we moved the view to the browser and paid for it in deployments, tooling, contracts, teams, and now agent context.
+Note: The reasons were valid: templates could not give us the native feel, so we moved the view to the browser and paid for it in deployments, tooling, contracts, teams, and now agent context.
 
 The question for the rest of the talk: do we still have to pay? Spoiler: no.
 
@@ -388,14 +391,15 @@ Note: Act two is the pattern. A bit of education, then a personal story, then a 
 <ul>
 <li>Smalltalk, 1979: separate knowing, deciding and showing</li>
 <li>On the web: request in, controller decides, view renders</li>
-<li>Nothing in the pattern says the view has to be a template</li>
 </ul>
 
-Note: **Smalltalk, 1979.** Trygve Reenskaug at Xerox PARC. Older than most of us. The idea: separate what the app knows, from what it decides, from what it shows.
+Note:
+MVC was the pattern used to build applications with 
+
+**Smalltalk, 1979.** Trygve Reenskaug at Xerox PARC. Older than most of us. The idea: separate what the app knows, from what it decides, from what it shows.
 
 **On the web it became a pipeline.** A request hits a controller. The controller talks to the model, your data and your rules. It hands a result to a view, and the view becomes the response.
 
-**Nothing in the pattern says the view has to be a template.** Underline this, the rest of the talk hangs on it. The pattern says the view shows what the controller decided. It does not say how.
 
 ---
 
@@ -412,7 +416,7 @@ Note: **Smalltalk, 1979.** Trygve Reenskaug at Xerox PARC. Older than most of us
 
 <p>The V was always a template. A template renders a page, and a page is not an app.</p>
 
-Note: Read two or three rows, not all six. Every heavyweight framework came with its own templating language for the V, server-owned, and the framework owned the whole triangle.
+Note: Every heavyweight framework came with its own templating language for the View, server-owned, and the framework owned the whole triangle.
 
 That is what batteries included meant in practice: model, view and controller in one box, with authentication, mail and jobs around it. One developer could build a complete product because the framework had an opinion about all three letters.
 
@@ -427,8 +431,8 @@ That is what batteries included meant in practice: model, view and controller in
 
 <ul>
 <li>Modules, dependency injection, guards, pipes</li>
-<li>The Laravel and Rails level of ambition, in TypeScript</li>
 <li>A backend framework that happens to speak HTTP</li>
+<li>Learned about shared state</li>
 <li>Then I found the MVC page in the docs</li>
 </ul>
 
@@ -436,11 +440,10 @@ That is what batteries included meant in practice: model, view and controller in
 <img class="illustration" src="/illustrations/notioly/learning.svg" alt="">
 </div>
 
-Note: Personal story, keep it light. I come from the frontend side, and I wanted a backend I could take seriously in the language I already write.
+Note: In between clients -> thinking about my role as a frontend developer in the age of AI. Figured that positioning myself as a full-stack developer would be a good idea, and NestJS was the framework I picked to learn.
 
 **Modules, dependency injection, guards, pipes.** NestJS, 2017, Kamil Myśliwiec. It looks like Angular on the server, on purpose. Modules own their providers, everything is injected, everything is testable.
 
-**The Laravel and Rails level of ambition, in TypeScript.** A real request pipeline: authentication in a guard, validation in a pipe, cross-cutting concerns in an interceptor. Queues, scheduling, websockets, config, all official.
 
 **A backend framework that happens to speak HTTP.** Not a rendering layer with a server bolted on. The other way round.
 
@@ -528,13 +531,13 @@ If the question is "which of these lets one developer build a whole product", th
 ## Handlebars is fine, but
 
 <ul>
-<li>Search that filters as you type (Linear)</li>
-<li>Drag and drop between columns (Trello)</li>
-<li>Editing a cell in place (Notion, Airtable)</li>
+<li>Search that filters as you type</li>
+<li>Drag and drop between columns</li>
+<li>Editing a cell in place</li>
 <li>"That name is taken", before you submit</li>
 <li>Feeds that load more as you scroll</li>
 <li>Dashboards that refresh themselves</li>
-<li>Instant actions with an undo (Gmail)</li>
+<li>Instant actions with an undo</li>
 <li>Wizards that remember every step</li>
 </ul>
 
@@ -572,19 +575,20 @@ Every one of these needs state in the browser and partial updates from the serve
 
 <img class="illustration small" src="/illustrations/notioly/fresh-idea.svg" alt="">
 
-Note: Pause before this one. Put the two things next to each other: a backend framework with a weak V, and a frontend framework that is the best V ever built, with no backend behind it. What if we plug the one into the other?
+Note: 
+So I wondered; what if the View in MVC could be my front-end library? Like React or Vue?! What if we plug the one into the other?
 
-Keep the M and the C exactly as they are in NestJS. Replace the template with a component tree. The controller returns props instead of a template context. The component renders them. Links and forms talk to controllers. No API in between, because there is nothing in between.
+Keep the Model and the Controller exactly as they are in NestJS. Replace the template with a component tree. 
 
-Then ask the room: does that sound too simple? Because it is not a new architecture. It is MVC, with the V we actually want.
+This is what I started to pursue. And this is where I arrived at.
 
 ---
 
 <!-- .slide: class="center-slide" -->
 
-<p class="kicker">The reveal</p>
+[//]: # (<p class="kicker">The reveal</p>)
 
-# It works.
+# NestJS-MVC
 
 <p>NestJS controllers return React or Vue pages.<br>It feels like a single-page app. You build it like a monolith.</p>
 
@@ -1088,23 +1092,35 @@ Note: Introduce the app in two sentences. Todoish is a todo app in the style of 
 
 Before the talk: app running, logged in as Ada, the Network tab open in a second window, a terminal ready for the collaborator script, an .exe and a PNG on the desktop, and a private window ready for step 9. Nine steps is about twelve minutes; if time is short, drop 4, 5 and 7.
 
-1. Prefetch. On stage: hover Inbox or a project in the sidebar, then click. They see: a prefetch request on the hover, then a click that comes from the cache, 0 ms. Code: frontend/layouts/AppLayout.tsx.
+1. Inloggen via een diepe link
+Doen: open een privévenster en ga direct naar /upcoming. Je komt op /login uit. Typ eerst een fout wachtwoord en log daarna in als ada@todoish.dev / password.
+Zien: bij het foute wachtwoord staat er een foutmelding onder het e-mailveld. Na het inloggen kom je op Upcoming terecht, de pagina die je eerst wilde zien, en er verschijnt "Welcome back, Ada."
+Wat het framework doet:
+- De AuthGuard is een gewone NestJS-guard die een UnauthorizedException gooit. nestjs-mvc maakt daar zelf een redirect naar /login van en onthoudt waar je heen wilde. .intended('/today') stuurt je daarna terug naar die plek.
+- Bij een fout wachtwoord gooit de controller een ValidationException. De fout komt vanzelf onder het juiste veld in het React-formulier terecht, zonder een API of fetch-code.
+- De welkomstmelding is een flash message, en die werkt zonder server-side sessie.
+- Het formulier is automatisch tegen CSRF beschermd. Je noemde "CORS", maar ik denk dat je CSRF bedoelde. Je hoeft er niets voor te doen. Alleen de webhook zet het bewust uit met @SkipCsrf().
+- Code: src/auth/auth.controller.ts, src/auth/auth.guard.ts
 
-2. useHttp. On stage: press Q and type "Pay rent every month p2 #Home @errands". They see: the words light up while you type, one JSON request, and the page does not change. Code: src/tasks/tasks.controller.ts (parse), frontend/components/QuickAdd.tsx.
 
-3. Optimistic update + flash. On stage: tick a task on Today, then click Undo. They see: the task disappears at once, only tasks and counts are reloaded, and the Undo arrives through the flash. Code: frontend/lib/tasks.ts, src/tasks/tasks.controller.ts (complete).
+2. Valideren terwijl je typt
+Doen: log uit, ga naar Register, typ ada@todoish.dev in het e-mailveld en klik naar het volgende veld.
+Zien: meteen staat er "Someone already signed up with that address", nog vóór je op verzenden klikt.
+Wat het framework doet: form.validate('email') stuurt dat ene veld naar dezelfde pipe en hetzelfde Zod-schema als het echte verzenden. De regel "bestaat dit adres al" staat dus maar op één plek, op de server, en kan gewoon de database raadplegen.
+- Code: src/auth/auth.schemas.ts, frontend/pages/Auth/Register.tsx
 
-4. optional(). On stage: open a task, copy the ?task= URL and reload that page. They see: only task and comments come along, the list is there first, then the task loads. Code: src/tasks/task-detail.ts, frontend/components/TaskDialog.tsx.
+3. Infinite scroll
+Doen: ga naar Upcoming en blijf naar beneden scrollen.
+Zien: er verschijnt steeds een nieuwe week, en de ?page= in de URL loopt mee. Herlaad op ?page=5 en scroll omhoog: dan komen de eerdere weken erbij.
+Wat het framework doet: de controller geeft een scroll()-prop terug met één week per pagina. <InfiniteScroll> vraagt de volgende week op en plakt die eronder. Je schrijft geen paginering-API en geen state op de client.
+- Code: src/upcoming/upcoming.controller.ts, frontend/pages/Upcoming/Index.tsx
 
-5. Upload + error bags. On stage: drag an .exe into the dialog, then a PNG. They see: an error under the comment field only, then the image appears in the comment. Code: src/comments/comments.controller.ts, src/common/file.pipe.ts.
 
-6. Precognition. On stage: Filters & Labels, click +, type "(today | p1" and then close the bracket. They see: first "A bracket is opened but never closed." from the parser on the server, then "Looks good", and nothing is saved. Code: src/filters/filters.schemas.ts, frontend/pages/Filters/Index.tsx.
-
-7. defer() + rescue. On stage: open Productivity, then ?nap=1 on the Karma tab. They see: three deferred requests at the same time, Karma fails, and the page stays up. Code: src/productivity/productivity.controller.ts, frontend/pages/Productivity/Index.tsx.
-
-8. Polling + deepMerge(). On stage: open the project "Todoish launch" as Ada and run npm run collaborator:demo. They see: Grace's cards appear and disappear live, and every poll asks for changes and cursor only. Code: src/projects/projects.controller.ts (show) and the project page in frontend/pages (TODO: the path was cut off in your notes).
-
-9. Signed URLs + SSR. On stage: Share, Make link, open it in a private window, then open the link once more. They see: View source shows HTML from the server; the second time is a 403, and so is a link with a changed id. Code: src/invitations/invitations.controller.ts.
+4. Taak afvinken en ongedaan maken
+Doen: vink op Today een taak af en klik daarna op Undo.
+Zien: de taak verdwijnt meteen, zonder wachten, en komt terug na Undo.
+Wat het framework doet: de pagina past de lijst eerst zelf aan (optimistic) en stuurt dan pas het verzoek. Het antwoord van de server bevestigt de wijziging of draait hem terug. De Undo-knop komt mee als flash message.
+- Code: frontend/lib/tasks.ts, src/tasks/tasks.controller.ts (complete)
 
 ---
 
@@ -1114,10 +1130,9 @@ Before the talk: app running, logged in as Ada, the Network tab open in a second
 ## Where to find it
 
 <ul>
+<li><a href="https://nestjs-mvc.ravenberg.dev">nestjs-mvc.ravenberg.dev</a></li>
+<li><a href="https://todoish.ravenberg.dev">todoish.ravenberg.dev</a></li>
 <li><a href="https://github.com/ravenberg/nestjs-mvc">github.com/ravenberg/nestjs-mvc</a></li>
-<li>Docs: TODO add the docs URL</li>
-<li><code>npm install nestjs-mvc</code></li>
-<li>The docs site and this deck run on it</li>
 </ul>
 
 </div>
